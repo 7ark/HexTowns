@@ -141,14 +141,9 @@ public struct BoardCorners
     }
 }
 
-public class HexBoard : MonoBehaviour
+public class HexBoard
 {
-    [SerializeField]
     public Vector2Int tileSize;
-    [SerializeField]
-    private GameObject[] treePrefabs;
-    [SerializeField]
-    private GameObject[] rockPrefabs;
 
     private HexTile[,] board2D;
     private Dictionary<HexCoordinates, HexTile> board = new System.Collections.Generic.Dictionary<HexCoordinates, HexTile>();
@@ -168,33 +163,13 @@ public class HexBoard : MonoBehaviour
     }
     public int HighestPoint { get; private set; } = -500;
     public HexTile[] AllTilesOnBoard { get { return allTiles.ToArray(); } }
+    public static Vector2 FullSize { get; private set; } = Vector2.zero;
 
-    private void Awake()
+    public HexBoard()
     {
-        hexMesh = GetComponentInChildren<HexMesh>();
+        tileSize = new Vector2Int(17, 17);
+        hexMesh = new HexMesh();
         board2D = new HexTile[Size.x, Size.y];
-    }
-
-    private void Start()
-    {
-
-
-
-        //MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
-        //CombineInstance[] combine = new CombineInstance[meshFilters.Length];
-        //
-        //int i = 0;
-        //while (i < meshFilters.Length)
-        //{
-        //    combine[i].mesh = meshFilters[i].sharedMesh;
-        //    combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-        //    meshFilters[i].gameObject.SetActive(false);
-        //
-        //    i++;
-        //}
-        //gameObject.GetComponent<MeshFilter>().mesh = new Mesh();
-        //gameObject.GetComponent<MeshFilter>().mesh.CombineMeshes(combine);
-        //transform.gameObject.SetActive(true);
     }
 
     public void CreateAllTiles()
@@ -207,8 +182,46 @@ public class HexBoard : MonoBehaviour
             }
         }
 
+        if(FullSize == Vector2.zero)
+        {
+            float left = float.MaxValue;
+            float right = float.MinValue;
+            float bottom = float.MaxValue;
+            float top = float.MinValue;
+
+            for (int i = 0; i < allTiles.Count; i++)
+            {
+                if(allTiles[i].Position.x < left)
+                {
+                    left = allTiles[i].Position.x;
+                }
+                if (allTiles[i].Position.x > right)
+                {
+                    right = allTiles[i].Position.x;
+                }
+                if (allTiles[i].Position.z < bottom)
+                {
+                    bottom = allTiles[i].Position.z;
+                }
+                if (allTiles[i].Position.z > top)
+                {
+                    top = allTiles[i].Position.z;
+                }
+            }
+
+            FullSize = new Vector2(
+                right - left,
+                top - bottom
+                );
+        }
+
 
         //StaticBatchingUtility.Combine(gameObject);
+    }
+
+    public void Update()
+    {
+        hexMesh.Update();
     }
 
     public void RefreshBoard()
@@ -232,7 +245,7 @@ public class HexBoard : MonoBehaviour
 
     }
 
-    public void GenerateMesh(Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference)
+    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
     {
         List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
 
@@ -273,7 +286,7 @@ public class HexBoard : MonoBehaviour
                 }
                 if (allTiles[i].Height < 150 && allTiles[i].Height > 5 && likelinessToHaveTree == 0)
                 {
-                    GameObject tree = Instantiate(treePrefabs[Random.Range(0, treePrefabs.Length)], transform);
+                    GameObject tree = GameObject.Instantiate(treePrefabs[Random.Range(0, treePrefabs.Length)], spawningObject.transform);
                     tree.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
                     tree.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP);
 
@@ -281,7 +294,7 @@ public class HexBoard : MonoBehaviour
                 }
                 if(allTiles[i].Height > -2 && likelinessToHaveRock == 0)
                 {
-                    GameObject rock = Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], transform);
+                    GameObject rock = GameObject.Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], spawningObject.transform);
                     rock.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
                     rock.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
 
@@ -400,5 +413,10 @@ public class HexBoard : MonoBehaviour
         board2D[x, y] = tile;
         allTiles.Add(tile);
         tile.GlobalIndex = HexBoardChunkHandler.Instance.RegisterTile(tile);
+    }
+
+    public Material OnDisable()
+    {
+        return hexMesh.OnDisable();
     }
 }

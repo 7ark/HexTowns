@@ -28,6 +28,10 @@ public class HexBoardChunkHandler : MonoBehaviour
     private HexagonTextureReference textureReference;
     [SerializeField]
     private Material boardMaterial;
+    [SerializeField]
+    private GameObject[] treePrefabs;
+    [SerializeField]
+    private GameObject[] rockPrefabs;
 
     //Test stuff
     [SerializeField]
@@ -66,6 +70,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Dictionary<Vector2Int, HexBoard> globalBoards = new Dictionary<Vector2Int, HexBoard>();
     private Dictionary<Vector2Int, HexBoard> queuedBoards = new Dictionary<Vector2Int, HexBoard>();
     private Dictionary<Vector2Int, Biome> biomeLayout = new Dictionary<Vector2Int, Biome>();
+    private HexBoard[,] allBoards;
     bool waitOne = false;
     private int seed;
     private Vector2Int[] voronoiPoints;
@@ -253,22 +258,40 @@ public class HexBoardChunkHandler : MonoBehaviour
         return allFlattened;
     }
 
+    
 
     private void Update()
     {
-        //if(cells != null && cells.Length > 0)
-        //{
-        //    Graphics.DrawMeshInstancedProcedural(mesh, 0, materialInst, bounds, cells.Length);
-        //}
+        Vector3 cameraPosition = cameraController.GetTargetedPosition();
+        int camX = (int)(cameraPosition.x / HexBoard.FullSize.x);
+        int camY = (int)(cameraPosition.z / HexBoard.FullSize.y);
 
-        //timer -= Time.deltaTime;
-        //if(timer <= 0)
+        if(allBoards != null && allBoards.Length > 0)
+        {
+            for (int x = camX - 10; x <= camX + 10; x++)
+            {
+                for (int y = camY - 10; y <= camY + 10; y++)
+                {
+                    bool valid =
+                        x >= 0 &&
+                        x < allBoards.GetLength(0) &&
+                        y >= 0 &&
+                        y < allBoards.GetLength(1) &&
+                        allBoards[x, y] != null;
+
+                    if (valid)
+                    {
+                        allBoards[x, y].Update();
+                    }
+                }
+            }
+        }
+        //for (int x = 0; x < allBoards.GetLength(0); x++)
         //{
-        //    CheckForFillMap();
-        //
-        //    //Debug.Log("Render Status Update\nGlobal Boards: " + globalBoards.Count + "\nBoards Waiting to Render: " + boardsQueuedToRender.Count + "\nQueuedBoards: " + queuedBoards.Count);
-        //
-        //    timer = 2;
+        //    for (int y = 0; y < allBoards.GetLength(1); y++)
+        //    {
+        //        allBoards[x, y].Update();
+        //    }
         //}
 
         if (waitOne)
@@ -281,7 +304,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             {
                 for (int i = 0; i < boardsQueuedToRender.Count; i++)
                 {
-                    boardsQueuedToRender[i].GenerateMesh(mesh, materialInst, textureReference);
+                    boardsQueuedToRender[i].GenerateMesh(gameObject, mesh, materialInst, textureReference, treePrefabs, rockPrefabs);
                     if (!globalBoards.ContainsKey(boardsQueuedToRender[i].GridPosition))
                     {
                         globalBoards.Add(boardsQueuedToRender[i].GridPosition, boardsQueuedToRender[0]);
@@ -294,15 +317,19 @@ public class HexBoardChunkHandler : MonoBehaviour
             }
             else
             {
-                boardsQueuedToRender[0].GenerateMesh(mesh, materialInst, textureReference);
-                
-                if (!globalBoards.ContainsKey(boardsQueuedToRender[0].GridPosition))
+                const int chunksToRenderPerFrame = 10;
+                for (int i = 0; i < Mathf.Min(boardsQueuedToRender.Count, chunksToRenderPerFrame); i++)
                 {
-                    globalBoards.Add(boardsQueuedToRender[0].GridPosition, boardsQueuedToRender[0]);
+                    boardsQueuedToRender[0].GenerateMesh(gameObject, mesh, materialInst, textureReference, treePrefabs, rockPrefabs);
+
+                    if (!globalBoards.ContainsKey(boardsQueuedToRender[0].GridPosition))
+                    {
+                        globalBoards.Add(boardsQueuedToRender[0].GridPosition, boardsQueuedToRender[0]);
+                    }
+
+                    queuedBoards.Remove(boardsQueuedToRender[0].GridPosition);
+                    boardsQueuedToRender.RemoveAt(0);
                 }
-                
-                queuedBoards.Remove(boardsQueuedToRender[0].GridPosition);
-                boardsQueuedToRender.RemoveAt(0);
             }
 
             if(boardsQueuedToRender.Count > 0)
@@ -407,6 +434,7 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     private void FillBoards(int offsetX, int offsetY, int increasedDistance = 1)
     {
+        allBoards = new HexBoard[boardSize.x, boardSize.y];
         List<HexBoard> boardsToUpdate = new List<HexBoard>();
         for (int x = 0; x < boardSize.x; x++)
         {
@@ -469,11 +497,11 @@ public class HexBoardChunkHandler : MonoBehaviour
 
         Biome biome = Biome.None;
 
-        HexBoard board = Instantiate(hexBoardPrefab, transform);
-        board.name = "HexBoard [" + x + ", " + y + "]";
+        HexBoard board = new HexBoard();// Instantiate(hexBoardPrefab, transform);
+        //board.name = "HexBoard [" + x + ", " + y + "]";
         board.GridPosition = new Vector2Int(x, y);
         board.tileSize = tileSize;
-        board.transform.localPosition = Vector3.zero;
+        //board.transform.localPosition = Vector3.zero;
 
         //Setup corners
         int sX = x;
@@ -541,6 +569,8 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
 
         board.RunTerrainGeneration(cornerRect, biome);
+
+        allBoards[x, y] = board;
 
         return board;
     }
@@ -771,4 +801,15 @@ public class HexBoardChunkHandler : MonoBehaviour
         return neighborBoards.ToArray();
     }
 
+    private void OnDisable()
+    {
+        foreach(var board in globalBoards.Values)
+        {
+            Material mat = board.OnDisable();
+            if(mat != null)
+            {
+                Destroy(mat);
+            }
+        }
+    }
 }

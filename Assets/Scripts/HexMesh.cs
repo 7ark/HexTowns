@@ -8,7 +8,7 @@ using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 
-public class HexMesh : MonoBehaviour
+public class HexMesh
 {
 
     [System.Serializable]
@@ -27,10 +27,6 @@ public class HexMesh : MonoBehaviour
     private Material matInstance;
     private HexTile[] allTiles;
     private Vector3 center;
-
-    private void Awake()
-    {
-    }
 
     public void Triangulate(Mesh mesh, List<HexTile> tiles, Material materialInst, HexagonTextureReference textureReference)
     {
@@ -64,9 +60,15 @@ public class HexMesh : MonoBehaviour
             HexTile cell = tiles[i];
             if (cell != null)
             {
+                int lowestHeight = int.MaxValue;
                 List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(cell);
-                neighbors.Sort((x, y) => { return x.Height.CompareTo(y.Height); });
-                int lowestHeight = neighbors[0].Height;
+                for (int j = 0; j < neighbors.Count; j++)
+                {
+                    if(neighbors[j].Height < lowestHeight)
+                    {
+                        lowestHeight = neighbors[j].Height;
+                    }
+                }
 
                 Vector3 pos = cell.Position;
                 pos.y = (lowestHeight - 1) * HexTile.HEIGHT_STEP;
@@ -84,7 +86,7 @@ public class HexMesh : MonoBehaviour
         matInstance.SetBuffer(DataBuffer, dataBuffer);
     }
 
-    private void Update()
+    public void Update()
     {
         if(meshBasis != null)
         {
@@ -92,15 +94,12 @@ public class HexMesh : MonoBehaviour
         }
     }
 
-    private void OnDisable()
+    public Material OnDisable()
     {
         if(dataBuffer != null)
         {
             dataBuffer.Release();
         }
-        if(matInstance != null)
-        {
-            Destroy(matInstance);
-        }
+        return matInstance;
     }
 }

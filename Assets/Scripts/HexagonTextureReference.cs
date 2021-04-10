@@ -10,6 +10,12 @@ public class HexagonTextureReference : MonoBehaviour
         public Vector2Int heightRange;
         public Texture2D[] textureChoices;
     }
+    [System.Serializable]
+    private struct TextureInfoIndex
+    {
+        public Vector2Int heightRange;
+        public int[] textureChoices;
+    }
 
     [SerializeField]
     private List<TextureInfo> textureData;
@@ -18,9 +24,12 @@ public class HexagonTextureReference : MonoBehaviour
 
     private List<Texture2D> allTextures = new List<Texture2D>();
     private Dictionary<Texture2D, int> texToIndex = new Dictionary<Texture2D, int>();
+    private Dictionary<int, int[]> textureDataIndices = new Dictionary<int, int[]>();
 
     public static Rect[] ATLAS_UVs;
     private Texture2D atlas;
+    private int greatestHeight = 0;
+    private int lowestHeight = int.MaxValue;
 
     /// <summary>
     /// Gets a random material based on the height passed
@@ -69,9 +78,21 @@ public class HexagonTextureReference : MonoBehaviour
 
     public int GetTextureIndex(int height, bool defaultToMaxMin = true)
     {
-        Texture2D texRef = GetTextureFromHeight(height, defaultToMaxMin);
-        int index = texToIndex[texRef];
-        return index;
+        //Texture2D texRef = GetTextureFromHeight(height, defaultToMaxMin);
+        //int index = texToIndex[texRef];
+        if(defaultToMaxMin)
+        {
+            if (height > greatestHeight)
+            {
+                height = greatestHeight;
+            }
+            if (height < lowestHeight)
+            {
+                height = lowestHeight;
+            }
+        }
+        int[] range = textureDataIndices[height];
+        return range[Random.Range(0, range.Length)];
     }
 
     public List<Texture2D> OrganizeAllTextures()
@@ -81,6 +102,18 @@ public class HexagonTextureReference : MonoBehaviour
         int index = 0;
         for (int i = 0; i < textureData.Count; i++)
         {
+            for (int j = textureData[i].heightRange.x; j <= textureData[i].heightRange.y; j++)
+            {
+                if(j > greatestHeight)
+                {
+                    greatestHeight = j;
+                }
+                if(j < lowestHeight)
+                {
+                    lowestHeight = j;
+                }
+                textureDataIndices.Add(j, null);
+            }
             for (int j = 0; j < textureData[i].textureChoices.Length; j++)
             {
                 if (!allTextures.Contains(textureData[i].textureChoices[j]))
@@ -90,6 +123,15 @@ public class HexagonTextureReference : MonoBehaviour
                     texToIndex.Add(tex, index);
                     index++;
                 }
+            }
+            int[] textureIndices = new int[textureData[i].textureChoices.Length];
+            for (int j = 0; j < textureData[i].textureChoices.Length; j++)
+            {
+                textureIndices[j] = texToIndex[textureData[i].textureChoices[j]];
+            }
+            for (int j = textureData[i].heightRange.x; j <= textureData[i].heightRange.y; j++)
+            {
+                textureDataIndices[j] = textureIndices;
             }
         }
 

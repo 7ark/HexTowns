@@ -5084,7 +5084,7 @@ MonoBehaviour:
   - heightRange: {x: -100, y: -75}
     textureChoices:
     - {fileID: 2800000, guid: c2e975e8a074dff45aee75e580a54344, type: 3}
-  - heightRange: {x: -76, y: -51}
+  - heightRange: {x: -74, y: -51}
     textureChoices:
     - {fileID: 2800000, guid: c2e975e8a074dff45aee75e580a54344, type: 3}
     - {fileID: 2800000, guid: 29cf16dcfaae11f46bccf7ae069faa60, type: 3}
@@ -5355,12 +5355,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boardSize: {x: 50, y: 50}
   tileSize: {x: 17, y: 17}
-  hexBoardPrefab: {fileID: 7733595940330502308, guid: 6edb7b422e9b72d47864cd76ae5b3abb, type: 3}
   cameraController: {fileID: 2006599518}
   generateOverTime: 1
   generationDisplay: {fileID: 300517835}
   textureReference: {fileID: 1371050005}
   boardMaterial: {fileID: 2100000, guid: a6d5868944094464d986cca2cbce5ecd, type: 2}
+  treePrefabs:
+  - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
+  rockPrefabs:
+  - {fileID: 8766014541193715956, guid: 23058347256c2c34bb43f4c315157b04, type: 3}
   baseMaterial: {fileID: 2100000, guid: 43f2bd7bcd4b198458b969d83497966f, type: 2}
   mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
   textures:
