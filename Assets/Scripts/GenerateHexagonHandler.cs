@@ -112,7 +112,7 @@ public class GenerateHexagonHandler : MonoBehaviour
     }
 }
 
-[BurstCompile]
+//[BurstCompile]
 public struct TriangulateTileJob : IJob
 {
     public NativeList<Vector3> vertices;
@@ -151,7 +151,8 @@ public struct TriangulateTileJob : IJob
     public void Execute()
     {
         Rect rect = new Rect();
-        if(uvData.Length > 0)
+        bool hasUVData = uvData.Length > 0;
+        if (hasUVData)
         {
             rect = uvData[textureID];
         }
@@ -178,7 +179,7 @@ public struct TriangulateTileJob : IJob
                 center + HexTile.CORNERS[i],
                 center + HexTile.CORNERS[i + 1]);
 
-            if (uvData.Length > 0)
+            if (hasUVData)
             {
                 Vector2 uv = CORNERS[i] * size + centerUV;
                 Vector2 uv2 = CORNERS[i + 1] * size + centerUV;
@@ -235,7 +236,7 @@ public struct TriangulateTileJob : IJob
                         new Vector3(cornerTwo.x, height * HexTile.HEIGHT_STEP, cornerTwo.z),
                         new Vector3(cornerOne.x, height * HexTile.HEIGHT_STEP, cornerOne.z));
 
-                    if (uvData.Length > 0)
+                    if (hasUVData)
                     {
                         Vector2 lowerLeftUV = rect.min;
                         Vector2 upperLeftUV = new Vector2(rect.xMin, rect.yMax);

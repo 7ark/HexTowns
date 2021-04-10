@@ -74,7 +74,7 @@ public class HexagonTextureReference : MonoBehaviour
         return index;
     }
 
-    public Texture2D CreateAtlas()
+    public List<Texture2D> OrganizeAllTextures()
     {
         texToIndex.Clear();
         allTextures.Clear();
@@ -93,27 +93,6 @@ public class HexagonTextureReference : MonoBehaviour
             }
         }
 
-
-        int sideRes = (allTextures.Count / 2) * textureSize + 2;
-
-        Texture2D newTexture = new Texture2D(sideRes, sideRes);
-        Rect[] vals = newTexture.PackTextures(allTextures.ToArray(), 2, sideRes);
-        ATLAS_UVs = vals;
-
-        allTextures.Clear();
-        System.GC.Collect();
-        Resources.UnloadUnusedAssets();
-
-        atlas = newTexture;
-        return newTexture;
-    }
-
-    private void OnDestroy()
-    {
-        for (int i = 0; i < allTextures.Count; i++)
-        {
-            Destroy(allTextures[i]);
-        }
-        Destroy(atlas);
+        return allTextures;
     }
 }

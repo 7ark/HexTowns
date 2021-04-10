@@ -73,26 +73,26 @@ public class InteractionHandler : MonoBehaviour
         hoverDisplay = hoverFilter.gameObject;
         //previewTile = hoverObject.GetComponent<PreviewTile>();
 
-        TriangulateTileJob job = new TriangulateTileJob()
-        {
-            position = Vector3.zero,
-            vertices = new NativeList<Vector3>(Allocator.TempJob),
-            triangles = new NativeList<int>(Allocator.TempJob),
-            textureID = 0,
-            uvs = new NativeList<Vector2>(Allocator.TempJob),
-            uvData = new NativeArray<Rect>(0, Allocator.TempJob),
-            height = 0,
-            scale = 1,
-            neighborArrayCount = 0,
-            neighborHeight = new NativeArray<int>(0, Allocator.TempJob),
-            neighborPositions = new NativeArray<Vector3>(0, Allocator.TempJob)
-        };
-        generateHexagonHandler.GenerateHexagon(job, (vertices, triangles, uvs) =>
-        {
-            hoverMesh.vertices = vertices.ToArray();
-            hoverMesh.triangles = triangles.ToArray();
-            hoverMesh.RecalculateNormals();
-        });
+        //TriangulateTileJob job = new TriangulateTileJob()
+        //{
+        //    position = Vector3.zero,
+        //    vertices = new NativeList<Vector3>(Allocator.TempJob),
+        //    triangles = new NativeList<int>(Allocator.TempJob),
+        //    textureID = 0,
+        //    uvs = new NativeList<Vector2>(Allocator.TempJob),
+        //    uvData = new NativeArray<Rect>(0, Allocator.TempJob),
+        //    height = 0,
+        //    scale = 1,
+        //    neighborArrayCount = 0,
+        //    neighborHeight = new NativeArray<int>(0, Allocator.TempJob),
+        //    neighborPositions = new NativeArray<Vector3>(0, Allocator.TempJob)
+        //};
+        //generateHexagonHandler.GenerateHexagon(job, (vertices, triangles, uvs) =>
+        //{
+        //    hoverMesh.vertices = vertices.ToArray();
+        //    hoverMesh.triangles = triangles.ToArray();
+        //    hoverMesh.RecalculateNormals();
+        //});
         SetHoverMaterial(true);
     }
 

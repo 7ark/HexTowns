@@ -6,95 +6,101 @@ using Unity.Jobs;
 using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
+using Unity.Collections.LowLevel.Unsafe;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class HexMesh : MonoBehaviour
 {
-    private Mesh hexMesh;
 
-    private MeshCollider hexCollider;
+    [System.Serializable]
+    public struct HexBufferData
+    {
+        public Vector4 pos_s;
+        public float index;
+    };
 
-    private List<Vector3> corners = new List<Vector3>();
-    private MeshRenderer meshRenderer;
-    private HexBoard parentBoard;
-    private GenerateHexagonHandler generateHexagonHandler;
+    private HexBufferData[] renderData;
+    private ComputeBuffer dataBuffer;
+
+    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
+    private Mesh meshBasis;
+    [SerializeField]
+    private Material matInstance;
+    private HexTile[] allTiles;
+    private Vector3 center;
 
     private void Awake()
     {
-        meshRenderer = GetComponent<MeshRenderer>();
-        hexMesh = GetComponent<MeshFilter>().mesh = new Mesh();
-        hexCollider = gameObject.AddComponent<MeshCollider>();
-        hexMesh.name = "Hex Mesh";
-        parentBoard = GetComponentInParent<HexBoard>();
-        generateHexagonHandler = gameObject.AddComponent<GenerateHexagonHandler>();
     }
 
-
-    public void SetMaterials(params Material[] mat)
+    public void Triangulate(Mesh mesh, List<HexTile> tiles, Material materialInst, HexagonTextureReference textureReference)
     {
-        meshRenderer.sharedMaterials = mat;
-    }
-
-    public void SetMaterial(Material mat, int index)
-    {
-        meshRenderer.sharedMaterials[index] = mat;
-    }
-
-    public void Triangulate(List<HexTile> tiles)
-    {
-        hexMesh.Clear();
-        corners.Clear();
-
-        List<TriangulateTileJob> jobs = new List<TriangulateTileJob>();
-        foreach (var tile in tiles) {
-            List<HexTile> tileNeighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(tile);
-            NativeArray<int> neighborHeights = new NativeArray<int>(tileNeighbors.Count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            NativeArray<Vector3> neighborPositions = new NativeArray<Vector3>(tileNeighbors.Count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            for (int j = 0; j < neighborHeights.Length; j++)
-            {
-                neighborHeights[j] = tileNeighbors[j].Height;
-                neighborPositions[j] = tileNeighbors[j].Position;
-            }
-
-            if(tile.MaterialIndex == -1)
-            {
-                tile.MaterialIndex = HexBoardChunkHandler.Instance.TextureRef.GetTextureIndex(tile.Height);
-            }
-
-            TriangulateTileJob job = new TriangulateTileJob()
-            {
-                position = new Vector3(tile.Position.x, tile.Height * HexTile.HEIGHT_STEP, tile.Position.z),
-                vertices = new NativeList<Vector3>(Allocator.TempJob),
-                triangles = new NativeList<int>(Allocator.TempJob),
-                textureID = tile.MaterialIndex,
-                uvs = new NativeList<Vector2>(Allocator.TempJob),
-                uvData = new NativeArray<Rect>(HexagonTextureReference.ATLAS_UVs, Allocator.TempJob),
-                height = tile.Height,
-                scale = 1,
-                neighborArrayCount = tileNeighbors.Count,
-                neighborHeight = neighborHeights,
-                neighborPositions = neighborPositions
-            };
-            jobs.Add(job);
-        }
-
-        generateHexagonHandler.GenerateHexagons(jobs, SetupMesh);
-    }
-
-
-    private void SetupMesh(Vector3[] vertices, int[] triangles, Vector2[] uvs)
-    {
-        hexMesh.vertices = vertices;
-        int[] tris = new int[triangles.Length];
-        for (int i = 0; i < triangles.Length; i++)
+        Vector3 pos = Vector3.zero;
+        for (int i = 0; i < tiles.Count; i++)
         {
-            tris[i] = i;
+            pos += tiles[i].Position;
         }
-        hexMesh.triangles = tris;
-        hexMesh.SetUVs(0, uvs);
-        hexMesh.RecalculateNormals();
-        hexCollider.sharedMesh = hexMesh;
+        pos /= tiles.Count;
 
-        //meshRenderer.sharedMaterial.SetTexture("_BaseColorMap", HexBoardChunkHandler.TEXTURE_ATLAS);
+        center = pos;
+        allTiles = tiles.ToArray();
+        matInstance = new Material(materialInst);
+        meshBasis = mesh;
+
+        UpdateBuffer(tiles, textureReference);
+    }
+    private void UpdateBuffer(List<HexTile> tiles, HexagonTextureReference textureReference)
+    {
+        if (dataBuffer != null)
+        {
+            dataBuffer.Release();
+        }
+
+        dataBuffer = new ComputeBuffer(tiles.Count,
+            UnsafeUtility.SizeOf<HexBufferData>());
+
+        renderData = new HexBufferData[tiles.Count];
+        for (var i = 0; i < renderData.Length; i++)
+        {
+            HexTile cell = tiles[i];
+            if (cell != null)
+            {
+                List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(cell);
+                neighbors.Sort((x, y) => { return x.Height.CompareTo(y.Height); });
+                int lowestHeight = neighbors[0].Height;
+
+                Vector3 pos = cell.Position;
+                pos.y = (lowestHeight - 1) * HexTile.HEIGHT_STEP;
+                HexBufferData data;
+                data.pos_s = pos;
+                int height = Mathf.Max(1, cell.Height - lowestHeight);
+                data.pos_s.w = height * HexTile.HEIGHT_STEP;
+                data.index = textureReference.GetTextureIndex(cell.Height);
+                renderData[i] = data;
+            }
+        }
+
+        dataBuffer.SetData(renderData);
+        // from `    StructuredBuffer<Data> dataBuffer;` in the hlsl file
+        matInstance.SetBuffer(DataBuffer, dataBuffer);
+    }
+
+    private void Update()
+    {
+        if(meshBasis != null)
+        {
+            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, new Bounds(center, new Vector3(80, 100, 80)), allTiles.Length);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if(dataBuffer != null)
+        {
+            dataBuffer.Release();
+        }
+        if(matInstance != null)
+        {
+            Destroy(matInstance);
+        }
     }
 }

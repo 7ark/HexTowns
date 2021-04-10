@@ -146,8 +146,6 @@ public class HexBoard : MonoBehaviour
     [SerializeField]
     public Vector2Int tileSize;
     [SerializeField]
-    private HexTile tilePrefab;
-    [SerializeField]
     private GameObject[] treePrefabs;
     [SerializeField]
     private GameObject[] rockPrefabs;
@@ -234,11 +232,11 @@ public class HexBoard : MonoBehaviour
 
     }
 
-    public void GenerateMesh()
+    public void GenerateMesh(Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference)
     {
         List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
 
-        hexMesh.Triangulate(allTiles);
+        hexMesh.Triangulate(meshBasis, allTiles, materialInst, textureReference);
 
         if(!environmentalObjectsGenerated)
         {

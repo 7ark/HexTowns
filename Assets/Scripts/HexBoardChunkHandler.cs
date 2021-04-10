@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MeshCombineStudio;
 using TMPro;
 using System.IO;
 using Random = UnityEngine.Random;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Collections;
 
 public class HexBoardChunkHandler : MonoBehaviour
 {
@@ -28,6 +29,37 @@ public class HexBoardChunkHandler : MonoBehaviour
     [SerializeField]
     private Material boardMaterial;
 
+    //Test stuff
+    [SerializeField]
+    private Material baseMaterial;
+
+    [SerializeField]
+    private Mesh mesh;
+
+    [SerializeField]
+    private Texture2D[] textures;
+
+    [SerializeField]
+    private Bounds bounds;
+
+    [SerializeField]
+    private HexTile[] cells;
+
+    [System.Serializable]
+    public struct HexBufferData
+    {
+        public Vector4 pos_s;
+        public float index;
+    };
+
+    private Material materialInst;
+    private HexBufferData[] renderData;
+    private ComputeBuffer dataBuffer;
+
+    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
+
+
+    private Texture2DArray textureArray;
     private HexTile[] globalTiles;
     private Vector2Int cachedLengths;
     private List<HexBoard> boardsQueuedToRender = new List<HexBoard>();
@@ -60,15 +92,93 @@ public class HexBoardChunkHandler : MonoBehaviour
         tileSize = new Vector2Int(newBoardSize, newBoardSize);
     }
 
+    private void CreateBaseMesh()
+    {
+        GenerateHexagonHandler generateHexagonHandler = gameObject.AddComponent<GenerateHexagonHandler>();
+        NativeArray<int> neighborHeights = new NativeArray<int>(6, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+        NativeArray<Vector3> neighborPositions = new NativeArray<Vector3>(6, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+        HexCoordinates[] neighborPos = new HexCoordinates[]
+        {
+            new HexCoordinates(1, 0),
+            new HexCoordinates(0, 1),
+            new HexCoordinates(-1, 0),
+            new HexCoordinates(0, -1),
+            new HexCoordinates(1, -1),
+            new HexCoordinates(-1, 1),
+
+        };
+        for (int j = 0; j < neighborHeights.Length; j++)
+        {
+            neighborHeights[j] = 0;
+            neighborPositions[j] = neighborPos[j].ToPosition();
+        }
+        NativeArray<Rect> test = new NativeArray<Rect>(new Rect[] { new Rect()
+        {
+            min = new Vector2(0, 0),
+            max = new Vector2(1, 1)
+        }}, Allocator.TempJob);
+        generateHexagonHandler.GenerateHexagon(new TriangulateTileJob()
+        {
+            position = new Vector3(0, 1, 0),
+            vertices = new NativeList<Vector3>(Allocator.TempJob),
+            triangles = new NativeList<int>(Allocator.TempJob),
+            textureID = 0,
+            uvs = new NativeList<Vector2>(Allocator.TempJob),
+            uvData = test,
+            height = 5,
+            scale = 1,
+            neighborArrayCount = 6,
+            neighborHeight = neighborHeights,
+            neighborPositions = neighborPositions
+        }, (Vector3[] vertices, int[] triangles, Vector2[] uvs) =>
+        {
+            mesh = new Mesh();
+
+            mesh.vertices = vertices;
+            int[] tris = new int[triangles.Length];
+            for (int i = 0; i < triangles.Length; i++)
+            {
+                tris[i] = i;
+            }
+            mesh.triangles = tris;
+            mesh.uv = uvs;
+            mesh.RecalculateNormals();
+        });
+    }
+
     private void Awake()
     {
         Instance = this;
+
+        materialInst = new Material(baseMaterial);
+
+        CreateBaseMesh();
+        textures = textureReference.OrganizeAllTextures().ToArray();
+
+        // copied from https://catlikecoding.com/unity/tutorials/hex-map/part-14/
+        Texture2D t = textures[0];
+        textureArray = new Texture2DArray(
+            t.width, t.height, textures.Length, t.format, false
+        );
+
+        textureArray.anisoLevel = t.anisoLevel;
+        textureArray.filterMode = t.filterMode;
+        textureArray.wrapMode = t.wrapMode;
+
+        for (int i = 0; i < textures.Length; i++)
+        {
+            for (int m = 0; m < t.mipmapCount; m++)
+            {
+                Graphics.CopyTexture(textures[i], 0, m, textureArray, i, m);
+            }
+        }
+
+        materialInst.mainTexture = textureArray;
     }
 
     public void StartGeneratingWorld(int worldSize)
     {
-        TEXTURE_ATLAS = textureReference.CreateAtlas();
-        boardMaterial.SetTexture("_MainTex", HexBoardChunkHandler.TEXTURE_ATLAS);
+        //boardMaterial.SetTexture("_MainTex", HexBoardChunkHandler.TEXTURE_ATLAS);
         //File.WriteAllBytes(@"C:\Users\funny\Documents\ShareX\Screenshots\2021-04\test.png", TEXTURE_ATLAS.EncodeToPNG());
 
         seed = System.DateTime.Now.Millisecond;
@@ -146,6 +256,10 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     private void Update()
     {
+        //if(cells != null && cells.Length > 0)
+        //{
+        //    Graphics.DrawMeshInstancedProcedural(mesh, 0, materialInst, bounds, cells.Length);
+        //}
 
         //timer -= Time.deltaTime;
         //if(timer <= 0)
@@ -157,17 +271,17 @@ public class HexBoardChunkHandler : MonoBehaviour
         //    timer = 2;
         //}
 
-        if(waitOne)
+        if (waitOne)
         {
             waitOne = false;
         }
         else if(boardsQueuedToRender.Count > 0)
         {
-            if(!generateOverTime)
+            if (!generateOverTime)
             {
                 for (int i = 0; i < boardsQueuedToRender.Count; i++)
                 {
-                    boardsQueuedToRender[i].GenerateMesh();
+                    boardsQueuedToRender[i].GenerateMesh(mesh, materialInst, textureReference);
                     if (!globalBoards.ContainsKey(boardsQueuedToRender[i].GridPosition))
                     {
                         globalBoards.Add(boardsQueuedToRender[i].GridPosition, boardsQueuedToRender[0]);
@@ -175,10 +289,12 @@ public class HexBoardChunkHandler : MonoBehaviour
                     queuedBoards.Remove(boardsQueuedToRender[i].GridPosition);
                 }
                 boardsQueuedToRender.Clear();
+
+                //SetupData();
             }
             else
             {
-                boardsQueuedToRender[0].GenerateMesh();
+                boardsQueuedToRender[0].GenerateMesh(mesh, materialInst, textureReference);
                 
                 if (!globalBoards.ContainsKey(boardsQueuedToRender[0].GridPosition))
                 {
@@ -204,7 +320,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                 //}
             }
 
-            waitOne = true;
+            //waitOne = true;
         }
     }
 
@@ -354,6 +470,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         Biome biome = Biome.None;
 
         HexBoard board = Instantiate(hexBoardPrefab, transform);
+        board.name = "HexBoard [" + x + ", " + y + "]";
         board.GridPosition = new Vector2Int(x, y);
         board.tileSize = tileSize;
         board.transform.localPosition = Vector3.zero;
