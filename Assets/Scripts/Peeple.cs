@@ -84,7 +84,6 @@ public class Peeple : MonoBehaviour
                 {
                     //This would mean we've tried to go to all the tiles, are our mover said it can't get there. We're leaving this job.
                     Debug.LogError("Job " + currentJob.name + " isn't reachable!", currentJob.gameObject);
-                    Debug.Break();
                     currentJob.MarkAsUnreachable();
                     currentJob.LeaveWork(this);
                 }

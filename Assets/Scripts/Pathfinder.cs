@@ -126,6 +126,7 @@ public class Pathfinder : MonoBehaviour
                     error += boardData.F + "\n";
                 }
                 Debug.LogError(error);
+                return new HexTile[] { };
             }
 
             coordsToData.Add(current.Tile, current);

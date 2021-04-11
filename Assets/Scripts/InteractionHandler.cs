@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 public class InteractionHandler : MonoBehaviour
 {
     private const float timeBetweenHoldings = 0.1f;
-    private const float timeBeforeNotCancelling = 0.1f;
+    private const float timeBeforeNotCancelling = 0.2f;
 
     [SerializeField]
     private EventSystem eventSystem;
