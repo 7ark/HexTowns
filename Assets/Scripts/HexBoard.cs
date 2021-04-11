@@ -306,9 +306,9 @@ public class HexBoard
         }
     }
 
-    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
+    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst,  Material materialSelectionInst, Camera drawCamera, Camera selectionCamera, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
     {
-        hexMesh.SetupMeshGenerationData(meshBasis, allTiles, materialInst, textureReference);
+        hexMesh.SetupMeshGenerationData(meshBasis, allTiles, materialInst, materialSelectionInst, drawCamera, selectionCamera, textureReference);
 
         this.spawningObject = spawningObject;
         this.treePrefabs = treePrefabs;

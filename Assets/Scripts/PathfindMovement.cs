@@ -17,14 +17,7 @@ public class PathfindMovement : MonoBehaviour
 
     public HexTile GetTileOn()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(new Ray(transform.position + new Vector3(0, 500), Vector3.down), out hit, Mathf.Infinity))
-        {
-            HexBoard board = hit.transform.GetComponentInParent<HexBoard>();
-            return HexBoardChunkHandler.Instance.GetTileFromWorldPosition(transform.position);
-        }
-
-        return null;
+        return HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(transform.position));
     }
 
     public void SetGoal(HexTile goal, bool instant = false, System.Action<bool> arrivedComplete = null, bool alwaysDoActionEvent = false)

@@ -33,6 +33,12 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Material baseMaterial;
+    [SerializeField]
+    private Material baseMaterialSelection;
+    [SerializeField]
+    private Camera drawingCamera;
+    [SerializeField]
+    private Camera selectionCamera;
 
     [SerializeField]
     private Mesh mesh;
@@ -295,7 +301,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             {
                 for (int i = 0; i < boardsQueuedToRender.Count; i++)
                 {
-                    boardsQueuedToRender[i].GenerateMesh(gameObject, mesh, materialInst, textureReference, treePrefabs, rockPrefabs);
+                    boardsQueuedToRender[i].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, treePrefabs, rockPrefabs);
                     if (!globalBoards.ContainsKey(boardsQueuedToRender[i].GridPosition))
                     {
                         globalBoards.Add(boardsQueuedToRender[i].GridPosition, boardsQueuedToRender[0]);
@@ -303,15 +309,13 @@ public class HexBoardChunkHandler : MonoBehaviour
                     queuedBoards.Remove(boardsQueuedToRender[i].GridPosition);
                 }
                 boardsQueuedToRender.Clear();
-
-                //SetupData();
             }
             else
             {
                 const int chunksToRenderPerFrame = 10;
                 for (int i = 0; i < Mathf.Min(boardsQueuedToRender.Count, chunksToRenderPerFrame); i++)
                 {
-                    boardsQueuedToRender[0].GenerateMesh(gameObject, mesh, materialInst, textureReference, treePrefabs, rockPrefabs);
+                    boardsQueuedToRender[0].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, treePrefabs, rockPrefabs);
 
                     if (!globalBoards.ContainsKey(boardsQueuedToRender[0].GridPosition))
                     {
@@ -703,6 +707,10 @@ public class HexBoardChunkHandler : MonoBehaviour
     public HexTile GetTileFromCoordinate(HexCoordinates coords)
     {
         int index = HexCoordToGlobalIndex(coords);
+        if(globalTiles == null || index >= globalTiles.Length || index < 0)
+        {
+            return null;
+        }
         return globalTiles[index];
     }
 

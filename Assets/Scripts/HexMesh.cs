@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 
 public class HexMesh
 {
@@ -16,20 +17,28 @@ public class HexMesh
     {
         public Vector4 pos_s;
         public float index;
+        public int hexCoordX;
+        public int hexCoordZ;
     };
 
     private HexBufferData[] renderData;
     private ComputeBuffer dataBuffer;
 
     private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
+    private static readonly int OffsetX = Shader.PropertyToID("_OffsetX");
+    private static readonly int OffsetZ = Shader.PropertyToID("_OffsetZ");
     private Mesh meshBasis;
-    [SerializeField]
     private Material matInstance;
+    private Material matSelectionInstance;
     private HexTile[] allTiles;
-    public Vector3 center;
+    private Camera drawCamera;
+    private Camera selectionCamera;
+    private Vector3 center;
 
-    public void SetupMeshGenerationData(Mesh mesh, List<HexTile> tiles, Material materialInst, HexagonTextureReference textureReference)
+    public void SetupMeshGenerationData(Mesh mesh, List<HexTile> tiles, Material materialInst, Material materialSelectionInst, Camera drawCamera, Camera selectionCamera, HexagonTextureReference textureReference)
     {
+        this.drawCamera = drawCamera;
+        this.selectionCamera = selectionCamera;
         Vector3 pos = Vector3.zero;
         for (int i = 0; i < tiles.Count; i++)
         {
@@ -40,6 +49,7 @@ public class HexMesh
         center = pos;
         allTiles = tiles.ToArray();
         matInstance = new Material(materialInst);
+        matSelectionInstance = new Material(materialSelectionInst);
         meshBasis = mesh;
 
         UpdateBuffer(tiles, textureReference);
@@ -76,7 +86,13 @@ public class HexMesh
                 data.pos_s = pos;
                 int height = Mathf.Max(1, cell.Height - lowestHeight);
                 data.pos_s.w = height * HexTile.HEIGHT_STEP;
-                data.index = textureReference.GetTextureIndex(cell.Height);
+                if(cell.MaterialIndex == -1)
+                {
+                    cell.MaterialIndex = textureReference.GetTextureIndex(cell.Height);
+                }
+                data.index = cell.MaterialIndex;
+                data.hexCoordX = cell.Coordinates.X;
+                data.hexCoordZ = cell.Coordinates.Y;
                 renderData[i] = data;
             }
         }
@@ -84,13 +100,35 @@ public class HexMesh
         dataBuffer.SetData(renderData);
         // from `    StructuredBuffer<Data> dataBuffer;` in the hlsl file
         matInstance.SetBuffer(DataBuffer, dataBuffer);
+
+        // chunk's offset in units of hexagons
+        matSelectionInstance.SetFloat(OffsetX, 0);
+        matSelectionInstance.SetFloat(OffsetZ, 0);
+        matSelectionInstance.SetBuffer(DataBuffer, dataBuffer);
     }
 
     public void Update()
     {
         if(meshBasis != null)
         {
-            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, new Bounds(center, new Vector3(80, 100, 80)), allTiles.Length);
+            Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
+#if UNITY_EDITOR
+            foreach (var svObj in UnityEditor.SceneView.sceneViews)
+            {
+                UnityEditor.SceneView sv = svObj as UnityEditor.SceneView;
+                if (sv != null)
+                {
+                    Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
+                        ShadowCastingMode.On, true, 6, sv.camera);
+                }
+            }
+#endif
+
+            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
+                ShadowCastingMode.On, true, 6, drawCamera);
+
+            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matSelectionInstance, bound, allTiles.Length, null,
+                ShadowCastingMode.Off, false, 6, selectionCamera);
         }
     }
 

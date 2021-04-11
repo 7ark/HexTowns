@@ -31,6 +31,10 @@ public class InteractionHandler : MonoBehaviour
     private Material hoverBadPreviewMaterial;
     [SerializeField]
     private MeshCombineStudio.MeshCombiner meshCombiner;
+    [SerializeField]
+    private Camera selectionCamera;
+    [SerializeField]
+    private CameraHexagonTextureRenderer cameraHexagonTexture;
 
     //private PreviewTile previewTile;
 
@@ -57,6 +61,8 @@ public class InteractionHandler : MonoBehaviour
     private bool destructionModeActive = false;
     private MeshRenderer hoverMeshRenderer;
     private float cancelTimer = 0;
+    private RenderTexture selectionRenderTexture;
+    private Texture2D hexSelectTex;
 
 
     private void Awake()
@@ -67,32 +73,37 @@ public class InteractionHandler : MonoBehaviour
         inputMaster = new MasterInput();
         inputMaster.Enable();
 
-        inputMaster.Player.SelectLocation.performed += LocationSelected;
         MeshFilter hoverFilter = hoverObject.GetComponentInChildren<MeshFilter>();
         hoverMesh = hoverFilter.mesh = new Mesh();
         hoverDisplay = hoverFilter.gameObject;
+        selectionRenderTexture = new RenderTexture(Screen.width, Screen.height, 16, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
+        selectionCamera.targetTexture = selectionRenderTexture;
+        hexSelectTex = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
+        cameraHexagonTexture.SetTexture(hexSelectTex, selectionRenderTexture);
+
+
         //previewTile = hoverObject.GetComponent<PreviewTile>();
 
-        //TriangulateTileJob job = new TriangulateTileJob()
-        //{
-        //    position = Vector3.zero,
-        //    vertices = new NativeList<Vector3>(Allocator.TempJob),
-        //    triangles = new NativeList<int>(Allocator.TempJob),
-        //    textureID = 0,
-        //    uvs = new NativeList<Vector2>(Allocator.TempJob),
-        //    uvData = new NativeArray<Rect>(0, Allocator.TempJob),
-        //    height = 0,
-        //    scale = 1,
-        //    neighborArrayCount = 0,
-        //    neighborHeight = new NativeArray<int>(0, Allocator.TempJob),
-        //    neighborPositions = new NativeArray<Vector3>(0, Allocator.TempJob)
-        //};
-        //generateHexagonHandler.GenerateHexagon(job, (vertices, triangles, uvs) =>
-        //{
-        //    hoverMesh.vertices = vertices.ToArray();
-        //    hoverMesh.triangles = triangles.ToArray();
-        //    hoverMesh.RecalculateNormals();
-        //});
+        TriangulateTileJob job = new TriangulateTileJob()
+        {
+            position = Vector3.zero,
+            vertices = new NativeList<Vector3>(Allocator.TempJob),
+            triangles = new NativeList<int>(Allocator.TempJob),
+            textureID = 0,
+            uvs = new NativeList<Vector2>(Allocator.TempJob),
+            uvData = new NativeArray<Rect>(0, Allocator.TempJob),
+            height = 0,
+            scale = 1,
+            neighborArrayCount = 0,
+            neighborHeight = new NativeArray<int>(0, Allocator.TempJob),
+            neighborPositions = new NativeArray<Vector3>(0, Allocator.TempJob)
+        };
+        generateHexagonHandler.GenerateHexagon(job, (vertices, triangles, uvs) =>
+        {
+            hoverMesh.vertices = vertices.ToArray();
+            hoverMesh.triangles = triangles.ToArray();
+            hoverMesh.RecalculateNormals();
+        });
         SetHoverMaterial(true);
     }
 
@@ -148,28 +159,43 @@ public class InteractionHandler : MonoBehaviour
         }
     }
 
-    private void LocationSelected(InputAction.CallbackContext context)
+    private void OnRenderImage(RenderTexture src, RenderTexture dest)
     {
-        RaycastHit hit;
-        if(Physics.Raycast(cameraInstance.ScreenPointToRay(Mouse.current.position.ReadValue()), out hit))
-        {
-            if(hit.transform != null)
-            {
-                Select(hit.point);
-            }
-        }
+        RenderTexture.active = selectionRenderTexture;
+
+        Vector2Int mouse = Vector2Int.FloorToInt(Mouse.current.position.ReadValue());
+        mouse.x = Mathf.Clamp(mouse.x, 0, Screen.width - 1);
+        mouse.y = (Screen.height - 1) - Mathf.Clamp(mouse.y, 0, Screen.height - 2);
+        Vector2 max = mouse + Vector2.one;
+        hexSelectTex.ReadPixels(Rect.MinMaxRect(mouse.x, mouse.y, max.x, max.y), 0, 0);
     }
 
     private void Update()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(cameraInstance.ScreenPointToRay(Mouse.current.position.ReadValue()), out hit))
+        if (eventSystem.currentInputModule.IsPointerOverGameObject(-1))
         {
-            if (hit.transform != null)
-            {
-                Hover(hit.point);
-            }
+            return;
         }
+        //RenderTexture.active = selectionRenderTexture;
+        //
+        //Vector2Int mouse = Vector2Int.FloorToInt(Mouse.current.position.ReadValue());
+        //mouse.x = Mathf.Clamp(mouse.x, 0, Screen.width - 1);
+        //mouse.y = (Screen.height - 1) - Mathf.Clamp(mouse.y, 0, Screen.height - 2);
+        //Vector2 max = mouse + Vector2.one;
+        //hexSelectTex.ReadPixels(Rect.MinMaxRect(mouse.x, mouse.y, max.x, max.y), 0, 0);
+
+        Color c = hexSelectTex.GetPixel(0, 0);
+        Vector2Int v;
+        unsafe
+        {
+            v = *(Vector2Int*)&c;
+        }
+
+        HexCoordinates currentHoveredCoordinate = new HexCoordinates(v.x, v.y);
+
+        HexTile currentTile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(currentHoveredCoordinate);
+
+        Hover(currentTile);
 
         holdTimer -= Time.deltaTime;
 
@@ -252,11 +278,15 @@ public class InteractionHandler : MonoBehaviour
                 SetHoverMaterial(true);
             }
         }
+
+        if(Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            Select(currentTile);
+        }
     }
 
-    private void Hover(Vector3 position)
+    private void Hover(HexTile tile)
     {
-        HexTile tile = HexBoardChunkHandler.Instance.GetTileFromWorldPosition(position);
         if(tile != null && (tile != lastHoveredTile || forceHoverUpdate))
         {
             forceHoverUpdate = false;
@@ -369,14 +399,8 @@ public class InteractionHandler : MonoBehaviour
         HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(toPreview.ToArray()), multiSelectCanChangeHeight ? multiSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
     }
 
-    private void Select(Vector3 position)
+    private void Select(HexTile tile)
     {
-        if(eventSystem.currentInputModule.IsPointerOverGameObject(-1))
-        {
-            return;
-        }
-
-        HexTile tile = HexBoardChunkHandler.Instance.GetTileFromWorldPosition(position);
         if(tile != null)
         {
             if(multiSelectionsLeft > 0)
