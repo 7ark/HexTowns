@@ -1006,8 +1006,8 @@ MonoBehaviour:
   m_SmoothRotationSpeed: 0.01
   m_SmoothZoomSpeed: 0.1
   m_SmoothAdjDistance: 0.9
-  m_OrbitRadius: {x: 10, y: 20}
-  m_OrbitHeight: {x: 10, y: 50}
+  m_OrbitRadius: {x: 5, y: 10}
+  m_OrbitHeight: {x: 5, y: 20}
   m_OrthographicSize: {x: 10, y: 10}
   m_DefaultOrientation: -90
   m_DefaultZoomLevel: 0.5
@@ -1090,7 +1090,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 0
+  m_EditorCurrentIndex: 1
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &178955329
@@ -5500,12 +5500,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boardSize: {x: 50, y: 50}
-  tileSize: {x: 17, y: 17}
+  tileSize: {x: 33, y: 33}
   cameraController: {fileID: 2006599518}
   generateOverTime: 1
   generationDisplay: {fileID: 300517835}
   textureReference: {fileID: 1371050005}
-  cameraViewRange: 10
+  cameraViewRange: 5
   treePrefabs:
   - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
   rockPrefabs:
@@ -6984,6 +6984,7 @@ MonoBehaviour:
   worldObjects:
   - {fileID: 221499194}
   - {fileID: 460025804}
+  - {fileID: 1253401351}
   buildingModeObjects:
   - {fileID: 2011210711}
   - {fileID: 178955327}
@@ -7339,8 +7340,8 @@ MonoBehaviour:
   m_SmoothRotationSpeed: 0.01
   m_SmoothZoomSpeed: 0.1
   m_SmoothAdjDistance: 0.9
-  m_OrbitRadius: {x: 30, y: 200}
-  m_OrbitHeight: {x: 15, y: 300}
+  m_OrbitRadius: {x: 10, y: 80}
+  m_OrbitHeight: {x: 15, y: 100}
   m_OrthographicSize: {x: 10, y: 10}
   m_DefaultOrientation: -90
   m_DefaultZoomLevel: 0.5
@@ -7423,7 +7424,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 2
+  m_EditorCurrentIndex: 1
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &2006599519

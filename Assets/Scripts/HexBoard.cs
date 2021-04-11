@@ -171,7 +171,10 @@ public class HexBoard
 
     public HexBoard()
     {
-        tileSize = new Vector2Int(17, 17);
+    }
+
+    public void Init()
+    {
         hexMesh = new HexMesh();
         board2D = new HexTile[Size.x, Size.y];
     }
@@ -278,19 +281,19 @@ public class HexBoard
                         likelinessToHaveRock = Random.Range(0, 100);
                         int otherForests = otherBoards.Count(b => b.BiomeTerrain == Biome.Forest);
 
-                        if (otherForests > 5)
+                        if (otherForests >= 6)
                         {
-                            otherForests += 2;
+                            otherForests += 8;
                         }
 
-                        likelinessToHaveTree = Random.Range(0, 10 - (otherForests / 2));
+                        likelinessToHaveTree = Random.Range(0, 20 - (otherForests));
                         break;
                 }
                 if (allTiles[i].Height < 150 && allTiles[i].Height > 5 && likelinessToHaveTree == 0)
                 {
                     GameObject tree = GameObject.Instantiate(treePrefabs[Random.Range(0, treePrefabs.Length)], spawningObject.transform);
                     tree.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
-                    tree.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP);
+                    tree.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
 
                     allTiles[i].AddEnvironmentItem(tree);
                 }
@@ -298,7 +301,7 @@ public class HexBoard
                 {
                     GameObject rock = GameObject.Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], spawningObject.transform);
                     rock.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
-                    rock.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
+                    rock.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
 
                     allTiles[i].AddEnvironmentItem(rock);
                 }
@@ -349,7 +352,7 @@ public class HexBoard
             ((board2D[diamond.xMin, diamond.yMin].Height +
             board2D[diamond.xMin, diamond.yMax].Height +
             board2D[diamond.xMax, diamond.yMin].Height +
-            board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(new Vector2Int(-10, 10)));// SpecialRandom(new Vector2Int(-5, 30));
+            board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome, true));// SpecialRandom(new Vector2Int(-5, 30));
 
         board2D[halfX, halfY].SetHeight(averageHeight);
 
@@ -377,22 +380,43 @@ public class HexBoard
         }
     }
 
-    private int SpecialRandom(Biome biome)
+    private int SpecialRandom(Biome biome, bool center = false)
     {
-        switch (biome)
+        if(center)
         {
-            case Biome.Hills:
-                return Random.Range(-3, 4);
-            case Biome.Plains:
-                return Random.Range(-1, 2);
-            case Biome.Ocean:
-                return Random.Range(-8, 3);
-            case Biome.Mountains:
-                return Random.Range(-2, 13);
-            case Biome.Desert:
-                return Random.Range(-5, 6);
-            case Biome.Forest:
-                return Random.Range(-1, 4);
+            switch (biome)
+            {
+                case Biome.Hills:
+                    return Random.Range(-2, 6);
+                case Biome.Plains:
+                    return Random.Range(-1, 2);
+                case Biome.Ocean:
+                    return Random.Range(-8, 3);
+                case Biome.Mountains:
+                    return Random.Range(-15, 16);
+                case Biome.Desert:
+                    return Random.Range(-5, 6);
+                case Biome.Forest:
+                    return Random.Range(-1, 4);
+            }
+        }
+        else
+        {
+            switch (biome)
+            {
+                case Biome.Hills:
+                    return Random.Range(-2, 4);
+                case Biome.Plains:
+                    return Random.Range(-2, 3);
+                case Biome.Ocean:
+                    return Random.Range(-8, 3);
+                case Biome.Mountains:
+                    return Random.Range(-2, 13);
+                case Biome.Desert:
+                    return Random.Range(-5, 6);
+                case Biome.Forest:
+                    return Random.Range(-1, 4);
+            }
         }
 
         return 0;

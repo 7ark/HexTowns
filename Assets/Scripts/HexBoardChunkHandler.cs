@@ -127,7 +127,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             textureID = 0,
             uvs = new NativeList<Vector2>(Allocator.TempJob),
             uvData = test,
-            height = 5,
+            height = 10,
             scale = 1,
             neighborArrayCount = 6,
             neighborHeight = neighborHeights,
@@ -492,6 +492,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         //board.name = "HexBoard [" + x + ", " + y + "]";
         board.GridPosition = new Vector2Int(x, y);
         board.tileSize = tileSize;
+        board.Init();
         //board.transform.localPosition = Vector3.zero;
 
         //Setup corners
@@ -571,8 +572,8 @@ public class HexBoardChunkHandler : MonoBehaviour
         switch (biome)
         {
             case Biome.Hills:
-                const int minHeightHills = -50;
-                const int maxHeightHills = 181;
+                const int minHeightHills = 25;
+                const int maxHeightHills = 161;
 
                 return Random.Range(minHeightHills, maxHeightHills);
             case Biome.Plains:
@@ -615,36 +616,14 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     private Biome GetRandomBiome()
     {
-        int val = Random.Range(0, 15);
+        List<Biome> grabBag = new List<Biome>();
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 6));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Hills, 3));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Ocean, 5));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Mountains, 1));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 6));
 
-        if(val < 2)
-        {
-            return Biome.Plains;
-        }
-        else if(val < 5)
-        {
-            return Biome.Hills;
-        }
-        else if(val < 9)
-        {
-            return Biome.Ocean;
-        }
-        else if(val < 12)
-        {
-            return Biome.Mountains;
-        }
-        else if(val < 15)
-        {
-            return Biome.Forest;
-        }
-        else if(val < 16)
-        {
-            return Biome.Desert;
-        }
-        else
-        {
-            return Biome.None;
-        }
+        return grabBag[Random.Range(0, grabBag.Count)];
     }
 
 

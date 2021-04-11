@@ -14,8 +14,8 @@ public class HexTile
 
 	public const float WATER_LEVEL = -3f;
 	public const int SIDES = 6;
-	public const float HEIGHT_STEP = 0.2f;
-	public const float OUTER_RADIUS = 3f;
+	public const float HEIGHT_STEP = 0.1f;
+	public const float OUTER_RADIUS = 1f;
     public const float INNER_RADIUS = OUTER_RADIUS * 0.866025404f;
 	public readonly static Vector3[] CORNERS = {
 		new Vector3(0f, 0f, OUTER_RADIUS),
