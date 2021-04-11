@@ -242,10 +242,6 @@ public class HexBoardChunkHandler : MonoBehaviour
             }
 
             boardsInvolvedWithTiles.Add(areaTiles[i].ParentBoard);
-            
-            foreach (var neighborBoard in GetTileNeighborBoards(areaTiles[i])) {
-                boardsInvolvedWithTiles.Add(neighborBoard);
-            }
         }
 
         foreach (var boardToRender in boardsInvolvedWithTiles) {

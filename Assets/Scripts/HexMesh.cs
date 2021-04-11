@@ -28,8 +28,8 @@ public class HexMesh
     private static readonly int OffsetX = Shader.PropertyToID("_OffsetX");
     private static readonly int OffsetZ = Shader.PropertyToID("_OffsetZ");
     private Mesh meshBasis;
-    private Material matInstance;
-    private Material matSelectionInstance;
+    private Material matInstance = null;
+    private Material matSelectionInstance = null;
     private HexTile[] allTiles;
     private Camera drawCamera;
     private Camera selectionCamera;
@@ -48,8 +48,14 @@ public class HexMesh
 
         center = pos;
         allTiles = tiles.ToArray();
-        matInstance = new Material(materialInst);
-        matSelectionInstance = new Material(materialSelectionInst);
+        if(matInstance == null)
+        {
+            matInstance = new Material(materialInst);
+        }
+        if(matSelectionInstance == null)
+        {
+            matSelectionInstance = new Material(materialSelectionInst);
+        }
         meshBasis = mesh;
 
         UpdateBuffer(tiles, textureReference);
@@ -68,7 +74,7 @@ public class HexMesh
         for (var i = 0; i < renderData.Length; i++)
         {
             HexTile cell = tiles[i];
-            if (cell != null)
+            if (cell != null) 
             {
                 int lowestHeight = int.MaxValue;
                 List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(cell);

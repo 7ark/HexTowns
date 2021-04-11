@@ -79,6 +79,7 @@ public class BuildingModeHandler : MonoBehaviour
             }
             currentPrefabInstance = Instantiate(hexagonPrefab);
             //builderModeCamera.transform.position = new Vector3(0, 600);
+            normalCamera.enabled = false;
             builderModeCamera.SetTargetedPosition(YOffset);
             builderModeCamera.GetStandardInput().RefreshCheckForMouse();
         }
@@ -87,6 +88,7 @@ public class BuildingModeHandler : MonoBehaviour
             Destroy(currentPrefabInstance.gameObject);
             Vector3 pos = normalCamera.GetTargetedPosition();
             pos.y = 0;
+            normalCamera.enabled = true;
             normalCamera.SetTargetedPosition(pos);
             normalCamera.GetStandardInput().RefreshCheckForMouse();
             placementHandler.UpdateButtons();

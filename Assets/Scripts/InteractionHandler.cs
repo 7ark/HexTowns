@@ -5,6 +5,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 
 public class InteractionHandler : MonoBehaviour
 {
@@ -33,8 +34,6 @@ public class InteractionHandler : MonoBehaviour
     private MeshCombineStudio.MeshCombiner meshCombiner;
     [SerializeField]
     private Camera selectionCamera;
-    [SerializeField]
-    private CameraHexagonTextureRenderer cameraHexagonTexture;
 
     //private PreviewTile previewTile;
 
@@ -63,6 +62,7 @@ public class InteractionHandler : MonoBehaviour
     private float cancelTimer = 0;
     private RenderTexture selectionRenderTexture;
     private Texture2D hexSelectTex;
+    private HexCoordinates currentCoordinates;
 
 
     private void Awake()
@@ -77,9 +77,7 @@ public class InteractionHandler : MonoBehaviour
         hoverMesh = hoverFilter.mesh = new Mesh();
         hoverDisplay = hoverFilter.gameObject;
         selectionRenderTexture = new RenderTexture(Screen.width, Screen.height, 16, UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32B32A32_SFloat);
-        selectionCamera.targetTexture = selectionRenderTexture;
         hexSelectTex = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
-        cameraHexagonTexture.SetTexture(hexSelectTex, selectionRenderTexture);
 
 
         //previewTile = hoverObject.GetComponent<PreviewTile>();
@@ -159,15 +157,17 @@ public class InteractionHandler : MonoBehaviour
         }
     }
 
-    private void OnRenderImage(RenderTexture src, RenderTexture dest)
+    private void OnGPUReadback(AsyncGPUReadbackRequest request)
     {
-        RenderTexture.active = selectionRenderTexture;
+        NativeArray<Color> pixel = request.GetData<Color>();
+        Color c = pixel[0];
+        Vector2Int v;
+        unsafe
+        {
+            v = *(Vector2Int*)&c;
+        }
 
-        Vector2Int mouse = Vector2Int.FloorToInt(Mouse.current.position.ReadValue());
-        mouse.x = Mathf.Clamp(mouse.x, 0, Screen.width - 1);
-        mouse.y = (Screen.height - 1) - Mathf.Clamp(mouse.y, 0, Screen.height - 2);
-        Vector2 max = mouse + Vector2.one;
-        hexSelectTex.ReadPixels(Rect.MinMaxRect(mouse.x, mouse.y, max.x, max.y), 0, 0);
+        currentCoordinates = new HexCoordinates(v.x, v.y);
     }
 
     private void Update()
@@ -176,24 +176,17 @@ public class InteractionHandler : MonoBehaviour
         {
             return;
         }
-        //RenderTexture.active = selectionRenderTexture;
-        //
-        //Vector2Int mouse = Vector2Int.FloorToInt(Mouse.current.position.ReadValue());
+        selectionCamera.targetTexture = selectionRenderTexture;
+        RenderTexture.active = selectionRenderTexture;
+
+        Vector2Int mouse = Vector2Int.FloorToInt(Mouse.current.position.ReadValue());
+        mouse.x = Mathf.Clamp(mouse.x, 0, Screen.width - 1);
+        mouse.y = Mathf.Clamp(mouse.y, 0, Screen.height - 2);
         //mouse.x = Mathf.Clamp(mouse.x, 0, Screen.width - 1);
         //mouse.y = (Screen.height - 1) - Mathf.Clamp(mouse.y, 0, Screen.height - 2);
-        //Vector2 max = mouse + Vector2.one;
-        //hexSelectTex.ReadPixels(Rect.MinMaxRect(mouse.x, mouse.y, max.x, max.y), 0, 0);
+        var request = AsyncGPUReadback.Request(selectionRenderTexture, 0, mouse.x, 1, mouse.y, 1, 0, 1, OnGPUReadback);
 
-        Color c = hexSelectTex.GetPixel(0, 0);
-        Vector2Int v;
-        unsafe
-        {
-            v = *(Vector2Int*)&c;
-        }
-
-        HexCoordinates currentHoveredCoordinate = new HexCoordinates(v.x, v.y);
-
-        HexTile currentTile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(currentHoveredCoordinate);
+        HexTile currentTile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(currentCoordinates);
 
         Hover(currentTile);
 

@@ -1456,11 +1456,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9485b0c79d11e2e4d0007da98d76c639, type: 3}
---- !u!1 &310632023 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 100000, guid: 9485b0c79d11e2e4d0007da98d76c639, type: 3}
-  m_PrefabInstance: {fileID: 310632022}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &321495815
 GameObject:
   m_ObjectHideFlags: 0
@@ -2542,7 +2537,6 @@ GameObject:
   m_Component:
   - component: {fileID: 435334063}
   - component: {fileID: 435334066}
-  - component: {fileID: 435334064}
   m_Layer: 0
   m_Name: SelectionCamera
   m_TagString: MainCamera
@@ -2564,18 +2558,6 @@ Transform:
   m_Father: {fileID: 1023898294}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &435334064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 435334062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ff836bcf61e3fa849bee9acb7a16fe45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!20 &435334066
 Camera:
   m_ObjectHideFlags: 0
@@ -2659,7 +2641,6 @@ MonoBehaviour:
   hoverBadPreviewMaterial: {fileID: 2100000, guid: fe4441abf1d05ad4e9939de657be8321, type: 2}
   meshCombiner: {fileID: 1619208941}
   selectionCamera: {fileID: 435334066}
-  cameraHexagonTexture: {fileID: 435334064}
 --- !u!4 &460025806
 Transform:
   m_ObjectHideFlags: 0
@@ -2818,7 +2799,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -7002,8 +6983,6 @@ MonoBehaviour:
   eventSystem: {fileID: 1784685719}
   worldObjects:
   - {fileID: 221499194}
-  - {fileID: 2006599517}
-  - {fileID: 310632023}
   - {fileID: 460025804}
   buildingModeObjects:
   - {fileID: 2011210711}
@@ -7411,7 +7390,7 @@ MonoBehaviour:
     m_PanWithJoystick: 1
     m_PanWithScreenBorder: 0
     m_PanWithTouch: 1
-    m_RotateWithKeyboard: 1
+    m_RotateWithKeyboard: 0
     m_RotateWithMouse: 1
     m_RotateWithJoystick: 1
     m_RotateWithTouch: 1
@@ -7444,7 +7423,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 0
+  m_EditorCurrentIndex: 2
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &2006599519
