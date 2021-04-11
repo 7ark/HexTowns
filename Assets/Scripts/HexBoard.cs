@@ -179,13 +179,13 @@ public class HexBoard
         board2D = new HexTile[Size.x, Size.y];
     }
 
-    public void CreateAllTiles()
+    public void CreateAllTiles(Vector2Int[] voronoiPoints, Dictionary<Vector2Int, Biome> biomeLayout)
     {
         for (int y = 0; y < Size.y; y++)
         {
             for (int x = 0; x < Size.x; x++)
             {
-                CreateTile(x, y);
+                CreateTile(x, y, voronoiPoints, biomeLayout);
             }
         }
 
@@ -241,12 +241,12 @@ public class HexBoard
         //}
     }
 
-    public void RunTerrainGeneration(BoardCorners cornerData, Biome biome)
+    public void RunTerrainGeneration(BoardCorners cornerData, Biome biome, Vector2Int[] voronoiPoints, Dictionary<Vector2Int, Biome> biomeLayout)
     {
         BiomeTerrain = biome;
-        CreateAllTiles();
+        CreateAllTiles(voronoiPoints, biomeLayout);
 
-        GenerateTerrainAlgorithm(cornerData, biome);
+        GenerateTerrainAlgorithm(cornerData);
 
 
         //RefreshBoard();
@@ -318,15 +318,100 @@ public class HexBoard
         this.rockPrefabs = rockPrefabs;
     }
 
-    private void GenerateTerrainAlgorithm(BoardCorners cornerData, Biome biome)
+    private int GetCornerHeight(Biome biome)
+    {
+        Debug.Log("Corner is " + biome);
+        switch (biome)
+        {
+            case Biome.Hills:
+                const int minHeightHills = 25;
+                const int maxHeightHills = 161;
+
+                return Random.Range(minHeightHills, maxHeightHills);
+            case Biome.Plains:
+                const int minHeightPlains = -2;
+                const int maxHeightPlains = 51;
+
+                return Random.Range(minHeightPlains, maxHeightPlains);
+            case Biome.Ocean:
+                const int minHeightOcean = -150;
+                const int maxHeightOcean = 21;
+
+                return Random.Range(minHeightOcean, maxHeightOcean);
+            case Biome.Mountains:
+                const int minHeightMountains = 50;
+                const int maxHeightMountains = 301;
+
+                if (Random.Range(0, 4) == 0)
+                {
+                    return Random.Range(minHeightMountains, maxHeightMountains);
+                }
+                else
+                {
+                    return Random.Range(minHeightMountains, maxHeightMountains + 200);
+                }
+
+            case Biome.Desert:
+                const int minHeightDesert = 20;
+                const int maxHeightDesert = 61;
+
+                return Random.Range(minHeightDesert, maxHeightDesert);
+            case Biome.Forest:
+                const int minHeightForest = -5;
+                const int maxHeightForest = 101;
+
+                return Random.Range(minHeightForest, maxHeightForest);
+        }
+
+        return 0;
+    }
+
+    private void GenerateTerrainAlgorithm(BoardCorners cornerData)
     {
         //Set 4 corners
-        board2D[0, 0].SetHeight(cornerData.lowerLeft);
-        board2D[Size.x - 1, 0].SetHeight(cornerData.lowerRight);
-        board2D[0, Size.y - 1].SetHeight(cornerData.upperLeft);
-        board2D[Size.x - 1, Size.y - 1].SetHeight(cornerData.upperRight);
+        if(board2D[0, 0].Height == 0)
+        {
+            int cornerHeight = GetCornerHeight(board2D[0, 0].BiomeTerrain);
+            board2D[0, 0].SetHeight(cornerHeight);// cornerData.lowerLeft);
+            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(board2D[0, 0], 2);
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                neighbors[i].SetHeight(cornerHeight + SpecialRandom(neighbors[i].BiomeTerrain));
+                Debug.DrawLine(neighbors[i].Position, neighbors[i].Position + new Vector3(0, 20), Color.red, 10);
+            }
+        }
+        if (board2D[Size.x - 1, 0].Height == 0)
+        {
+            int cornerHeight = GetCornerHeight(board2D[Size.x - 1, 0].BiomeTerrain);
+            board2D[Size.x - 1, 0].SetHeight(cornerHeight); //(cornerData.lowerRight);
+            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(board2D[Size.x - 1, 0], 2);
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                neighbors[i].SetHeight(cornerHeight + SpecialRandom(neighbors[i].BiomeTerrain));
+            }
+        }
+        if (board2D[0, Size.y - 1].Height == 0)
+        {
+            int cornerHeight = GetCornerHeight(board2D[0, Size.y - 1].BiomeTerrain);
+            board2D[0, Size.y - 1].SetHeight(cornerHeight); //(cornerData.upperLeft);
+            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(board2D[0, Size.y - 1], 2);
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                neighbors[i].SetHeight(cornerHeight + SpecialRandom(neighbors[i].BiomeTerrain));
+            }
+        }
+        if (board2D[Size.x - 1, Size.y - 1].Height == 0)
+        {
+            int cornerHeight = GetCornerHeight(board2D[Size.x - 1, Size.y - 1].BiomeTerrain);
+            board2D[Size.x - 1, Size.y - 1].SetHeight(cornerHeight); //(cornerData.upperRight);
+            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(board2D[Size.x - 1, Size.y - 1], 2);
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                neighbors[i].SetHeight(cornerHeight + SpecialRandom(neighbors[i].BiomeTerrain));
+            }
+        }
 
-        DiamondAlgStep(new RectInt(0, 0, Size.x - 1, Size.y - 1), biome);
+        DiamondAlgStep(new RectInt(0, 0, Size.x - 1, Size.y - 1));
 
         HighestPoint = -500;
         for (int i = 0; i < allTiles.Count; i++)
@@ -338,7 +423,7 @@ public class HexBoard
         }
     }
 
-    private void DiamondAlgStep(RectInt diamond, Biome biome, int depth = 0)
+    private void DiamondAlgStep(RectInt diamond, int depth = 0)
     {
         if(diamond.width < 2 || diamond.height < 2)
         {
@@ -352,19 +437,19 @@ public class HexBoard
             ((board2D[diamond.xMin, diamond.yMin].Height +
             board2D[diamond.xMin, diamond.yMax].Height +
             board2D[diamond.xMax, diamond.yMin].Height +
-            board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome, true));// SpecialRandom(new Vector2Int(-5, 30));
+            board2D[diamond.xMax, diamond.yMax].Height) / 4);// + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(board2D[halfX, halfY].BiomeTerrain, true));// SpecialRandom(new Vector2Int(-5, 30));
 
         board2D[halfX, halfY].SetHeight(averageHeight);
 
-        board2D[halfX, diamond.yMin].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMin].Height, board2D[diamond.xMax, diamond.yMin].Height, 0.5f)) + SpecialRandom(biome));
-        board2D[halfX, diamond.yMax].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMax].Height, board2D[diamond.xMax, diamond.yMax].Height, 0.5f)) + SpecialRandom(biome));
-        board2D[diamond.xMin, halfY].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMin].Height, board2D[diamond.xMin, diamond.yMax].Height, 0.5f)) + SpecialRandom(biome));
-        board2D[diamond.xMax, halfY].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMax, diamond.yMin].Height, board2D[diamond.xMax, diamond.yMax].Height, 0.5f)) + SpecialRandom(biome));
+        board2D[halfX, diamond.yMin].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMin].Height, board2D[diamond.xMax, diamond.yMin].Height, 0.5f)) + SpecialRandom(board2D[halfX, diamond.yMin].BiomeTerrain));
+        board2D[halfX, diamond.yMax].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMax].Height, board2D[diamond.xMax, diamond.yMax].Height, 0.5f)) + SpecialRandom(board2D[halfX, diamond.yMax].BiomeTerrain));
+        board2D[diamond.xMin, halfY].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMin, diamond.yMin].Height, board2D[diamond.xMin, diamond.yMax].Height, 0.5f)) + SpecialRandom(board2D[diamond.xMin, halfY].BiomeTerrain));
+        board2D[diamond.xMax, halfY].SetHeight(Mathf.RoundToInt(Mathf.Lerp(board2D[diamond.xMax, diamond.yMin].Height, board2D[diamond.xMax, diamond.yMax].Height, 0.5f)) + SpecialRandom(board2D[diamond.xMax, halfY].BiomeTerrain));
 
-        DiamondAlgStep(new RectInt(diamond.xMin, diamond.yMin, halfX - diamond.xMin, halfY - diamond.yMin), biome, depth + 1);
-        DiamondAlgStep(new RectInt(halfX, diamond.yMin, diamond.xMax - halfX, halfY - diamond.yMin), biome, depth + 1);
-        DiamondAlgStep(new RectInt(diamond.xMin, halfY, halfX - diamond.xMin, diamond.yMax - halfY), biome, depth + 1);
-        DiamondAlgStep(new RectInt(halfX, halfY, diamond.xMax - halfX, diamond.yMax - halfY), biome, depth + 1);
+        DiamondAlgStep(new RectInt(diamond.xMin, diamond.yMin, halfX - diamond.xMin, halfY - diamond.yMin), depth + 1);
+        DiamondAlgStep(new RectInt(halfX, diamond.yMin, diamond.xMax - halfX, halfY - diamond.yMin), depth + 1);
+        DiamondAlgStep(new RectInt(diamond.xMin, halfY, halfX - diamond.xMin, diamond.yMax - halfY), depth + 1);
+        DiamondAlgStep(new RectInt(halfX, halfY, diamond.xMax - halfX, diamond.yMax - halfY), depth + 1);
     }
 
     private int SpecialRandom(Vector2Int range)
@@ -382,22 +467,21 @@ public class HexBoard
 
     private int SpecialRandom(Biome biome, bool center = false)
     {
+        return 0;
         if(center)
         {
             switch (biome)
             {
                 case Biome.Hills:
-                    return Random.Range(-2, 6);
+                    return Random.Range(-7, 11);
                 case Biome.Plains:
-                    return Random.Range(-1, 2);
+                    return Random.Range(-6, 7);
                 case Biome.Ocean:
-                    return Random.Range(-8, 3);
+                    return Random.Range(-13, 8);
                 case Biome.Mountains:
-                    return Random.Range(-15, 16);
-                case Biome.Desert:
-                    return Random.Range(-5, 6);
+                    return Random.Range(-20, 21);
                 case Biome.Forest:
-                    return Random.Range(-1, 4);
+                    return Random.Range(-6, 9);
             }
         }
         else
@@ -412,8 +496,6 @@ public class HexBoard
                     return Random.Range(-8, 3);
                 case Biome.Mountains:
                     return Random.Range(-2, 13);
-                case Biome.Desert:
-                    return Random.Range(-5, 6);
                 case Biome.Forest:
                     return Random.Range(-1, 4);
             }
@@ -422,7 +504,7 @@ public class HexBoard
         return 0;
     }
 
-    private void CreateTile(int x, int y)
+    private void CreateTile(int x, int y, Vector2Int[] voronoiPoints, Dictionary<Vector2Int, Biome> biomeLayout)
     {
         int positionX = x + (GridPosition.x * Size.x);
         int positionY = y + (GridPosition.y * Size.y);
@@ -443,6 +525,43 @@ public class HexBoard
             ParentBoard = this,
             Coordinates = HexCoordinates.FromOffsetCoordinates(positionX, positionY)
         };
+
+        Vector2Int closest = new Vector2Int();
+        float closestDist = float.MaxValue;
+        for (int i = 0; i < voronoiPoints.Length; i++)
+        {
+            float dist = Vector3.Distance(position, new Vector3(voronoiPoints[i].x * (HexTile.OUTER_RADIUS * 2), 0, voronoiPoints[i].y * (HexTile.OUTER_RADIUS * 2)));
+            if(dist < closestDist)
+            {
+                closestDist = dist;
+                closest = voronoiPoints[i];
+            }
+
+            Vector3 p = new Vector3(voronoiPoints[i].x, 0, voronoiPoints[i].y);
+            //Debug.DrawLine(p, p + new Vector3(0, 50), Color.red, 10);
+        }
+        tile.BiomeTerrain = biomeLayout[closest];
+
+        Color biomeColor = Color.white;
+        switch (tile.BiomeTerrain)
+        {
+            case Biome.Mountains:
+                biomeColor = Color.grey;
+                break;
+            case Biome.Hills:
+                biomeColor = Color.yellow;
+                break;
+            case Biome.Plains:
+                biomeColor = Color.green;
+                break;
+            case Biome.Ocean:
+                biomeColor = Color.blue;
+                break;
+            case Biome.Forest:
+                biomeColor = Color.cyan;
+                break;
+        }
+        //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), biomeColor, 10);
 
         board.Add(tile.Coordinates, tile);
         board2D[x, y] = tile;

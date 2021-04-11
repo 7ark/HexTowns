@@ -348,49 +348,56 @@ public class HexBoardChunkHandler : MonoBehaviour
         Dictionary<Vector2Int, Vector2Int> chunkToVoronoiPoint = new Dictionary<Vector2Int, Vector2Int>();
         Dictionary<Vector2Int, Biome> voronoiToBiome = new Dictionary<Vector2Int, Biome>();
 
+        int maxX = boardSize.x * tileSize.x;
+        int maxY = boardSize.y * tileSize.y;
         voronoiPoints = new Vector2Int[boardSize.x * boardSize.y];
         for (int i = 0; i < voronoiPoints.Length; i++)
         {
-            voronoiPoints[i] = new Vector2Int(Random.Range(-boardSize.x, boardSize.x + 1), Random.Range(-boardSize.y, boardSize.y + 1));
-            if(!voronoiChunks.ContainsKey(voronoiPoints[i]))
-            {
-                voronoiChunks.Add(voronoiPoints[i], new List<Vector2Int>());
-                voronoiToBiome.Add(voronoiPoints[i], GetRandomBiome());
-            }
+            voronoiPoints[i] = new Vector2Int(Random.Range(0, maxX), Random.Range(0, maxY));
+            //if(!voronoiChunks.ContainsKey(voronoiPoints[i]))
+            //{
+            //    voronoiChunks.Add(voronoiPoints[i], new List<Vector2Int>());
+            //    voronoiToBiome.Add(voronoiPoints[i], GetRandomBiome());
+            //}
         }
 
-
-        for (int x = -boardSize.x; x <= boardSize.x; x++)
+        for (int i = 0; i < voronoiPoints.Length; i++)
         {
-            for (int y = -boardSize.y; y <= boardSize.y; y++)
-            {
-                Vector2Int pos = new Vector2Int(x, y);
-                Vector2Int voronoiPointClosestTo = new Vector2Int(0, 0);
-                float voronoiDistance = float.MaxValue;
-                for (int i = 0; i < voronoiPoints.Length; i++)
-                {
-                    float dist = (voronoiPoints[i] - pos).magnitude;
-
-                    if(dist < voronoiDistance)
-                    {
-                        voronoiDistance = dist;
-                        voronoiPointClosestTo = voronoiPoints[i];
-                    }
-                }
-
-                voronoiChunks[voronoiPointClosestTo].Add(pos);
-                chunkToVoronoiPoint.Add(pos, voronoiPointClosestTo);
-            }
+            biomeLayout.Add(voronoiPoints[i], GetRandomBiome());
         }
 
-        for (int x = -boardSize.x; x <= boardSize.x; x++)
-        {
-            for (int y = -boardSize.y; y <= boardSize.y; y++)
-            {
-                Vector2Int voronoiPoint = chunkToVoronoiPoint[new Vector2Int(x, y)];
-                biomeLayout.Add(new Vector2Int(x, y), voronoiToBiome[voronoiPoint]);
-            }
-        }
+
+        //for (int x = -boardSize.x; x <= boardSize.x; x++)
+        //{
+        //    for (int y = -boardSize.y; y <= boardSize.y; y++)
+        //    {
+        //        Vector2Int pos = new Vector2Int(x, y);
+        //        Vector2Int voronoiPointClosestTo = new Vector2Int(0, 0);
+        //        float voronoiDistance = float.MaxValue;
+        //        for (int i = 0; i < voronoiPoints.Length; i++)
+        //        {
+        //            float dist = (voronoiPoints[i] - pos).magnitude;
+        //
+        //            if(dist < voronoiDistance)
+        //            {
+        //                voronoiDistance = dist;
+        //                voronoiPointClosestTo = voronoiPoints[i];
+        //            }
+        //        }
+        //
+        //        voronoiChunks[voronoiPointClosestTo].Add(pos);
+        //        chunkToVoronoiPoint.Add(pos, voronoiPointClosestTo);
+        //    }
+        //}
+        //
+        //for (int x = -boardSize.x; x <= boardSize.x; x++)
+        //{
+        //    for (int y = -boardSize.y; y <= boardSize.y; y++)
+        //    {
+        //        Vector2Int voronoiPoint = chunkToVoronoiPoint[new Vector2Int(x, y)];
+        //        biomeLayout.Add(new Vector2Int(x, y), voronoiToBiome[voronoiPoint]);
+        //    }
+        //}
     }
 
     private void CheckForFillMap()
@@ -560,7 +567,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             biomeLayout.Add(new Vector2Int(x, y), biome);
         }
 
-        board.RunTerrainGeneration(cornerRect, biome);
+        board.RunTerrainGeneration(cornerRect, biome, voronoiPoints, biomeLayout);
 
         allBoards[x, y] = board;
 
@@ -617,11 +624,11 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Biome GetRandomBiome()
     {
         List<Biome> grabBag = new List<Biome>();
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 6));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 5));
         grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Hills, 3));
         grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Ocean, 5));
         grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Mountains, 1));
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 6));
+        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 5));
 
         return grabBag[Random.Range(0, grabBag.Count)];
     }
@@ -719,7 +726,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
     }
 
-    public HexTile[] GetTileNeighborsInDistance(HexTile tile, int distance)
+    public List<HexTile> GetTileNeighborsInDistance(HexTile tile, int distance)
     {
         List<HexTile> allTiles = new List<HexTile>()
         {
@@ -750,7 +757,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             delayedLayer.Clear();
         }
 
-        return allTiles.ToArray();
+        return allTiles;
     }
 
     public HexTile GetTileInDirection(HexTile tile, int directionX, int directionY)
