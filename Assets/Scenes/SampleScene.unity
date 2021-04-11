@@ -5359,7 +5359,7 @@ MonoBehaviour:
   generateOverTime: 1
   generationDisplay: {fileID: 300517835}
   textureReference: {fileID: 1371050005}
-  boardMaterial: {fileID: 2100000, guid: a6d5868944094464d986cca2cbce5ecd, type: 2}
+  cameraViewRange: 10
   treePrefabs:
   - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
   rockPrefabs:
@@ -7189,8 +7189,8 @@ MonoBehaviour:
   m_Camera: {fileID: 1023898293}
   m_Target: {fileID: 0}
   m_TargetPosition: {x: 0, y: 0, z: 0}
-  m_MapLimitLow: {x: -10000, y: -10000}
-  m_MapLimitHigh: {x: 10000, y: 10000}
+  m_MapLimitLow: {x: 0, y: 0}
+  m_MapLimitHigh: {x: 100000, y: 100000}
   m_SmoothMoveSpeed: 0.01
   m_SmoothRotationSpeed: 0.01
   m_SmoothZoomSpeed: 0.1

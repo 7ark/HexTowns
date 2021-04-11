@@ -26,9 +26,9 @@ public class HexMesh
     [SerializeField]
     private Material matInstance;
     private HexTile[] allTiles;
-    private Vector3 center;
+    public Vector3 center;
 
-    public void Triangulate(Mesh mesh, List<HexTile> tiles, Material materialInst, HexagonTextureReference textureReference)
+    public void SetupMeshGenerationData(Mesh mesh, List<HexTile> tiles, Material materialInst, HexagonTextureReference textureReference)
     {
         Vector3 pos = Vector3.zero;
         for (int i = 0; i < tiles.Count; i++)
@@ -94,7 +94,7 @@ public class HexMesh
         }
     }
 
-    public Material OnDisable()
+    public Material ReleaseData()
     {
         if(dataBuffer != null)
         {

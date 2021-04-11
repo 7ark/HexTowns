@@ -17,8 +17,6 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Vector2Int tileSize = new Vector2Int(17, 17);
 
     [SerializeField]
-    private HexBoard hexBoardPrefab;
-    [SerializeField]
     private CodeRoadOne.CRO_Camera cameraController;
     [SerializeField]
     private bool generateOverTime = false;
@@ -27,13 +25,12 @@ public class HexBoardChunkHandler : MonoBehaviour
     [SerializeField]
     private HexagonTextureReference textureReference;
     [SerializeField]
-    private Material boardMaterial;
+    private int cameraViewRange = 10;
     [SerializeField]
     private GameObject[] treePrefabs;
     [SerializeField]
     private GameObject[] rockPrefabs;
 
-    //Test stuff
     [SerializeField]
     private Material baseMaterial;
 
@@ -42,12 +39,6 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Texture2D[] textures;
-
-    [SerializeField]
-    private Bounds bounds;
-
-    [SerializeField]
-    private HexTile[] cells;
 
     [System.Serializable]
     public struct HexBufferData
@@ -268,9 +259,9 @@ public class HexBoardChunkHandler : MonoBehaviour
 
         if(allBoards != null && allBoards.Length > 0)
         {
-            for (int x = camX - 10; x <= camX + 10; x++)
+            for (int x = camX - cameraViewRange; x <= camX + cameraViewRange; x++)
             {
-                for (int y = camY - 10; y <= camY + 10; y++)
+                for (int y = camY - cameraViewRange; y <= camY + cameraViewRange; y++)
                 {
                     bool valid =
                         x >= 0 &&

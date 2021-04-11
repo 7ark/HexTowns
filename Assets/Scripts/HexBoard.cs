@@ -165,6 +165,10 @@ public class HexBoard
     public HexTile[] AllTilesOnBoard { get { return allTiles.ToArray(); } }
     public static Vector2 FullSize { get; private set; } = Vector2.zero;
 
+    private GameObject spawningObject;
+    private GameObject[] treePrefabs;
+    private GameObject[] rockPrefabs;
+
     public HexBoard()
     {
         tileSize = new Vector2Int(17, 17);
@@ -221,6 +225,7 @@ public class HexBoard
 
     public void Update()
     {
+        GenerateEnvironmentalObjects();
         hexMesh.Update();
     }
 
@@ -245,14 +250,11 @@ public class HexBoard
 
     }
 
-    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
+    public void GenerateEnvironmentalObjects()
     {
-        List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
-
-        hexMesh.Triangulate(meshBasis, allTiles, materialInst, textureReference);
-
-        if(!environmentalObjectsGenerated)
+        if (!environmentalObjectsGenerated && spawningObject != null)
         {
+            List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
             environmentalObjectsGenerated = true;
             for (int i = 0; i < allTiles.Count; i++)
             {
@@ -292,7 +294,7 @@ public class HexBoard
 
                     allTiles[i].AddEnvironmentItem(tree);
                 }
-                if(allTiles[i].Height > -2 && likelinessToHaveRock == 0)
+                if (allTiles[i].Height > -2 && likelinessToHaveRock == 0)
                 {
                     GameObject rock = GameObject.Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], spawningObject.transform);
                     rock.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
@@ -302,6 +304,15 @@ public class HexBoard
                 }
             }
         }
+    }
+
+    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
+    {
+        hexMesh.SetupMeshGenerationData(meshBasis, allTiles, materialInst, textureReference);
+
+        this.spawningObject = spawningObject;
+        this.treePrefabs = treePrefabs;
+        this.rockPrefabs = rockPrefabs;
     }
 
     private void GenerateTerrainAlgorithm(BoardCorners cornerData, Biome biome)
@@ -417,6 +428,6 @@ public class HexBoard
 
     public Material OnDisable()
     {
-        return hexMesh.OnDisable();
+        return hexMesh.ReleaseData();
     }
 }
