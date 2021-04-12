@@ -68,7 +68,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             MoveOutOfWorkArea);
         PrimitiveTask<PeepleWS> relaxTask = new PrimitiveTask<PeepleWS>("Relax",
             (worldState) => { return true ; },
-            (worldState) => { worldState.energy++; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true;},
+            (worldState) => { worldState.energy += 1; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true;},
             TakeBreak);
         PrimitiveTask<PeepleWS> moveToHomeTask = new PrimitiveTask<PeepleWS>("MoveToHome",
             (worldState) => { return worldState.hasHome && worldState.location != PeepleLocation.Home; },
@@ -95,7 +95,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             MoveToJob);
         PrimitiveTask<PeepleWS> doJobTask = new PrimitiveTask<PeepleWS>("DoJob",
             (worldState) => { return worldState.hasJob && worldState.location == PeepleLocation.Job; },
-            (worldState) => { worldState.energy -= 2; if (worldState.energy < 0) worldState.energy = 0; },
+            (worldState) => { worldState.energy -= 1; if (worldState.energy < 0) worldState.energy = 0; },
             DoJob);
         PrimitiveTask<PeepleWS> stopRestingTask = new PrimitiveTask<PeepleWS>("StopResting",
             (worldState) => { return true; },
@@ -339,7 +339,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private IEnumerator DoJob(System.Action<bool> onComplete)
     {
         Job.DoWork();
-        peepleWorldState.energy -= 2;
+        peepleWorldState.energy -= 1;
         if(peepleWorldState.energy < 0)
         {
             peepleWorldState.energy = 0;
@@ -351,13 +351,13 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator TakeBreak(System.Action<bool> onComplete)
     {
-        peepleWorldState.energy++;
+        peepleWorldState.energy += 2;
         if(peepleWorldState.energy > 100)
         {
             peepleWorldState.energy = 100;
         }
         peepleWorldState.resting = true;
-        restingSymbol.SetActive(true);
+        restingSymbol.SetActive(peepleWorldState.energy < 100);
 
         yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
