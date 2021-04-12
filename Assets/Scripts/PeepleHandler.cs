@@ -38,17 +38,17 @@ public class PeepleHandler : MonoBehaviour
         return result.ToArray();
     }
 
-    private void Update()
-    {
-        actionTickTimer -= Time.deltaTime;
-        if(actionTickTimer <= 0)
-        {
-            actionTickTimer = STANDARD_ACTION_TICK;
-
-            for (int i = 0; i < allPeeple.Count; i++)
-            {
-                allPeeple[i].DoLifeTick();
-            }
-        }
-    }
+    //private void Update()
+    //{
+    //    actionTickTimer -= Time.deltaTime;
+    //    if(actionTickTimer <= 0)
+    //    {
+    //        actionTickTimer = STANDARD_ACTION_TICK;
+    //
+    //        for (int i = 0; i < allPeeple.Count; i++)
+    //        {
+    //            allPeeple[i].DoLifeTick();
+    //        }
+    //    }
+    //}
 }

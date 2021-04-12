@@ -53,6 +53,10 @@ public class PathfindMovement : MonoBehaviour
                     Debug.Log(name + " tried to find a path, but it wasn't valid");
                     currentArrivedAction?.Invoke(false);
                 }
+                else if(pathTiles.Length == 1)
+                {
+                    currentArrivedAction?.Invoke(true);
+                }
                 else
                 {
                     Debug.Log(name + " found the path to the tile. Beginning movement.");

@@ -208,8 +208,8 @@ public class Placeable : Workable
         transform.Rotate(new Vector3(0, rotationSnapping * -amount));
     }
 
-    public override HexTile[] GetTilesAssociated()
+    public override List<HexTile> GetTilesAssociated()
     {
-        return homeTiles.ToArray();
+        return homeTiles;
     }
 }

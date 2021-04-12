@@ -4286,6 +4286,8 @@ MonoBehaviour:
   symbolData:
   - SymbolType: 0
     Mat: {fileID: 2100000, guid: 8f955fa1bd2d1f648bab62724b2c2ef5, type: 2}
+  - SymbolType: 1
+    Mat: {fileID: 2100000, guid: bebca40c61aa0d74195b4505a48812f6, type: 2}
 --- !u!1 &1159210538
 GameObject:
   m_ObjectHideFlags: 0

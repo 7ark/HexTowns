@@ -42,7 +42,7 @@ public class HexTile
     {
         get
         {
-			return HeightLocked || HasEnvironmentalItems;
+			return HasEnvironmentalItems;
 		}
     }
 

@@ -105,6 +105,12 @@ public class InteractionHandler : MonoBehaviour
         SetHoverMaterial(true);
     }
 
+    private void OnDestroy()
+    {
+        Destroy(hexSelectTex);
+        Destroy(selectionRenderTexture);
+    }
+
     public void SetHoverMaterial(bool good)
     {
         hoverMeshRenderer.sharedMaterial = good ? hoverPreviewMaterial : hoverBadPreviewMaterial;

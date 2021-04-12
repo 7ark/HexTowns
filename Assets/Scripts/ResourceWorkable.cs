@@ -27,7 +27,7 @@ public class ResourceWorkable : Workable
         Destroy(symbol);
     }
 
-    public override HexTile[] GetTilesAssociated()
+    public override List<HexTile> GetTilesAssociated()
     {
         return base.GetTilesAssociated();
     }

@@ -78,7 +78,14 @@ public class TerrainModificationHandler : MonoBehaviour
                 Workable workable = newObj.AddComponent<Workable>();
                 workable.TilesAssociated = new List<HexTile>(areaTilesList);
                 workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
-                workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 3));
+                workable.OnBuilt += () =>
+                {
+                    for (int i = 0; i < areaTilesList.Count; i++)
+                    {
+                        areaTilesList[i].WorkArea = false;
+                    }
+                };
+                workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 5));
                 workablesWaitingToStart.Add(workable, areaTilesList.ToArray());
                 for (int i = 0; i < areaTilesList.Count; i++)
                 {
@@ -122,57 +129,57 @@ public class TerrainModificationHandler : MonoBehaviour
                 if (goodToStart)
                 {
                     List<HexTile> tilesWaitingOnList = new List<HexTile>(tilesWaitingOn);
-                    Peeple[] peeps = PeepleHandler.Instance.GetPeepleOnTiles(tilesWaitingOn);
-                    if(peeps.Length > 0)
+                    //Peeple[] peeps = PeepleHandler.Instance.GetPeepleOnTiles(tilesWaitingOn);
+                    //if(peeps.Length > 0)
+                    //{
+                    //    int directionX = -1;
+                    //    int peepIndex = 0;
+                    //    Peeple farthest = null;
+                    //    float farthestDist = 0;
+                    //    for (int i = 0; i < peeps.Length; i++)
+                    //    {
+                    //        float dist = Vector3.Distance(peeps[i].transform.position, tilesWaitingOn[0].Position + new Vector3(0, tilesWaitingOn[0].Height * HexTile.HEIGHT_STEP));
+                    //        if(dist > farthestDist)
+                    //        {
+                    //            farthest = peeps[i];
+                    //            farthestDist = dist;
+                    //        }
+                    //    }
+                    //    for (int i = 0; i < tilesWaitingOn.Length; i++)
+                    //    {
+                    //        tilesWaitingOn[i].WorkArea = true;
+                    //    }
+                    //    while (peepIndex < peeps.Length)
+                    //    {
+                    //        HexTile hex = HexBoardChunkHandler.Instance.GetTileInDirection(tilesWaitingOn[0], directionX, 0);
+                    //        directionX--;
+                    //        if (!hex.CantWalkThrough && !tilesWaitingOnList.Contains(hex))
+                    //        {
+                    //            if (peeps[peepIndex] == farthest)
+                    //            {
+                    //                peeps[peepIndex].Movement.SetGoal(hex, alwaysDoActionEvent: true, arrivedComplete: (valid) =>
+                    //                {
+                    //                    for (int i = 0; i < tilesWaitingOn.Length; i++)
+                    //                    {
+                    //                        tilesWaitingOn[i].HeightLocked = true;
+                    //                        tilesWaitingOn[i].WorkArea = false;
+                    //                    }
+                    //                    workable.BeginWorking();
+                    //                });
+                    //            }
+                    //            else
+                    //            {
+                    //                peeps[peepIndex].Movement.SetGoal(hex);
+                    //            }
+                    //            peepIndex++;
+                    //        }
+                    //    }
+                    //}
+                    //else
                     {
-                        int directionX = -1;
-                        int peepIndex = 0;
-                        Peeple farthest = null;
-                        float farthestDist = 0;
-                        for (int i = 0; i < peeps.Length; i++)
-                        {
-                            float dist = Vector3.Distance(peeps[i].transform.position, tilesWaitingOn[0].Position + new Vector3(0, tilesWaitingOn[0].Height * HexTile.HEIGHT_STEP));
-                            if(dist > farthestDist)
-                            {
-                                farthest = peeps[i];
-                                farthestDist = dist;
-                            }
-                        }
                         for (int i = 0; i < tilesWaitingOn.Length; i++)
                         {
                             tilesWaitingOn[i].WorkArea = true;
-                        }
-                        while (peepIndex < peeps.Length)
-                        {
-                            HexTile hex = HexBoardChunkHandler.Instance.GetTileInDirection(tilesWaitingOn[0], directionX, 0);
-                            directionX--;
-                            if (!hex.CantWalkThrough && !tilesWaitingOnList.Contains(hex))
-                            {
-                                if (peeps[peepIndex] == farthest)
-                                {
-                                    peeps[peepIndex].Movement.SetGoal(hex, alwaysDoActionEvent: true, arrivedComplete: (valid) =>
-                                    {
-                                        for (int i = 0; i < tilesWaitingOn.Length; i++)
-                                        {
-                                            tilesWaitingOn[i].HeightLocked = true;
-                                            tilesWaitingOn[i].WorkArea = false;
-                                        }
-                                        workable.BeginWorking();
-                                    });
-                                }
-                                else
-                                {
-                                    peeps[peepIndex].Movement.SetGoal(hex);
-                                }
-                                peepIndex++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < tilesWaitingOn.Length; i++)
-                        {
-                            tilesWaitingOn[i].HeightLocked = true;
                         }
                         workable.BeginWorking();
                     }

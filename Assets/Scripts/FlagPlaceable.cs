@@ -33,6 +33,7 @@ public class FlagPlaceable : Placeable
 
             Peeple peeple = Instantiate(peeplePrefab, HexBoardChunkHandler.Instance.transform);
             peeple.Movement.SetGoal(tileOptions[index], true);
+            peeple.SetHome(tileOptions[index]);
 
             tileOptions.RemoveAt(index);
         }

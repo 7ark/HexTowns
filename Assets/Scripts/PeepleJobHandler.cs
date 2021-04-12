@@ -25,6 +25,28 @@ public class PeepleJobHandler : MonoBehaviour
         workables.Remove(work);
     }
 
+    public bool AnyOpenJobs()
+    {
+        for (int i = workables.Count - 1; i >= 0; i--)
+        {
+            if (workables[i] == null)
+            {
+                workables.RemoveAt(i);
+            }
+        }
+        List<Workable> jobsAvailable = new List<Workable>(workables);
+
+        for (int i = 0; i < jobsAvailable.Count; i++)
+        {
+            if (!jobsAvailable[i].Unreachable && jobsAvailable[i].WorkSlotsAvailable > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public bool FindJob(Peeple peeple)
     {
         for (int i = workables.Count - 1; i >= 0; i--)

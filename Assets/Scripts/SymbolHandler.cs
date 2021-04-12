@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum SymbolType { Destroy }
+public enum SymbolType { Destroy, PeepleRest }
 
 public class SymbolHandler : MonoBehaviour
 {

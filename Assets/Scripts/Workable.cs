@@ -85,21 +85,19 @@ public class Workable : MonoBehaviour
 
     public HexTile[] GetWorkableTiles()
     {
-        List<HexTile> additionalSurroundings = new List<HexTile>();
-        List<HexTile> goodTiles = new List<HexTile>(GetTilesAssociated());
-        for (int i = 0; i < goodTiles.Count; i++)
+        List<HexTile> associatedTiles = GetTilesAssociated();
+        List<HexTile> goodTiles = new List<HexTile>();
+        for (int i = 0; i < associatedTiles.Count; i++)
         {
-            HexTile[] neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(goodTiles[i]).ToArray();
+            HexTile[] neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(associatedTiles[i]).ToArray();
             for (int j = 0; j < neighbors.Length; j++)
             {
-                if(!goodTiles.Contains(neighbors[j]))
+                if(!associatedTiles.Contains(neighbors[j]))
                 {
-                    additionalSurroundings.Add(neighbors[j]);
+                    goodTiles.Add(neighbors[j]);
                 }
             }
         }
-
-        goodTiles.AddRange(additionalSurroundings);
 
         for (int i = 0; i < currentTilesWorking.Count; i++)
         {
@@ -140,9 +138,9 @@ public class Workable : MonoBehaviour
             LeaveWork(currentWorkers[i]);
         }
     }
-    public virtual HexTile[] GetTilesAssociated()
+    public virtual List<HexTile> GetTilesAssociated()
     {
-        return TilesAssociated.ToArray();
+        return TilesAssociated;
     }
 
     public virtual HexTile GetClosestAssociatedTile(Vector3 pos)
@@ -166,8 +164,8 @@ public class Workable : MonoBehaviour
     }
     protected virtual void OnDestroy()
     {
-        HexTile[] tiles = GetTilesAssociated();
-        for (int i = 0; i < tiles.Length; i++)
+        List<HexTile> tiles = GetTilesAssociated();
+        for (int i = 0; i < tiles.Count; i++)
         {
             tiles[i].RemoveWorkableFromTile(this);
         }

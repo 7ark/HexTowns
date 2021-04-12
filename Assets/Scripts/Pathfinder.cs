@@ -64,7 +64,7 @@ public class Pathfinder : MonoBehaviour
     {
         if(to == from)
         {
-            return new HexTile[] { };
+            return new HexTile[] { to };
         }
 
         if(to.CantWalkThrough)
@@ -121,11 +121,14 @@ public class Pathfinder : MonoBehaviour
 
             if (!found)
             {
-                string error = "Current couldnt be found. Uh uh.\n";
+                string error = "Current couldnt be found. Uh uh. We've looked at " + closed.Count + " tiles. Gonna draw lines from start to end (green to blue).\n";
                 foreach (var boardData in open) {
                     error += boardData.F + "\n";
                 }
-                Debug.LogError(error);
+                Debug.LogError(error + StackTraceUtility.ExtractStackTrace());
+                Debug.DrawLine(from.Position, from.Position + new Vector3(0, 20), Color.green, 60);
+                Debug.DrawLine(to.Position, to.Position + new Vector3(0, 20), Color.blue, 60);
+                Debug.Break();
                 return new HexTile[] { };
             }
 
@@ -192,6 +195,10 @@ public class Pathfinder : MonoBehaviour
         if (to.CantWalkThrough) {
             return double.MaxValue;
         }
+        if(to.WorkArea)
+        {
+            cost += 10000;
+        }
         
         //TODO Tile Biome Data?
         if (from.Height > 0 && to.Height > 0) {
@@ -223,11 +230,16 @@ public class Pathfinder : MonoBehaviour
     {
         Vector3 onePos = one.Coordinates.ToPosition();
         Vector3 twoPos = two.Coordinates.ToPosition();
+        float extra = 0;
         if(two.CantWalkThrough)
         {
             return double.MaxValue;
         }
+        if(two.WorkArea)
+        {
+            extra += 10000;
+        }
 
-        return Vector3.Distance(onePos, twoPos) * HexTile.OUTER_RADIUS * 10;
+        return Vector3.Distance(onePos, twoPos) * HexTile.OUTER_RADIUS * 10 + extra;
     }
 }
