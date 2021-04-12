@@ -352,7 +352,7 @@ public class HexBoard
             ((board2D[diamond.xMin, diamond.yMin].Height +
             board2D[diamond.xMin, diamond.yMax].Height +
             board2D[diamond.xMax, diamond.yMin].Height +
-            board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome, true));// SpecialRandom(new Vector2Int(-5, 30));
+            board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome));// SpecialRandom(new Vector2Int(-5, 30));
 
         board2D[halfX, halfY].SetHeight(averageHeight);
 
@@ -380,43 +380,22 @@ public class HexBoard
         }
     }
 
-    private int SpecialRandom(Biome biome, bool center = false)
+    private int SpecialRandom(Biome biome)
     {
-        if(center)
+        switch (biome)
         {
-            switch (biome)
-            {
-                case Biome.Hills:
-                    return Random.Range(-2, 6);
-                case Biome.Plains:
-                    return Random.Range(-1, 2);
-                case Biome.Ocean:
-                    return Random.Range(-8, 3);
-                case Biome.Mountains:
-                    return Random.Range(-15, 16);
-                case Biome.Desert:
-                    return Random.Range(-5, 6);
-                case Biome.Forest:
-                    return Random.Range(-1, 4);
-            }
-        }
-        else
-        {
-            switch (biome)
-            {
-                case Biome.Hills:
-                    return Random.Range(-2, 4);
-                case Biome.Plains:
-                    return Random.Range(-2, 3);
-                case Biome.Ocean:
-                    return Random.Range(-8, 3);
-                case Biome.Mountains:
-                    return Random.Range(-2, 13);
-                case Biome.Desert:
-                    return Random.Range(-5, 6);
-                case Biome.Forest:
-                    return Random.Range(-1, 4);
-            }
+            case Biome.Hills:
+                return Random.Range(-2, 4);
+            case Biome.Plains:
+                return Random.Range(-2, 3);
+            case Biome.Ocean:
+                return Random.Range(-8, 3);
+            case Biome.Mountains:
+                return Random.Range(-2, 13);
+            case Biome.Desert:
+                return Random.Range(-5, 6);
+            case Biome.Forest:
+                return Random.Range(-1, 4);
         }
 
         return 0;

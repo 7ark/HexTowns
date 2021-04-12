@@ -7409,7 +7409,7 @@ MonoBehaviour:
     m_EditorShowRotating: 1
     m_EditorShowZoom: 0
     m_EditorShowClick: 1
-  m_UseCameraCollision: 1
+  m_UseCameraCollision: 0
   m_CollisionMasks:
     serializedVersion: 2
     m_Bits: 55
@@ -7426,7 +7426,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 1
+  m_EditorCurrentIndex: 3
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &2006599519
