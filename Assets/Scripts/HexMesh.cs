@@ -9,18 +9,16 @@ using Unity.Mathematics;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
 
+[System.Serializable]
+public struct HexBufferData
+{
+    public Vector4 pos_s;
+    public float index;
+    public int hexCoordX;
+    public int hexCoordZ;
+};
 public class HexMesh
 {
-
-    [System.Serializable]
-    public struct HexBufferData
-    {
-        public Vector4 pos_s;
-        public float index;
-        public int hexCoordX;
-        public int hexCoordZ;
-    };
-
     private HexBufferData[] renderData;
     private ComputeBuffer dataBuffer;
 

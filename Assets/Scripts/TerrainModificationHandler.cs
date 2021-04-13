@@ -257,6 +257,9 @@ public class TerrainModificationHandler : MonoBehaviour
 
 public static class HexagonPreviewArea
 {
+    private static HexBufferData[] renderData;
+    private static ComputeBuffer dataBuffer;
+    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
     private struct HexPreviewData
     {
         public HexTile[] areatiles;

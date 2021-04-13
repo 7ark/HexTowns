@@ -8,6 +8,12 @@ using UnityEngine.InputSystem;
 public class BuildingModeHandler : MonoBehaviour
 {
     public static readonly Vector3 YOffset = new Vector3(0, 1000);
+    [System.Serializable]
+    private struct ItemData
+    {
+        public string itemName;
+        public GameObject objectPrefab;
+    }
 
     [SerializeField]
     private EventSystem eventSystem;
@@ -29,24 +35,38 @@ public class BuildingModeHandler : MonoBehaviour
     private Placeable placeablePrefab;
     [SerializeField]
     private Transform prefabParent;
+    [SerializeField]
+    private ItemData[] allItemsAvailable;
 
-    private HexagonBuildingBlock currentPrefabInstance;
+    private HexagonBuildingBlock currentBuildingBlockPrefabInstance;
     private List<HexagonBuildingBlock> allBuildingBlocks = new List<HexagonBuildingBlock>();
-    private Dictionary<string, Placeable> madeBuildings = new Dictionary<string, Placeable>();
-    Dictionary<ResourceType, int> resourceCostTotal = new Dictionary<ResourceType, int>();
+    private List<GameObject> allPlacedItems = new List<GameObject>();
+    private Dictionary<ResourceType, int> resourceCostTotal = new Dictionary<ResourceType, int>();
+    private Dictionary<string, GameObject> placeableItems = new Dictionary<string, GameObject>();
     private HexagonWallBuildingBlock highlightedWall = null;
+    private GameObject itemPrefabInstance = null;
     private int tempBuildingCount = 1;
 
     public bool Active { get; private set; }
 
     private void Awake()
     {
+        for (int i = 0; i < allItemsAvailable.Length; i++)
+        {
+            placeableItems.Add(allItemsAvailable[i].itemName, allItemsAvailable[i].objectPrefab);
+        }
+
         SetBuildingMode(false);
     }
 
     public void ToggleBuildingMode()
     {
         SetBuildingMode(!Active);
+    }
+
+    public void SelectItemToPlace(string item)
+    {
+        itemPrefabInstance = Instantiate(placeableItems[item]);
     }
 
     private void SetBuildingMode(bool active)
@@ -73,11 +93,11 @@ public class BuildingModeHandler : MonoBehaviour
             {
                 resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
             }
-            if(currentPrefabInstance != null)
+            if(currentBuildingBlockPrefabInstance != null)
             {
-                Destroy(currentPrefabInstance.gameObject);
+                Destroy(currentBuildingBlockPrefabInstance.gameObject);
             }
-            currentPrefabInstance = Instantiate(hexagonPrefab);
+            currentBuildingBlockPrefabInstance = Instantiate(hexagonPrefab);
             //builderModeCamera.transform.position = new Vector3(0, 600);
             normalCamera.enabled = false;
             builderModeCamera.SetTargetedPosition(YOffset);
@@ -85,7 +105,7 @@ public class BuildingModeHandler : MonoBehaviour
         }
         else if(Active && !active)
         {
-            Destroy(currentPrefabInstance.gameObject);
+            Destroy(currentBuildingBlockPrefabInstance.gameObject);
             Vector3 pos = normalCamera.GetTargetedPosition();
             pos.y = 0;
             normalCamera.enabled = true;
@@ -147,6 +167,12 @@ public class BuildingModeHandler : MonoBehaviour
             copyGO.transform.position -= YOffset;
             copyGO.transform.SetParent(combined.transform, true);
             building.AddObjectBase(copyGO);
+        }
+        for (int i = 0; i < allPlacedItems.Count; i++)
+        {
+            GameObject item = allPlacedItems[i];
+            item.transform.position -= YOffset;
+            item.transform.SetParent(combined.transform, true);
         }
         combined.transform.localPosition = Vector3.zero;
         building.SetupFromScript(new GameObject[] { combined });
@@ -215,7 +241,7 @@ public class BuildingModeHandler : MonoBehaviour
                     if (wall != null)
                     {
                         highlightedWall.SetMaterial(true);
-                        currentPrefabInstance.gameObject.SetActive(false);
+                        currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
 
                         if(Mouse.current.leftButton.wasPressedThisFrame)
                         {
@@ -225,41 +251,69 @@ public class BuildingModeHandler : MonoBehaviour
                     else
                     {
                         HexCoordinates coordinates = HexCoordinates.FromPosition(hit.point);
-                        if (AnyOthersHere(coordinates))
+                        Vector3 centerPosition = coordinates.ToPosition() + new Vector3(0, hit.point.y);
+                        if(itemPrefabInstance != null)
                         {
-                            currentPrefabInstance.gameObject.SetActive(false);
+                            currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
+                            if (AnyOthersHere(coordinates))
+                            {
+                                itemPrefabInstance.gameObject.SetActive(true);
+                                itemPrefabInstance.transform.position = centerPosition + new Vector3(0, 0.2f);
+                                Vector3 differenceVector = hit.point - centerPosition;
+                                float degrees = Mathf.Atan2(differenceVector.x, differenceVector.z) * Mathf.Rad2Deg;
+                                degrees = Mathf.RoundToInt(degrees / 60) * 60;
+                                itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, degrees));
+                            }
+                            else
+                            {
+                                itemPrefabInstance.gameObject.SetActive(false);
+                            }
                         }
                         else
                         {
-                            currentPrefabInstance.gameObject.SetActive(true);
-                            currentPrefabInstance.transform.position = coordinates.ToPosition() + new Vector3(0, hit.point.y);
+                            if (AnyOthersHere(coordinates))
+                            {
+                                currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
+                            }
+                            else
+                            {
+                                currentBuildingBlockPrefabInstance.gameObject.SetActive(true);
+                                currentBuildingBlockPrefabInstance.transform.position = centerPosition;
+                            }
                         }
                     }
                 }
             }
-
-            if(currentPrefabInstance.gameObject.activeSelf && Mouse.current.leftButton.wasPressedThisFrame)
+            if(Mouse.current.leftButton.wasPressedThisFrame)
             {
-                currentPrefabInstance.Place();
-                //TODO: Replace this with cost based on selected material type
-                resourceCostTotal[ResourceType.Wood] += 5;
-                resourceCostTotal[ResourceType.Stone] += 2;
-                currentPrefabInstance.AddAssociatedResourceCost(new ResourceCount()
+                if(itemPrefabInstance != null && itemPrefabInstance.gameObject.activeSelf)
                 {
-                    ResourceType = ResourceType.Wood,
-                    Amount = 5
-                });
-                currentPrefabInstance.AddAssociatedResourceCost(new ResourceCount()
+                    allPlacedItems.Add(itemPrefabInstance);
+                    itemPrefabInstance = null;
+                }
+                else if (currentBuildingBlockPrefabInstance.gameObject.activeSelf)
                 {
-                    ResourceType = ResourceType.Stone,
-                    Amount = 2
-                });
-                resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
-                currentPrefabInstance.Coordinates = HexCoordinates.FromPosition(currentPrefabInstance.transform.position);
-                allBuildingBlocks.Add(currentPrefabInstance);
-                currentPrefabInstance = Instantiate(hexagonPrefab);
+                    currentBuildingBlockPrefabInstance.Place();
+                    //TODO: Replace this with cost based on selected material type
+                    resourceCostTotal[ResourceType.Wood] += 5;
+                    resourceCostTotal[ResourceType.Stone] += 2;
+                    currentBuildingBlockPrefabInstance.AddAssociatedResourceCost(new ResourceCount()
+                    {
+                        ResourceType = ResourceType.Wood,
+                        Amount = 5
+                    });
+                    currentBuildingBlockPrefabInstance.AddAssociatedResourceCost(new ResourceCount()
+                    {
+                        ResourceType = ResourceType.Stone,
+                        Amount = 2
+                    });
+                    resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
+                    currentBuildingBlockPrefabInstance.Coordinates = HexCoordinates.FromPosition(currentBuildingBlockPrefabInstance.transform.position);
+                    allBuildingBlocks.Add(currentBuildingBlockPrefabInstance);
+                    currentBuildingBlockPrefabInstance = Instantiate(hexagonPrefab);
 
-                UpdateAllNeighbors();
+                    UpdateAllNeighbors();
+                }
             }
         }
     }
