@@ -43,6 +43,7 @@ public class BuildingModeHandler : MonoBehaviour
     private List<GameObject> allPlacedItems = new List<GameObject>();
     private Dictionary<ResourceType, int> resourceCostTotal = new Dictionary<ResourceType, int>();
     private Dictionary<string, GameObject> placeableItems = new Dictionary<string, GameObject>();
+    private Dictionary<HexCoordinates, List<GameObject>> placeableItemLocations = new Dictionary<HexCoordinates, List<GameObject>>();
     private HexagonWallBuildingBlock highlightedWall = null;
     private GameObject itemPrefabInstance = null;
     private int tempBuildingCount = 1;
@@ -225,6 +226,7 @@ public class BuildingModeHandler : MonoBehaviour
                 return;
             }
 
+            bool hoveredOverWall = false;
             RaycastHit hit;
             if (Physics.Raycast(builderModeCamera.GetCamera().ScreenPointToRay(Mouse.current.position.ReadValue()), out hit))
             {
@@ -240,6 +242,7 @@ public class BuildingModeHandler : MonoBehaviour
 
                     if (wall != null)
                     {
+                        hoveredOverWall = true;
                         highlightedWall.SetMaterial(true);
                         currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
 
@@ -257,12 +260,40 @@ public class BuildingModeHandler : MonoBehaviour
                             currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
                             if (AnyOthersHere(coordinates))
                             {
-                                itemPrefabInstance.gameObject.SetActive(true);
-                                itemPrefabInstance.transform.position = centerPosition + new Vector3(0, 0.2f);
-                                Vector3 differenceVector = hit.point - centerPosition;
-                                float degrees = Mathf.Atan2(differenceVector.x, differenceVector.z) * Mathf.Rad2Deg;
-                                degrees = Mathf.RoundToInt(degrees / 60) * 60;
-                                itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, degrees));
+                                float forcedRotation = -1;
+                                bool cantPlace = false;
+                                if(placeableItemLocations.ContainsKey(coordinates))
+                                {
+                                    if(placeableItemLocations[coordinates].Count >= 2)
+                                    {
+                                        cantPlace = true;
+                                    }
+                                    else
+                                    {
+                                        forcedRotation = placeableItemLocations[coordinates][0].transform.rotation.eulerAngles.y + 180;
+                                    }
+                                }
+
+                                if(cantPlace)
+                                {
+                                    itemPrefabInstance.gameObject.SetActive(false);
+                                }
+                                else
+                                {
+                                    itemPrefabInstance.gameObject.SetActive(true);
+                                    itemPrefabInstance.transform.position = centerPosition + new Vector3(0, 0.2f);
+                                    if(forcedRotation == -1)
+                                    {
+                                        Vector3 differenceVector = hit.point - centerPosition;
+                                        float degrees = Mathf.Atan2(differenceVector.x, differenceVector.z) * Mathf.Rad2Deg;
+                                        degrees = Mathf.RoundToInt(degrees / 60) * 60;
+                                        itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, degrees + 30));
+                                    }
+                                    else
+                                    {
+                                        itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, forcedRotation));
+                                    }
+                                }
                             }
                             else
                             {
@@ -284,12 +315,21 @@ public class BuildingModeHandler : MonoBehaviour
                     }
                 }
             }
-            if(Mouse.current.leftButton.wasPressedThisFrame)
+            if(Mouse.current.leftButton.wasPressedThisFrame && !hoveredOverWall)
             {
                 if(itemPrefabInstance != null && itemPrefabInstance.gameObject.activeSelf)
                 {
-                    allPlacedItems.Add(itemPrefabInstance);
-                    itemPrefabInstance = null;
+                    HexCoordinates coords = HexCoordinates.FromPosition(itemPrefabInstance.transform.position);
+                    if(!placeableItemLocations.ContainsKey(coords))
+                    {
+                        placeableItemLocations.Add(coords, new List<GameObject>());
+                    }
+                    if(placeableItemLocations[coords].Count < 2)
+                    {
+                        placeableItemLocations[coords].Add(itemPrefabInstance);
+                        allPlacedItems.Add(itemPrefabInstance);
+                        itemPrefabInstance = null;
+                    }
                 }
                 else if (currentBuildingBlockPrefabInstance.gameObject.activeSelf)
                 {

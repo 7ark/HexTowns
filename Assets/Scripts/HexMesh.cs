@@ -19,8 +19,8 @@ public struct HexBufferData
 };
 public class HexMesh
 {
-    private HexBufferData[] renderData;
-    private ComputeBuffer dataBuffer;
+    private HexBufferData[] renderData = null;
+    private ComputeBuffer dataBuffer = null;
 
     private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
     private static readonly int OffsetX = Shader.PropertyToID("_OffsetX");
@@ -68,7 +68,11 @@ public class HexMesh
         dataBuffer = new ComputeBuffer(tiles.Count,
             UnsafeUtility.SizeOf<HexBufferData>());
 
-        renderData = new HexBufferData[tiles.Count];
+        if(renderData == null)
+        {
+            renderData = new HexBufferData[tiles.Count];
+        }
+
         for (var i = 0; i < renderData.Length; i++)
         {
             HexTile cell = tiles[i];

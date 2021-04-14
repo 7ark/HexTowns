@@ -7512,7 +7512,7 @@ MonoBehaviour:
     m_RotateDetectionThreshold: 5
     m_MinimumRoateAngle: 1
     m_ZoomKeyboardSpeed: 0.1
-    m_ZoomMouseSpeed: 0.1
+    m_ZoomMouseSpeed: 0.05
     m_ZoomJoystickSpeed: 0.1
     m_ZoomTouchSpeed: 0.001
     m_ZoomDetectionThreshold: 20
@@ -7537,7 +7537,7 @@ MonoBehaviour:
     m_ClickWithTouch: 1
     m_EditorShowPanning: 1
     m_EditorShowRotating: 1
-    m_EditorShowZoom: 0
+    m_EditorShowZoom: 1
     m_EditorShowClick: 1
   m_UseCameraCollision: 0
   m_CollisionMasks:
@@ -7556,7 +7556,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 3
+  m_EditorCurrentIndex: 2
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &2006599519
