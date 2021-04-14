@@ -24,10 +24,10 @@ public class Placeable : Workable
     private GameObject selectedOption;
     protected List<HexTile> homeTiles = new List<HexTile>();
     private MeshRenderer[] previewRenderers;
-    private GameObject terrainHeightPreview;
     public System.Action OnPlaced;
     private GenerateHexagonHandler generateHexagonHandler;
     private HexTile lastHovered;
+    private HexagonPreviewArea.PreviewRenderData previewTerrain = null;
 
     private GameObject associatedPhysicalGameObject;
 
@@ -55,11 +55,6 @@ public class Placeable : Workable
     public virtual void Init(GameObject associatedPhysicalGameObject)
     {
         this.associatedPhysicalGameObject = associatedPhysicalGameObject;
-
-        terrainHeightPreview = new GameObject(associatedPhysicalGameObject.name + "_HeightPreview");
-        terrainHeightPreview.transform.SetParent(associatedPhysicalGameObject.transform);
-        terrainHeightPreview.AddComponent<MeshRenderer>().sharedMaterial = terrainPreview;
-        terrainHeightPreview.AddComponent<MeshFilter>();
 
         generateHexagonHandler = associatedPhysicalGameObject.gameObject.AddComponent<GenerateHexagonHandler>();
 
@@ -120,12 +115,12 @@ public class Placeable : Workable
             tilesDisplay.Add(HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position)));
         }
 
-        HexagonPreviewArea.AddAreaToDisplay(tilesDisplay.ToArray(), tileHoveringAt.Height + ModifiedHeight, terrainHeightPreview, null);
-    }
-
-    private void LateUpdate()
-    {
-        HexagonPreviewArea.DisplayArea(terrainHeightPreview, generateHexagonHandler);
+        if(previewTerrain == null)
+        {
+            previewTerrain = HexagonPreviewArea.CreateUniqueReference();
+        }
+        HexagonPreviewArea.DisplayArea(previewTerrain, tilesDisplay, tileHoveringAt.Height + ModifiedHeight);
+        //HexagonPreviewArea.AddAreaToDisplay(tilesDisplay.ToArray(), tileHoveringAt.Height + ModifiedHeight, terrainHeightPreview, null);
     }
 
     public bool Place(Vector3 position, HexTile tilePlacedOn)
@@ -143,6 +138,8 @@ public class Placeable : Workable
             homeTiles.Add(HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position)));
         }
 
+        HexagonPreviewArea.StopDisplay(previewTerrain);
+
         OnPlaced?.Invoke();
 
         for (int i = 0; i < homeTiles.Count; i++)
@@ -159,8 +156,6 @@ public class Placeable : Workable
 
             BeginWorking();
         });
-
-        GameObject.Destroy(terrainHeightPreview);
 
         return true;
     }

@@ -5649,6 +5649,7 @@ MonoBehaviour:
   drawingCamera: {fileID: 1023898293}
   selectionCamera: {fileID: 435334066}
   mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
+  hexagonPreviewMaterial: {fileID: 2100000, guid: 1e9d3c058453f7948b4a84c9f7ec39ee, type: 2}
   textures:
   - {fileID: 2800000, guid: 819311b7a66a8f740b104cf9f9ffadf5, type: 3}
 --- !u!4 &1407722124
@@ -7532,7 +7533,7 @@ MonoBehaviour:
     m_RotateWithMouse: 1
     m_RotateWithJoystick: 1
     m_RotateWithTouch: 1
-    m_ZoomWithKeyboard: 1
+    m_ZoomWithKeyboard: 0
     m_ZoomWithMouseWheel: 1
     m_ZoomWithJoystick: 1
     m_ZoomWithTouch: 1

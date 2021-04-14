@@ -33,7 +33,7 @@ public class HexagonSelectionHandler : MonoBehaviour
         return tilesBetween.ToArray();
     }
 
-    public HexTile[] GetBorderBetweenTiles(HexTile[] tiles)
+    public List<HexTile> GetBorderBetweenTiles(HexTile[] tiles)
     {
         List<HexTile> borders = new List<HexTile>();
         for (int i = 0; i < tiles.Length; i++)
@@ -53,7 +53,7 @@ public class HexagonSelectionHandler : MonoBehaviour
             }
         }
 
-        return borders.ToArray();
+        return borders;
     }
 
     public List<List<HexTile>> GetBordersBetweenTilesSeperated(HexTile[] tiles)

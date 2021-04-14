@@ -338,6 +338,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator DoJob(System.Action<bool> onComplete)
     {
+        if(Job == null)
+        {
+            onComplete(false);
+            yield break;
+        }
+
         Job.DoWork();
         peepleWorldState.energy -= 1;
         if(peepleWorldState.energy < 0)

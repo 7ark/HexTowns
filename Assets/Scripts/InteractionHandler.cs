@@ -50,10 +50,9 @@ public class InteractionHandler : MonoBehaviour
     private int multiSelectionsLeft = 0;
     private List<HexTile> multiSelections = new List<HexTile>();
     private System.Action<HexTile[], int> onMultiselectComplete;
-    private GameObject multiSelectPreview;
+    private HexagonPreviewArea.PreviewRenderData multiSelectPreview;
     private int multiselectHeightMod = 0;
     private bool multiSelectCanChangeHeight = true;
-    private MeshRenderer multiSelectRenderer;
     private HexTile lastHoveredTile;
     private List<GameObject> toCombine = new List<GameObject>();
     private bool forceHoverUpdate = false;
@@ -130,8 +129,7 @@ public class InteractionHandler : MonoBehaviour
 
     private void SetupMultiSelectObject()
     {
-        multiSelectPreview = Instantiate(terrainModPreviewPrefab);
-        multiSelectRenderer = multiSelectPreview.GetComponent<MeshRenderer>();
+        multiSelectPreview = HexagonPreviewArea.CreateUniqueReference();// Instantiate(terrainModPreviewPrefab);
     }
 
     public void DisplayPlaceablePreview(PlaceableGO placeablePrefab, string prefabName, System.Action onPlaced = null)
@@ -298,11 +296,13 @@ public class InteractionHandler : MonoBehaviour
                 potentialSelections.Add(tile);
 
                 bool badShape = HexagonSelectionHandler.Instance.DoBordersCross(potentialSelections.ToArray());
-                multiSelectRenderer.sharedMaterial = badShape ? badTerrainMaterial : goodTerrainMaterial;
+                //multiSelectRenderer.sharedMaterial = badShape ? badTerrainMaterial : goodTerrainMaterial;
 
                 if(potentialSelections[potentialSelections.Count - 2] != potentialSelections[potentialSelections.Count - 1])
                 {
-                    HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
+                    HexagonPreviewArea.DisplayArea(multiSelectPreview, HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500);
+
+                    //HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
 
                     //if (badShape)
                     //{
@@ -320,14 +320,6 @@ public class InteractionHandler : MonoBehaviour
                 placeablePreview.Get().SetPreviewMaterial(placeableGood);
                 placeablePreview.Get().Hover(tile);
             }
-        }
-    }
-
-    private void LateUpdate()
-    {
-        if(multiSelectionsLeft > 0)
-        {
-            HexagonPreviewArea.DisplayArea(multiSelectPreview, generateHexagonHandler);
         }
     }
 
@@ -351,8 +343,7 @@ public class InteractionHandler : MonoBehaviour
         multiSelectionsLeft = 0;
         onMultiselectComplete = null;
         multiSelections.Clear();
-        Destroy(multiSelectPreview);
-        multiSelectRenderer = null;
+        HexagonPreviewArea.StopDisplay(multiSelectPreview);
         multiSelectPreview = null;
     }
 
@@ -385,7 +376,8 @@ public class InteractionHandler : MonoBehaviour
         multiSelectionsLeft = 0;
         onMultiselectComplete?.Invoke(multiSelections.ToArray(), multiSelections[0].Height + multiselectHeightMod);
         multiSelections.Clear();
-        multiSelectPreview.SetActive(false);
+        HexagonPreviewArea.StopDisplay(multiSelectPreview);
+        multiSelectPreview = null;
     }
 
     private void UpdateMultiSelectPreview(bool includePreview = true)
@@ -395,7 +387,8 @@ public class InteractionHandler : MonoBehaviour
         {
             toPreview.Add(lastHoveredTile);
         }
-        HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(toPreview.ToArray()), multiSelectCanChangeHeight ? multiSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
+        HexagonPreviewArea.DisplayArea(multiSelectPreview, HexagonSelectionHandler.Instance.GetBorderBetweenTiles(toPreview.ToArray()), multiSelectCanChangeHeight ? multiSelections[0].Height + multiselectHeightMod : -500);
+        //HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(toPreview.ToArray()), multiSelectCanChangeHeight ? multiSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
     }
 
     private void Select(HexTile tile)

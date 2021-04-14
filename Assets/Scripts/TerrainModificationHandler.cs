@@ -11,10 +11,10 @@ public class TerrainModificationHandler : MonoBehaviour
     private GameObject terrainModPreviewPrefab;
 
     private GenerateHexagonHandler generateHexagonHandler;
-    private Dictionary<GameObject, HexTile[]> objToAssociatedTiles = new Dictionary<GameObject, HexTile[]>();
-    private Dictionary<GameObject, int> objToAssociatedHeight = new Dictionary<GameObject, int>();
-    private Dictionary<GameObject, System.Action> objToAssociatedCompleteAction = new Dictionary<GameObject, System.Action>();
-    private List<GameObject> allWorkableObjects = new List<GameObject>();
+    private Dictionary<HexagonPreviewArea.PreviewRenderData, HexTile[]> objToAssociatedTiles = new Dictionary<HexagonPreviewArea.PreviewRenderData, HexTile[]>();
+    private Dictionary<HexagonPreviewArea.PreviewRenderData, int> objToAssociatedHeight = new Dictionary<HexagonPreviewArea.PreviewRenderData, int>();
+    private Dictionary<HexagonPreviewArea.PreviewRenderData, System.Action> objToAssociatedCompleteAction = new Dictionary<HexagonPreviewArea.PreviewRenderData, System.Action>();
+    private List<HexagonPreviewArea.PreviewRenderData> allWorkableObjects = new List<HexagonPreviewArea.PreviewRenderData>();
     private Dictionary<Workable, HexTile[]> workablesWaitingToStart = new Dictionary<Workable, HexTile[]>();
     private float workablesWaitingTimer = 0;
 
@@ -26,7 +26,7 @@ public class TerrainModificationHandler : MonoBehaviour
         generateHexagonHandler = gameObject.AddComponent<GenerateHexagonHandler>();
     }
 
-    public void RequestTerrainModification(HexTile[] areaTiles, int height, GameObject existingModification = null, System.Action onComplete = null)
+    public void RequestTerrainModification(HexTile[] areaTiles, int height, HexagonPreviewArea.PreviewRenderData existingModification = null, System.Action onComplete = null)
     {
         List<HexTile> areaTilesList = new List<HexTile>(areaTiles);
 
@@ -51,56 +51,91 @@ public class TerrainModificationHandler : MonoBehaviour
             {
                 areaTilesList.RemoveAt(i);
             }
+            if(areaTilesList[i].Height == height)
+            {
+                areaTilesList.RemoveAt(i);
+            }
         }
 
-        GameObject newObj = existingModification == null ? Instantiate(terrainModPreviewPrefab) : existingModification;
+        if(areaTilesList.Count <= 0)
+        {
+            onComplete?.Invoke();
+            return;
+        }
+
+        HexagonPreviewArea.PreviewRenderData newObj = existingModification == null ? HexagonPreviewArea.CreateUniqueReference() : existingModification;
         if(existingModification == null)
         {
             allWorkableObjects.Add(newObj);
             objToAssociatedTiles.Add(newObj, areaTilesList.ToArray());
             objToAssociatedHeight.Add(newObj, height);
             objToAssociatedCompleteAction.Add(newObj, onComplete);
-        }
 
-        HexagonPreviewArea.AddAreaToDisplay(areaTilesList.ToArray(), height, newObj, (GameObject modifiedObject, bool success) =>
-        {
-            if (!success)
+
+            Workable workable = new Workable();// newObj.AddComponent<Workable>();
+            workable.TilesAssociated = new List<HexTile>(areaTilesList);
+            workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
+            workable.OnWorkFinished += () =>
             {
-                onComplete?.Invoke();
-                objToAssociatedHeight.Remove(modifiedObject);
-                objToAssociatedTiles.Remove(modifiedObject);
-                allWorkableObjects.Remove(modifiedObject);
-                objToAssociatedCompleteAction.Remove(modifiedObject);
-                return;
-            }
-            if (existingModification == null)
-            {
-                Workable workable = new Workable();// newObj.AddComponent<Workable>();
-                workable.TilesAssociated = new List<HexTile>(areaTilesList);
-                workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
-                workable.OnWorkFinished += () =>
-                {
-                    for (int i = 0; i < areaTilesList.Count; i++)
-                    {
-                        areaTilesList[i].WorkArea = false;
-                    }
-                };
-                workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 5));
-                workablesWaitingToStart.Add(workable, areaTilesList.ToArray());
                 for (int i = 0; i < areaTilesList.Count; i++)
                 {
-                    areaTilesList[i].AddWorkableToTile(workable, height);
-                    Workable[] tileWorkables = areaTilesList[i].GetEnvironmentalItemsAsWorkable();
-                    for (int j = 0; j < tileWorkables.Length; j++)
-                    {
-                        tileWorkables[j].BeginWorking();
-                    }
+                    areaTilesList[i].WorkArea = false;
                 }
-                //PeepleJobHandler.Instance.AddWorkable(workable);
+            };
+            workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 5));
+            workablesWaitingToStart.Add(workable, areaTilesList.ToArray());
+            for (int i = 0; i < areaTilesList.Count; i++)
+            {
+                areaTilesList[i].AddWorkableToTile(workable, height);
+                Workable[] tileWorkables = areaTilesList[i].GetEnvironmentalItemsAsWorkable();
+                for (int j = 0; j < tileWorkables.Length; j++)
+                {
+                    tileWorkables[j].BeginWorking();
+                }
             }
+        }
 
-            newObj.transform.position = Vector3.zero;
-        });
+        HexagonPreviewArea.DisplayArea(newObj, areaTilesList, height);
+
+        //HexagonPreviewArea.AddAreaToDisplay(areaTilesList.ToArray(), height, newObj, (GameObject modifiedObject, bool success) =>
+        //{
+        //    if (!success)
+        //    {
+        //        onComplete?.Invoke();
+        //        objToAssociatedHeight.Remove(modifiedObject);
+        //        objToAssociatedTiles.Remove(modifiedObject);
+        //        allWorkableObjects.Remove(modifiedObject);
+        //        objToAssociatedCompleteAction.Remove(modifiedObject);
+        //        return;
+        //    }
+        //    if (existingModification == null)
+        //    {
+        //        Workable workable = new Workable();// newObj.AddComponent<Workable>();
+        //        workable.TilesAssociated = new List<HexTile>(areaTilesList);
+        //        workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
+        //        workable.OnWorkFinished += () =>
+        //        {
+        //            for (int i = 0; i < areaTilesList.Count; i++)
+        //            {
+        //                areaTilesList[i].WorkArea = false;
+        //            }
+        //        };
+        //        workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 5));
+        //        workablesWaitingToStart.Add(workable, areaTilesList.ToArray());
+        //        for (int i = 0; i < areaTilesList.Count; i++)
+        //        {
+        //            areaTilesList[i].AddWorkableToTile(workable, height);
+        //            Workable[] tileWorkables = areaTilesList[i].GetEnvironmentalItemsAsWorkable();
+        //            for (int j = 0; j < tileWorkables.Length; j++)
+        //            {
+        //                tileWorkables[j].BeginWorking();
+        //            }
+        //        }
+        //        //PeepleJobHandler.Instance.AddWorkable(workable);
+        //    }
+        //
+        //    newObj.transform.position = Vector3.zero;
+        //});
 
     }
 
@@ -195,7 +230,7 @@ public class TerrainModificationHandler : MonoBehaviour
         }
     }
 
-    private bool DoWorkOnTerrain(GameObject obj)
+    private bool DoWorkOnTerrain(HexagonPreviewArea.PreviewRenderData obj)
     {
         if(!allWorkableObjects.Contains(obj))
         {
@@ -225,17 +260,10 @@ public class TerrainModificationHandler : MonoBehaviour
             objToAssociatedTiles.Remove(obj);
             allWorkableObjects.Remove(obj);
             objToAssociatedCompleteAction.Remove(obj);
-            Destroy(obj);
+
+            HexagonPreviewArea.StopDisplay(obj);
 
             return true;
-        }
-    }
-
-    private void LateUpdate()
-    {
-        for (int i = 0; i < allWorkableObjects.Count; i++)
-        {
-            HexagonPreviewArea.DisplayArea(allWorkableObjects[i], generateHexagonHandler);
         }
     }
 
@@ -255,113 +283,3 @@ public class TerrainModificationHandler : MonoBehaviour
     //}
 }
 
-public static class HexagonPreviewArea
-{
-    private static HexBufferData[] renderData;
-    private static ComputeBuffer dataBuffer;
-    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
-    private struct HexPreviewData
-    {
-        public HexTile[] areatiles;
-        public int height;
-        public System.Action<GameObject, bool> onComplete;
-    }
-    private static Dictionary<GameObject, HexPreviewData> displaysToDo = new Dictionary<GameObject, HexPreviewData>();
-
-    public static void AddAreaToDisplay(HexTile[] areaTiles, int height, GameObject meshToModify, System.Action<GameObject, bool> onComplete)
-    {
-        HexPreviewData previewData = new HexPreviewData()
-        {
-            areatiles = areaTiles,
-            height = height,
-            onComplete = onComplete
-        };
-        if (!displaysToDo.ContainsKey(meshToModify))
-        {
-            displaysToDo.Add(meshToModify, previewData);
-        }
-        displaysToDo[meshToModify] = previewData;
-    }
-
-    public static void DisplayArea(GameObject associatedObject, GenerateHexagonHandler generateHexagonHandler)
-    {
-        if(!displaysToDo.ContainsKey(associatedObject))
-        {
-            return;
-        }
-        DisplayArea(displaysToDo[associatedObject].areatiles, displaysToDo[associatedObject].height, associatedObject, generateHexagonHandler, displaysToDo[associatedObject].onComplete);
-        displaysToDo.Remove(associatedObject);
-    }
-
-    private static void DisplayArea(HexTile[] areaTiles, int height, GameObject meshToModify, GenerateHexagonHandler generateHexagonHandler, System.Action<GameObject, bool> onComplete)
-    {
-        //if(generateHexagonHandler.DoingJob)
-        //{
-        //    return;
-        //}
-        List<HexTile> areaTilesList = new List<HexTile>(areaTiles);
-        List<TriangulateTileJob> jobs = new List<TriangulateTileJob>();
-        for (int i = 0; i < areaTilesList.Count; i++)
-        {
-            if (areaTilesList[i].Height == height)
-            {
-                continue;
-            }
-            HexTile[] tileNeighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(areaTilesList[i]).ToArray();
-            NativeArray<int> neighborHeights = new NativeArray<int>(tileNeighbors.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            NativeArray<Vector3> neighborPositions = new NativeArray<Vector3>(tileNeighbors.Length, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
-            for (int j = 0; j < neighborHeights.Length; j++)
-            {
-                neighborHeights[j] = areaTilesList.Contains(tileNeighbors[j]) || tileNeighbors[j].Height > height ? height : (Mathf.Max(areaTilesList[i].Height, tileNeighbors[j].Height));
-                neighborPositions[j] = tileNeighbors[j].Position;
-            }
-
-            TriangulateTileJob job = new TriangulateTileJob()
-            {
-                position = new Vector3(areaTilesList[i].Position.x, height * HexTile.HEIGHT_STEP, areaTilesList[i].Position.z),
-                vertices = new NativeList<Vector3>(Allocator.TempJob),
-                triangles = new NativeList<int>(Allocator.TempJob),
-                textureID = areaTilesList[i].MaterialIndex,
-                uvs = new NativeList<Vector2>(Allocator.TempJob),
-                uvData = new NativeArray<Rect>(0, Allocator.TempJob),
-                height = height > areaTilesList[i].Height ? height : areaTilesList[i].Height,
-                scale = height > areaTilesList[i].Height ? 1 : 1.05f,
-                neighborArrayCount = tileNeighbors.Length,
-                neighborHeight = neighborHeights,
-                neighborPositions = neighborPositions
-            };
-            jobs.Add(job);
-        }
-
-        if (jobs.Count == 0)
-        {
-            onComplete?.Invoke(meshToModify, false);
-            return;
-        }
-
-        generateHexagonHandler.GenerateHexagons(jobs, (vertices, triangles, uvs) =>
-        {
-            GameObject newObj = meshToModify;
-            //Debug.Log(jobs.Count + " : " + vertices.Count);
-
-            if(newObj == null)
-            {
-                return;
-            }
-
-            newObj.transform.position = Vector3.zero;
-
-            Mesh hexMesh = newObj.GetComponent<MeshFilter>().mesh = new Mesh();
-            hexMesh.vertices = vertices;
-            int[] tris = new int[triangles.Length];
-            for (int i = 0; i < triangles.Length; i++)
-            {
-                tris[i] = i;
-            }
-            hexMesh.triangles = tris;
-            hexMesh.RecalculateNormals();
-
-            onComplete?.Invoke(newObj, true);
-        });
-    }
-}

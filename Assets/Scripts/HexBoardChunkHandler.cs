@@ -42,6 +42,8 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Mesh mesh;
+    [SerializeField]
+    private Material hexagonPreviewMaterial;
 
     [SerializeField]
     private Texture2D[] textures;
@@ -178,6 +180,11 @@ public class HexBoardChunkHandler : MonoBehaviour
         materialInst.mainTexture = textureArray;
     }
 
+    private void Start()
+    {
+        HexagonPreviewArea.Initialize(mesh, hexagonPreviewMaterial, drawingCamera);
+    }
+
     public void StartGeneratingWorld(int worldSize)
     {
         //boardMaterial.SetTexture("_MainTex", HexBoardChunkHandler.TEXTURE_ATLAS);
@@ -255,6 +262,8 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     private void Update()
     {
+        HexagonPreviewArea.Update();
+
         Vector3 cameraPosition = cameraController.GetTargetedPosition();
         int camX = (int)(cameraPosition.x / HexBoard.FullSize.x);
         int camY = (int)(cameraPosition.z / HexBoard.FullSize.y);
