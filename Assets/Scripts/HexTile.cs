@@ -54,7 +54,7 @@ public class HexTile
         }
 	}
 	private List<WorkableHeightData> buildingReferences = new List<WorkableHeightData>();
-	private List<GameObject> environmentalObjectsOnTile = new List<GameObject>();
+	private List<Workable> environmentalObjectsOnTile = new List<Workable>();
 	public Vector3 Position { get; set; }
 
 	public void AddWorkableToTile(Workable workable, int height)
@@ -99,10 +99,10 @@ public class HexTile
 
 
 
-	public void AddEnvironmentItem(GameObject obj)
+	public void AddEnvironmentItem(Workable obj)
     {
-		Workable envWorkable = obj.GetComponent<Workable>();
-		envWorkable.OnBuilt += () => { environmentalObjectsOnTile.Remove(obj); };
+		Workable envWorkable = obj;
+		envWorkable.OnWorkFinished += () => { environmentalObjectsOnTile.Remove(obj); };
 		envWorkable.TilesAssociated = new List<HexTile>() { this };
 		environmentalObjectsOnTile.Add(obj);
     }
@@ -112,7 +112,7 @@ public class HexTile
 		List<Workable> workables = new List<Workable>();
         for (int i = 0; i < environmentalObjectsOnTile.Count; i++)
         {
-			Workable envWorkable = environmentalObjectsOnTile[i].GetComponent<ResourceWorkable>();
+			Workable envWorkable = environmentalObjectsOnTile[i];
 
 			if(envWorkable != null)
 			{
@@ -121,15 +121,6 @@ public class HexTile
         }
 
 		return workables.ToArray();
-    }
-
-	public void RemoveEnvironmentalItems()
-    {
-        for (int i = 0; i < environmentalObjectsOnTile.Count; i++)
-        {
-			environmentalObjectsOnTile[i].SetActive(false);
-        }
-		environmentalObjectsOnTile.Clear();
     }
 
 	public void SetHeight(int height)

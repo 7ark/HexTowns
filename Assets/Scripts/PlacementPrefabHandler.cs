@@ -18,7 +18,7 @@ public class PlacementPrefabHandler : MonoBehaviour
     private struct PlacementPrefabData
     {
         public string Name;
-        public Placeable PlaceablePrefab;
+        public PlaceableGO PlaceablePrefab;
         public ResourceCount[] ResourcesUsed;
         [HideInInspector]
         public Button ButtonReference;
@@ -34,7 +34,7 @@ public class PlacementPrefabHandler : MonoBehaviour
     [SerializeField]
     private Transform buttonParent;
 
-    private Dictionary<string, Placeable> nameToPrefab = new Dictionary<string, Placeable>();
+    private Dictionary<string, PlaceableGO> nameToPrefab = new Dictionary<string, PlaceableGO>();
     private Dictionary<string, Button> nameToButtonReference = new Dictionary<string, Button>();
     private Dictionary<string, ResourceCount[]> nameToResourceInfo = new Dictionary<string, ResourceCount[]>();
     private Dictionary<string, Dictionary<ResourceType, int>> nameToResourceDictionaries = new Dictionary<string, Dictionary<ResourceType, int>>();
@@ -95,7 +95,7 @@ public class PlacementPrefabHandler : MonoBehaviour
         }
     }
 
-    public void AddNewPlaceable(string placeableName, Placeable prefab, ResourceCount[] resources)
+    public void AddNewPlaceable(string placeableName, PlaceableGO prefab, ResourceCount[] resources)
     {
         Button newButton = AddButtonItem(placeableName);
         prefabData.Add(new PlacementPrefabData()

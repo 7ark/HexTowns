@@ -10,11 +10,18 @@ public class ResourceWorkable : Workable
     private int resourceAmount;
 
     private GameObject symbol;
+    private HexTile tileOn;
+
+    public ResourceWorkable(HexTile tileOn, int workStepsRequired, ResourceType resourceToReceiveOnCompletion, int resourceAmount) : base(workStepsRequired)
+    {
+        this.tileOn = tileOn;
+        this.resourceToReceiveOnCompletion = resourceToReceiveOnCompletion;
+        this.resourceAmount = resourceAmount;
+    }
 
     public override void BeginWorking()
     {
-        symbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.Destroy, transform.position + new Vector3(0, 6));
-        symbol.transform.SetParent(transform);
+        symbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.Destroy, tileOn.Position + new Vector3(0, tileOn.Height * HexTile.HEIGHT_STEP) + new Vector3(0, 6));
         base.BeginWorking();
     }
 
@@ -23,8 +30,8 @@ public class ResourceWorkable : Workable
         base.WorkCompleted();
 
         ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount);
-        Destroy(gameObject);
-        Destroy(symbol);
+        DestroySelf();
+        GameObject.Destroy(symbol);
     }
 
     public override List<HexTile> GetTilesAssociated()

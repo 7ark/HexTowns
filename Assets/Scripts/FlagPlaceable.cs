@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class FlagPlaceable : Placeable
 {
     [SerializeField]
@@ -31,7 +32,7 @@ public class FlagPlaceable : Placeable
         {
             int index = Random.Range(0, tileOptions.Count);
 
-            Peeple peeple = Instantiate(peeplePrefab, HexBoardChunkHandler.Instance.transform);
+            Peeple peeple = GameObject.Instantiate(peeplePrefab, HexBoardChunkHandler.Instance.transform);
             peeple.Movement.SetGoal(tileOptions[index], true);
             peeple.SetHome(tileOptions[index]);
 

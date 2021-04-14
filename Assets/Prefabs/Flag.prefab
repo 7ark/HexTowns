@@ -42,22 +42,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 538277349491774642}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c78aae2a76170e747a7f400084229f60, type: 3}
+  m_Script: {fileID: 11500000, guid: e793acc2cbed803469aa5108892ed957, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  workStepsRequired: 0
-  previewDisplay: {fileID: 3805468926157672171}
-  visualOptions:
-  - {fileID: 737257090047163711}
-  visualsParent: {fileID: 3187782367228160431}
-  spaces: []
-  rotationSnapping: 30
-  terrainPreview: {fileID: 2100000, guid: 3c7d95b6e2180584eb026326db60a3d5, type: 2}
-  previewMatGood: {fileID: 2100000, guid: 22db25dbdd2b2634b81202c666f4d512, type: 2}
-  previewMatBad: {fileID: 2100000, guid: 190ed38306925324bb74913f84763ff8, type: 2}
-  objectsToCheckTilesUnder: []
-  peepleToSpawn: 5
-  peeplePrefab: {fileID: 5218861364646250683, guid: a2ac985ddbe481e4c9d6c0f7eb81c10b, type: 3}
+  placeableInstance:
+    workStepsRequired: 1
+    previewDisplay: {fileID: 0}
+    visualOptions: []
+    visualsParent: {fileID: 0}
+    rotationSnapping: 60
+    terrainPreview: {fileID: 0}
+    previewMatGood: {fileID: 0}
+    previewMatBad: {fileID: 0}
+    objectsToCheckTilesUnder: []
+  flagPlaceableInstance:
+    workStepsRequired: 0
+    previewDisplay: {fileID: 3805468926157672171}
+    visualOptions:
+    - {fileID: 737257090047163711}
+    visualsParent: {fileID: 3187782367228160431}
+    rotationSnapping: 60
+    terrainPreview: {fileID: 2100000, guid: 3c7d95b6e2180584eb026326db60a3d5, type: 2}
+    previewMatGood: {fileID: 2100000, guid: 22db25dbdd2b2634b81202c666f4d512, type: 2}
+    previewMatBad: {fileID: 2100000, guid: 190ed38306925324bb74913f84763ff8, type: 2}
+    objectsToCheckTilesUnder: []
+    peepleToSpawn: 5
+    peeplePrefab: {fileID: 5218861364646250683, guid: a2ac985ddbe481e4c9d6c0f7eb81c10b, type: 3}
 --- !u!1 &2304634775550328803
 GameObject:
   m_ObjectHideFlags: 0

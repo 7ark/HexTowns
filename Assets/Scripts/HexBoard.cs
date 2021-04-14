@@ -8,6 +8,8 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 
 [System.Serializable]
 public struct HexCoordinates : System.IEquatable<HexCoordinates>
@@ -150,6 +152,7 @@ public class HexBoard
     private List<HexTile> allTiles = new List<HexTile>();
     private HexMesh hexMesh;
     private bool environmentalObjectsGenerated = false;
+    private List<InstancedEnvironmentalObject> environmentalObjectsInstanced = new List<InstancedEnvironmentalObject>();
 
     public bool GeneratingTiles { get; private set; }
     public Vector2Int GridPosition { get; set; }
@@ -230,6 +233,11 @@ public class HexBoard
     {
         GenerateEnvironmentalObjects();
         hexMesh.Update();
+
+        for (int i = 0; i < environmentalObjectsInstanced.Count; i++)
+        {
+            environmentalObjectsInstanced[i].Update();
+        }
     }
 
     public void RefreshBoard()
@@ -255,6 +263,8 @@ public class HexBoard
 
     public void GenerateEnvironmentalObjects()
     {
+        List<Matrix4x4> treeMatrices = new List<Matrix4x4>();
+        List<Matrix4x4> rockMatices = new List<Matrix4x4>();
         if (!environmentalObjectsGenerated && spawningObject != null)
         {
             List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
@@ -291,20 +301,43 @@ public class HexBoard
                 }
                 if (allTiles[i].Height < 150 && allTiles[i].Height > 5 && likelinessToHaveTree == 0)
                 {
-                    GameObject tree = GameObject.Instantiate(treePrefabs[Random.Range(0, treePrefabs.Length)], spawningObject.transform);
-                    tree.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
-                    tree.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
+                    Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
+                    Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
+                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, treePrefabs[0].transform.localScale);
+                    treeMatrices.Add(matrix);
 
-                    allTiles[i].AddEnvironmentItem(tree);
+                    ResourceWorkable treeWorkable = new ResourceWorkable(allTiles[i], 3, ResourceType.Wood, 2);
+                    treeWorkable.OnDestroyed += (w) =>
+                    {
+                        environmentalObjectsInstanced[0].RemoveDataPoint(matrix);
+                    };
+                    
+                    allTiles[i].AddEnvironmentItem(treeWorkable);
                 }
                 if (allTiles[i].Height > -2 && likelinessToHaveRock == 0)
                 {
-                    GameObject rock = GameObject.Instantiate(rockPrefabs[Random.Range(0, rockPrefabs.Length)], spawningObject.transform);
-                    rock.transform.Rotate(new Vector3(0, Random.Range(0, 361)));
-                    rock.transform.position = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
+                    Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
+                    Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
+                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, rockPrefabs[0].transform.localScale);
+                    rockMatices.Add(matrix);
 
-                    allTiles[i].AddEnvironmentItem(rock);
+                    ResourceWorkable rockWorkable = new ResourceWorkable(allTiles[i], 1, ResourceType.Stone, 1);
+                    rockWorkable.OnDestroyed += (w) =>
+                    {
+                        environmentalObjectsInstanced[1].RemoveDataPoint(matrix);
+                    };
+
+                    allTiles[i].AddEnvironmentItem(rockWorkable);
                 }
+            }
+
+            if(treeMatrices.Count > 0)
+            {
+                environmentalObjectsInstanced[0].SetDataPoints(treeMatrices);
+            }
+            if(rockMatices.Count > 0)
+            {
+                environmentalObjectsInstanced[1].SetDataPoints(rockMatices);
             }
         }
     }
@@ -316,6 +349,17 @@ public class HexBoard
         this.spawningObject = spawningObject;
         this.treePrefabs = treePrefabs;
         this.rockPrefabs = rockPrefabs;
+
+        InstancedEnvironmentalObject environmentalObjectTree = new InstancedEnvironmentalObject();
+        environmentalObjectTree.SetData(treePrefabs[0], drawCamera);
+
+        environmentalObjectsInstanced.Add(environmentalObjectTree);
+
+        InstancedEnvironmentalObject environmentalObjectRock = new InstancedEnvironmentalObject();
+        environmentalObjectRock.SetData(rockPrefabs[0], drawCamera);
+
+        environmentalObjectsInstanced.Add(environmentalObjectRock);
+
     }
 
     private void GenerateTerrainAlgorithm(BoardCorners cornerData, Biome biome)
@@ -432,5 +476,125 @@ public class HexBoard
     public Material OnDisable()
     {
         return hexMesh.ReleaseData();
+    }
+}
+
+public class InstancedEnvironmentalObject
+{
+    [System.Serializable]
+    public struct EnvObjBufferData
+    {
+        public Matrix4x4 world2Obj;
+        public Matrix4x4 obj2world;
+    };
+
+    private EnvObjBufferData[] renderData = null;
+    private ComputeBuffer dataBuffer = null;
+
+    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
+
+    private Mesh meshBasis;
+    private List<Material> matInstances = new List<Material>();
+    private List<Matrix4x4> pointInformation;
+    private Vector3 center;
+    private int submeshCount = 0;
+    private Camera drawCamera;
+
+    public void SetData(GameObject originalObject, Camera drawCamera)
+    {
+        meshBasis = originalObject.GetComponent<MeshFilter>().sharedMesh;
+        submeshCount = meshBasis.subMeshCount;
+        this.drawCamera = drawCamera;
+
+        if (matInstances.Count <= 0)
+        {
+            MeshRenderer meshRender = originalObject.GetComponent<MeshRenderer>();
+            for (int i = 0; i < meshRender.sharedMaterials.Length; i++)
+            {
+                matInstances.Add(new Material(meshRender.sharedMaterials[i]));
+            }
+        }
+    }
+
+    public void RemoveDataPoint(Matrix4x4 pos)
+    {
+        pointInformation.Remove(pos);
+        UpdateBuffer(pointInformation);
+    }
+
+    public void AddDataPoint(Matrix4x4 pos)
+    {
+        pointInformation.Add(pos);
+        UpdateBuffer(pointInformation);
+    }
+
+    public void SetDataPoints(List<Matrix4x4> points)
+    {
+        this.pointInformation = points;
+        
+        center = Vector3.zero;
+        for (int i = 0; i < points.Count; i++)
+        {
+            center += (Vector3)points[i].GetColumn(3); 
+        }
+        center /= points.Count;
+
+        UpdateBuffer(points);
+    }
+
+    private void UpdateBuffer(List<Matrix4x4> points)
+    {
+        if (dataBuffer != null)
+        {
+            dataBuffer.Release();
+        }
+
+        dataBuffer = new ComputeBuffer(points.Count,
+            UnsafeUtility.SizeOf<EnvObjBufferData>());
+
+        if (renderData == null || renderData.Length != points.Count)
+        {
+            renderData = new EnvObjBufferData[points.Count];
+        }
+
+        for (var i = 0; i < renderData.Length; i++)
+        {
+            EnvObjBufferData data;
+            data.world2Obj = points[i].inverse;
+            data.obj2world = points[i];
+            renderData[i] = data;
+        }
+
+        dataBuffer.SetData(renderData);
+        // from `    StructuredBuffer<Data> dataBuffer;` in the hlsl file
+        for (int i = 0; i < matInstances.Count; i++)
+        {
+            matInstances[i].SetBuffer(DataBuffer, dataBuffer);
+        }
+    }
+    public void Update()
+    {
+        if (meshBasis != null && pointInformation != null && pointInformation.Count > 0)
+        {
+            for (int i = 0; i < submeshCount; i++)
+            {
+                Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
+#if UNITY_EDITOR
+                foreach (var svObj in UnityEditor.SceneView.sceneViews)
+                {
+                    UnityEditor.SceneView sv = svObj as UnityEditor.SceneView;
+                    if (sv != null)
+                    {
+                        Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
+                            ShadowCastingMode.On, true, 0, sv.camera);
+                    }
+                }
+#endif
+
+                Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
+                    ShadowCastingMode.On, true, 0, drawCamera);
+            }
+
+        }
     }
 }

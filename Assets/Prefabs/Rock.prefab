@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 8281261457819236942}
   - component: {fileID: 4990877884441556459}
   - component: {fileID: 7108896517413208353}
-  - component: {fileID: -5245565118937627497}
   m_Layer: 0
   m_Name: Rock
   m_TagString: Untagged
@@ -82,18 +81,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &-5245565118937627497
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8766014541193715956}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 513dc31e9959f084db830db1b3f1efd3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  workStepsRequired: 1
-  resourceToReceiveOnCompletion: 1
-  resourceAmount: 1

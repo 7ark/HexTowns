@@ -40,8 +40,8 @@ public class InteractionHandler : MonoBehaviour
     private MasterInput inputMaster;
     private Camera cameraInstance;
 
-    private Placeable placeablePreview;
-    private Placeable placeablePreviewPrefab;
+    private PlaceableGO placeablePreview;
+    private PlaceableGO placeablePreviewPrefab;
     private GenerateHexagonHandler generateHexagonHandler;
     private Mesh hoverMesh;
     private GameObject hoverDisplay;
@@ -134,7 +134,7 @@ public class InteractionHandler : MonoBehaviour
         multiSelectRenderer = multiSelectPreview.GetComponent<MeshRenderer>();
     }
 
-    public void DisplayPlaceablePreview(Placeable placeablePrefab, string prefabName, System.Action onPlaced = null)
+    public void DisplayPlaceablePreview(PlaceableGO placeablePrefab, string prefabName, System.Action onPlaced = null)
     {
         if(placeablePreview != null)
         {
@@ -142,11 +142,11 @@ public class InteractionHandler : MonoBehaviour
         }
         placeablePreviewPrefab = placeablePrefab;
         placeablePreview = Instantiate(placeablePrefab, hoverObject.transform);
-        placeablePreview.PlaceableName = prefabName;
+        placeablePreview.Get().PlaceableName = prefabName;
         placeablePreview.transform.localPosition = Vector3.zero;
         if(onPlaced != null)
         {
-            placeablePreview.OnPlaced += onPlaced;
+            placeablePreview.Get().OnPlaced += onPlaced;
         }
         forceHoverUpdate = true;
         //hoverDisplay.transform.localScale = new Vector3(placeablePreview.Size, placeablePreview.Size, placeablePreview.Size);
@@ -219,21 +219,21 @@ public class InteractionHandler : MonoBehaviour
         {
             if(Keyboard.current.qKey.wasPressedThisFrame)
             {
-                placeablePreview.Rotate(-1);
+                placeablePreview.Get().Rotate(-1);
             }
             if(Keyboard.current.eKey.wasPressedThisFrame)
             {
-                placeablePreview.Rotate(1);
+                placeablePreview.Get().Rotate(1);
             }
             if(Keyboard.current.pageUpKey.isPressed && holdTimer < 0)
             {
-                placeablePreview.ModifiedHeight++;
+                placeablePreview.Get().ModifiedHeight++;
                 hoverDisplay.transform.localPosition = placeablePreview.transform.localPosition;
                 holdTimer = timeBetweenHoldings;
             }
             if(Keyboard.current.pageDownKey.isPressed && holdTimer < 0)
             {
-                placeablePreview.ModifiedHeight--;
+                placeablePreview.Get().ModifiedHeight--;
                 hoverDisplay.transform.localPosition = placeablePreview.transform.localPosition;
                 holdTimer = timeBetweenHoldings;
             }
@@ -316,9 +316,9 @@ public class InteractionHandler : MonoBehaviour
             }
             if (placeablePreview != null)
             {
-                bool placeableGood = placeablePreview.CanPlaceHere(tile);
-                placeablePreview.SetPreviewMaterial(placeableGood);
-                placeablePreview.Hover(tile);
+                bool placeableGood = placeablePreview.Get().CanPlaceHere(tile);
+                placeablePreview.Get().SetPreviewMaterial(placeableGood);
+                placeablePreview.Get().Hover(tile);
             }
         }
     }
@@ -417,24 +417,24 @@ public class InteractionHandler : MonoBehaviour
             }
             else if (placeablePreview != null)
             {
-                if(placeablePreview.Place(tile.Coordinates.ToPosition() + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP), tile))
+                if(placeablePreview.Get().Place(tile.Coordinates.ToPosition() + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP), tile))
                 {
                     toCombine.Add(placeablePreview.gameObject);
-                    placeablePreview.OnBuilt += () =>
+                    placeablePreview.Get().OnWorkFinished += () =>
                     {
                         meshCombiner.searchOptions.parentGOs = toCombine.ToArray();
                         meshCombiner.CombineAll();
                     };
-                    placeablePreview.OnDestroyed += (go) =>
+                    placeablePreview.Get().OnDestroyed += (go) =>
                     {
-                        toCombine.Remove(go);
+                        toCombine.Remove(((Placeable)go).PhysicalRepresentation);
                         meshCombiner.searchOptions.parentGOs = toCombine.ToArray();
                         meshCombiner.CombineAll();
                     };
                     meshCombiner.searchOptions.parentGOs = toCombine.ToArray();
                     meshCombiner.CombineAll();
 
-                    string placeableName = placeablePreview.PlaceableName;
+                    string placeableName = placeablePreview.Get().PlaceableName;
                     placeablePreview.transform.SetParent(null);
                     placeablePreview = null;
                     hoverDisplay.transform.localScale = Vector3.one;

@@ -2,18 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Workable : MonoBehaviour
+[System.Serializable]
+public class Workable
 {
     [SerializeField]
     private int workStepsRequired = 1;
 
     private int workLeft = 0;
 
-    public bool CanBuild { get; private set; } = false;
+    public bool CanWork { get; private set; } = false;
     public bool WorkFinished { get; private set; } = false;
     public List<HexTile> TilesAssociated { private get; set; } = new List<HexTile>(); //Weird scenario where we do need to set this outside sometimes, but we want to use GetTilesAssociated()
-    public System.Action OnBuilt;
-    public System.Action<GameObject> OnDestroyed;
+    public System.Action OnWorkFinished;
+    public System.Action<Workable> OnDestroyed;
     public System.Func<bool> OnWorkTick;
     public bool Unreachable { get; private set; }
 
@@ -28,14 +29,19 @@ public class Workable : MonoBehaviour
         }
     }
 
+    public Workable()
+    {
+
+    }
+
+    public Workable(int workStepsRequired)
+    {
+        this.workStepsRequired = workStepsRequired;
+    }
+
     public void SetWorkSteps(int worksteps)
     {
         workStepsRequired = worksteps;
-        workLeft = workStepsRequired;
-    }
-
-    protected virtual void Awake()
-    {
         workLeft = workStepsRequired;
     }
 
@@ -109,27 +115,28 @@ public class Workable : MonoBehaviour
 
     public virtual void BeginWorking()
     {
-        if(workStepsRequired == 0)
+        workLeft = workStepsRequired;
+        if (workStepsRequired == 0)
         {
             WorkCompleted();
             return;
         }
 
         PeepleJobHandler.Instance.AddWorkable(this);
-        CanBuild = true;
+        CanWork = true;
     }
 
     public virtual void CancelWork()
     {
         if(!WorkFinished)
         {
-            Destroy(gameObject);
+            DestroySelf();
         }
     }
 
     protected virtual void WorkCompleted()
     {
-        OnBuilt?.Invoke();
+        OnWorkFinished?.Invoke();
 
         WorkFinished = true;
         PeepleJobHandler.Instance.RemoveWorkable(this);
@@ -162,7 +169,7 @@ public class Workable : MonoBehaviour
         currentWorkers.Remove(peeple);
         peeple.SetCurrentJob(null);
     }
-    protected virtual void OnDestroy()
+    protected virtual void DestroySelf()
     {
         List<HexTile> tiles = GetTilesAssociated();
         for (int i = 0; i < tiles.Count; i++)
@@ -174,6 +181,6 @@ public class Workable : MonoBehaviour
         {
             LeaveWork(currentWorkers[i]);
         }
-        OnDestroyed?.Invoke(gameObject);
+        OnDestroyed?.Invoke(this);
     }
 }

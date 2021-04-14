@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
 public class Placeable : Workable
 {
     [SerializeField]
@@ -10,8 +11,6 @@ public class Placeable : Workable
     private GameObject[] visualOptions;
     [SerializeField]
     private Transform visualsParent;
-    [SerializeField]
-    private HexCoordinates[] spaces;
     [SerializeField]
     private float rotationSnapping = 60;
     [SerializeField]
@@ -30,6 +29,8 @@ public class Placeable : Workable
     private GenerateHexagonHandler generateHexagonHandler;
     private HexTile lastHovered;
 
+    private GameObject associatedPhysicalGameObject;
+
     public string PlaceableName { get; set; }
 
     private int modHeight = 0;
@@ -39,7 +40,7 @@ public class Placeable : Workable
         set
         {
             modHeight = value;
-            transform.localPosition = new Vector3(0, ModifiedHeight * HexTile.HEIGHT_STEP);
+            associatedPhysicalGameObject.transform.localPosition = new Vector3(0, ModifiedHeight * HexTile.HEIGHT_STEP);
             if(lastHovered != null)
             {
                 Hover(lastHovered);
@@ -49,17 +50,20 @@ public class Placeable : Workable
     [SerializeField, HideInInspector]
     private List<GameObject> objectsToCheckTilesUnder = new List<GameObject>();
 
-    protected override void Awake()
+    public GameObject PhysicalRepresentation { get { return associatedPhysicalGameObject; } }
+
+    public virtual void Init(GameObject associatedPhysicalGameObject)
     {
-        base.Awake();
-        terrainHeightPreview = new GameObject(name + "_HeightPreview");
-        terrainHeightPreview.transform.SetParent(transform);
+        this.associatedPhysicalGameObject = associatedPhysicalGameObject;
+
+        terrainHeightPreview = new GameObject(associatedPhysicalGameObject.name + "_HeightPreview");
+        terrainHeightPreview.transform.SetParent(associatedPhysicalGameObject.transform);
         terrainHeightPreview.AddComponent<MeshRenderer>().sharedMaterial = terrainPreview;
         terrainHeightPreview.AddComponent<MeshFilter>();
 
-        generateHexagonHandler = gameObject.AddComponent<GenerateHexagonHandler>();
+        generateHexagonHandler = associatedPhysicalGameObject.gameObject.AddComponent<GenerateHexagonHandler>();
 
-        if(visualOptions.Length > 0)
+        if (visualOptions.Length > 0)
         {
             Setup();
         }
@@ -76,8 +80,8 @@ public class Placeable : Workable
 
         selectedOption = visualOptions[selectionType];
 
-        Destroy(previewDisplay);
-        previewDisplay = Instantiate(selectedOption, transform);
+        GameObject.Destroy(previewDisplay);
+        previewDisplay = GameObject.Instantiate(selectedOption, associatedPhysicalGameObject.transform);
         previewDisplay.SetActive(true);
         previewDisplay.transform.localPosition = selectedOption.transform.localPosition;
         previewDisplay.transform.localScale = selectedOption.transform.localScale;
@@ -130,7 +134,7 @@ public class Placeable : Workable
         {
             return false;
         }
-        transform.position = position + new Vector3(0, ModifiedHeight * HexTile.HEIGHT_STEP);
+        associatedPhysicalGameObject.transform.position = position + new Vector3(0, ModifiedHeight * HexTile.HEIGHT_STEP);
 
         homeTiles.Clear();
         homeTiles.Add(tilePlacedOn);
@@ -156,7 +160,7 @@ public class Placeable : Workable
             BeginWorking();
         });
 
-        Destroy(terrainHeightPreview);
+        GameObject.Destroy(terrainHeightPreview);
 
         return true;
     }
@@ -164,6 +168,7 @@ public class Placeable : Workable
     {
         previewDisplay.SetActive(false);
         visualOptions[selectionType].SetActive(true);
+
         base.WorkCompleted();
     }
 
@@ -205,7 +210,7 @@ public class Placeable : Workable
 
     public void Rotate(int amount)
     {
-        transform.Rotate(new Vector3(0, rotationSnapping * -amount));
+        associatedPhysicalGameObject.transform.Rotate(new Vector3(0, rotationSnapping * -amount));
     }
 
     public override List<HexTile> GetTilesAssociated()

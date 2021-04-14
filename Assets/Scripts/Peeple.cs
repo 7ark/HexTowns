@@ -282,7 +282,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             if (jobTileIndex >= allTiles.Count)
             {
                 //This would mean we've tried to go to all the tiles, are our mover said it can't get there. We're leaving this job.
-                Debug.LogError("Job " + currentJob.name + " isn't reachable!", currentJob.gameObject);
+                //Debug.LogError("Job " + currentJob.name + " isn't reachable!", currentJob.gameObject);
                 currentJob.MarkAsUnreachable();
                 currentJob.LeaveWork(this);
                 onComplete(false);
@@ -292,7 +292,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             {
                 //Try to move to the job site location.
                 Job.SetTileWorking(allTiles[jobTileIndex]);
-                Debug.Log("Telling job " + Job.name + " that im gonna work on a tile " + allTiles[jobTileIndex].Coordinates);
+                //Debug.Log("Telling job " + Job.name + " that im gonna work on a tile " + allTiles[jobTileIndex].Coordinates);
                 waitingForGoalResults = true;
                 Movement.SetGoal(allTiles[jobTileIndex], arrivedComplete: (success) =>
                 {
@@ -309,7 +309,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                         else
                         {
                             Job.StopWorkingTile(allTiles[jobTileIndex]);
-                            Debug.Log("Telling job " + Job.name + " that im NOT gonna work on a tile " + allTiles[jobTileIndex].Coordinates);
+                            //Debug.Log("Telling job " + Job.name + " that im NOT gonna work on a tile " + allTiles[jobTileIndex].Coordinates);
 
                             //Otherwise we're gonna try a different work site location next tick
                             jobTileIndex++;

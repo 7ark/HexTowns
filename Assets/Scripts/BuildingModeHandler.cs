@@ -32,7 +32,7 @@ public class BuildingModeHandler : MonoBehaviour
     [SerializeField]
     private HexagonBuildingBlock hexagonPrefab;
     [SerializeField]
-    private Placeable placeablePrefab;
+    private PlaceableGO placeablePrefab;
     [SerializeField]
     private Transform prefabParent;
     [SerializeField]
@@ -150,7 +150,7 @@ public class BuildingModeHandler : MonoBehaviour
 
         name = "DefaultTestingBuilding" + tempBuildingCount++;
 
-        Placeable building = Instantiate(placeablePrefab, prefabParent);
+        PlaceableGO building = Instantiate(placeablePrefab, prefabParent);
         GameObject combined = new GameObject("CombinedBuildingShape");
         Vector3 averaged = Vector3.zero;
         for (int i = 0; i < allBuildingBlocks.Count; i++)
@@ -167,7 +167,7 @@ public class BuildingModeHandler : MonoBehaviour
             Destroy(copy);
             copyGO.transform.position -= YOffset;
             copyGO.transform.SetParent(combined.transform, true);
-            building.AddObjectBase(copyGO);
+            building.Get().AddObjectBase(copyGO);
         }
         for (int i = 0; i < allPlacedItems.Count; i++)
         {
@@ -176,10 +176,10 @@ public class BuildingModeHandler : MonoBehaviour
             item.transform.SetParent(combined.transform, true);
         }
         combined.transform.localPosition = Vector3.zero;
-        building.SetupFromScript(new GameObject[] { combined });
+        building.Get().SetupFromScript(new GameObject[] { combined });
         combined.transform.localPosition = Vector3.zero;
-        building.SetTotalWorkableSlots(Mathf.Max(1, allBuildingBlocks.Count / 5));
-        building.SetWorkSteps(allBuildingBlocks.Count);
+        building.Get().SetTotalWorkableSlots(Mathf.Max(1, allBuildingBlocks.Count / 5));
+        building.Get().SetWorkSteps(allBuildingBlocks.Count);
         building.transform.position = new Vector3(0, 500) + YOffset;
         allBuildingBlocks.Clear();
 

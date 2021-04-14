@@ -75,10 +75,10 @@ public class TerrainModificationHandler : MonoBehaviour
             }
             if (existingModification == null)
             {
-                Workable workable = newObj.AddComponent<Workable>();
+                Workable workable = new Workable();// newObj.AddComponent<Workable>();
                 workable.TilesAssociated = new List<HexTile>(areaTilesList);
                 workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
-                workable.OnBuilt += () =>
+                workable.OnWorkFinished += () =>
                 {
                     for (int i = 0; i < areaTilesList.Count; i++)
                     {
