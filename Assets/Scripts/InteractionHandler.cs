@@ -300,7 +300,7 @@ public class InteractionHandler : MonoBehaviour
 
                 if(potentialSelections[potentialSelections.Count - 2] != potentialSelections[potentialSelections.Count - 1])
                 {
-                    HexagonPreviewArea.DisplayArea(multiSelectPreview, HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500);
+                    HexagonPreviewArea.DisplayArea(multiSelectPreview, HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500, badShape);
 
                     //HexagonPreviewArea.AddAreaToDisplay(HexagonSelectionHandler.Instance.GetBorderBetweenTiles(potentialSelections.ToArray()), multiSelectCanChangeHeight ? potentialSelections[0].Height + multiselectHeightMod : -500, multiSelectPreview, null);
 
