@@ -18,7 +18,7 @@ public static class HexagonPreviewArea
         public HexBufferData[] renderData;
         public ComputeBuffer dataBuffer;
         public Material matInstance;
-        public Vector3 center;
+        public Bounds bounds;
     }
     private static HashSet<PreviewRenderData> displays = new HashSet<PreviewRenderData>();
 
@@ -53,7 +53,7 @@ public static class HexagonPreviewArea
             if(currDisplay.renderData != null && currDisplay.renderData.Length > 0)
             {
                 //Draw that shit
-                Bounds bound = new Bounds(currDisplay.center, new Vector3(500, 100, 500));
+                Bounds bound = currDisplay.bounds;
 #if UNITY_EDITOR
                 foreach (var svObj in UnityEditor.SceneView.sceneViews)
                 {
@@ -75,18 +75,22 @@ public static class HexagonPreviewArea
 
     public static PreviewRenderData DisplayArea(PreviewRenderData uniqueReference, List<HexTile> areaTiles, int height, bool useRedDisplay = false)
     {
-        uniqueReference.center = Vector3.zero;
+        Vector3 center = Vector3.zero;
         for (int i = 0; i < areaTiles.Count; i++)
         {
-            uniqueReference.center += areaTiles[i].Position;
+            center += areaTiles[i].Position;
         }
-        uniqueReference.center /= areaTiles.Count;
+        center /= areaTiles.Count;
 
         uniqueReference.dataBuffer = new ComputeBuffer(areaTiles.Count,
             UnsafeUtility.SizeOf<HexBufferData>());
 
         uniqueReference.renderData = new HexBufferData[areaTiles.Count];
 
+        float left = float.MaxValue;
+        float right = float.MinValue;
+        float bottom = float.MaxValue;
+        float top = float.MinValue;
         for (int i = 0; i < uniqueReference.renderData.Length; i++)
         {
             HexTile cell = areaTiles[i];
@@ -112,8 +116,27 @@ public static class HexagonPreviewArea
                 data.hexCoordX = cell.Coordinates.X;
                 data.hexCoordZ = cell.Coordinates.Y;
                 uniqueReference.renderData[i] = data;
+
+                if(pos.x < left)
+                {
+                    left = pos.x;
+                }
+                if(pos.x > right)
+                {
+                    right = pos.x;
+                }
+                if(pos.z < bottom)
+                {
+                    bottom = pos.z;
+                }
+                if(pos.z > top)
+                {
+                    top = pos.z;
+                }
             }
         }
+
+        uniqueReference.bounds = new Bounds(center, new Vector3(right - left, 100, top - bottom));
 
         uniqueReference.dataBuffer.SetData(uniqueReference.renderData);
         uniqueReference.matInstance.SetBuffer(DataBuffer, uniqueReference.dataBuffer);

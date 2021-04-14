@@ -10,7 +10,6 @@ public class TerrainModificationHandler : MonoBehaviour
     [SerializeField]
     private GameObject terrainModPreviewPrefab;
 
-    private GenerateHexagonHandler generateHexagonHandler;
     private Dictionary<HexagonPreviewArea.PreviewRenderData, HexTile[]> objToAssociatedTiles = new Dictionary<HexagonPreviewArea.PreviewRenderData, HexTile[]>();
     private Dictionary<HexagonPreviewArea.PreviewRenderData, int> objToAssociatedHeight = new Dictionary<HexagonPreviewArea.PreviewRenderData, int>();
     private Dictionary<HexagonPreviewArea.PreviewRenderData, System.Action> objToAssociatedCompleteAction = new Dictionary<HexagonPreviewArea.PreviewRenderData, System.Action>();
@@ -23,7 +22,6 @@ public class TerrainModificationHandler : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-        generateHexagonHandler = gameObject.AddComponent<GenerateHexagonHandler>();
     }
 
     public void RequestTerrainModification(HexTile[] areaTiles, int height, HexagonPreviewArea.PreviewRenderData existingModification = null, System.Action onComplete = null)
