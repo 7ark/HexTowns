@@ -54,20 +54,25 @@ public static class HexagonPreviewArea
             {
                 //Draw that shit
                 Bounds bound = currDisplay.bounds;
+                bool drawInGameView = true;
 #if UNITY_EDITOR
                 foreach (var svObj in UnityEditor.SceneView.sceneViews)
                 {
                     UnityEditor.SceneView sv = svObj as UnityEditor.SceneView;
                     if (sv != null)
                     {
+                        if (sv == UnityEditor.SceneView.currentDrawingSceneView)
+                            drawInGameView = false;
                         Graphics.DrawMeshInstancedProcedural(meshBasis, 0, currDisplay.matInstance, bound, currDisplay.renderData.Length, null,
                             ShadowCastingMode.On, true, 6, sv.camera);
                     }
                 }
 #endif
-
-                Graphics.DrawMeshInstancedProcedural(meshBasis, 0, currDisplay.matInstance, bound, currDisplay.renderData.Length, null,
-                    ShadowCastingMode.On, true, 6, drawCamera);
+                if(drawInGameView)
+                {
+                    Graphics.DrawMeshInstancedProcedural(meshBasis, 0, currDisplay.matInstance, bound, currDisplay.renderData.Length, null,
+                        ShadowCastingMode.On, true, 6, drawCamera);
+                }
             }
 
         }

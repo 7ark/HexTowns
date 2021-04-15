@@ -579,20 +579,25 @@ public class InstancedEnvironmentalObject
             for (int i = 0; i < submeshCount; i++)
             {
                 Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
+                bool drawInGameView = true;
 #if UNITY_EDITOR
                 foreach (var svObj in UnityEditor.SceneView.sceneViews)
                 {
                     UnityEditor.SceneView sv = svObj as UnityEditor.SceneView;
                     if (sv != null)
                     {
+                        if (sv == UnityEditor.SceneView.currentDrawingSceneView)
+                            drawInGameView = false;
                         Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
                             ShadowCastingMode.On, true, 0, sv.camera);
                     }
                 }
 #endif
-
-                Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
-                    ShadowCastingMode.On, true, 0, drawCamera);
+                if(drawInGameView)
+                {
+                    Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
+                        ShadowCastingMode.On, true, 0, drawCamera);
+                }
             }
 
         }

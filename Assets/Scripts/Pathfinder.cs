@@ -36,6 +36,8 @@ public class Pathfinder : MonoBehaviour
 
     public static Pathfinder Instance;
     private Queue<QueuedPathData> queuedData = new Queue<QueuedPathData>();
+    private List<double> lastCost = new List<double>();
+    private List<HexTile> lastTiles = new List<HexTile>();
 
     private void Awake()
     {
@@ -62,7 +64,9 @@ public class Pathfinder : MonoBehaviour
     }
     public HexTile[] RunPathing(HexTile to, HexTile from)
     {
-        if(to == from)
+        lastCost.Clear();
+        lastTiles.Clear();
+        if (to == from)
         {
             return new HexTile[] { to };
         }
@@ -190,29 +194,37 @@ public class Pathfinder : MonoBehaviour
         return resultingPath.ToArray();
     }
 
-    private double Cost(HexTile from, HexTile to) {
+    private void OnDrawGizmos()
+    {
+        for (int i = 0; i < lastCost.Count; i++)
+        {
+            UnityEditor.Handles.Label(lastTiles[i].Position + new Vector3(0, lastTiles[i].Height * HexTile.HEIGHT_STEP), lastCost[i].ToString("000"));
+        }
+    }
+
+    private double Cost(HexTile fromTile, HexTile toTile) {
         double cost = 0;
-        if (to.CantWalkThrough) {
+        if (toTile.CantWalkThrough) {
             return double.MaxValue;
         }
-        if(to.WorkArea)
+        if(toTile.WorkArea)
         {
             cost += 10000;
         }
 
-        if(to.BuildingOnTile != null || from.BuildingOnTile != null)
+        if(toTile.BuildingOnTile != null || fromTile.BuildingOnTile != null)
         {
-            if (to.BuildingOnTile != null && from.BuildingOnTile == null)
+            if (toTile.BuildingOnTile != null && fromTile.BuildingOnTile == null)
             {
-                WallStructureType wallType = to.BuildingOnTile.GetWallBetweenTiles(from, to);
+                WallStructureType wallType = toTile.BuildingOnTile.GetWallBetweenTiles(fromTile, toTile);
                 if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
                 {
                     cost += 100000;
                 }
             }
-            else if (to.BuildingOnTile == null && from.BuildingOnTile != null)
+            else if (toTile.BuildingOnTile == null && fromTile.BuildingOnTile != null)
             {
-                WallStructureType wallType = from.BuildingOnTile.GetWallBetweenTiles(to, from);
+                WallStructureType wallType = fromTile.BuildingOnTile.GetWallBetweenTiles(toTile, fromTile);
                 if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
                 {
                     cost += 100000;
@@ -222,13 +234,13 @@ public class Pathfinder : MonoBehaviour
         else
         {
             //TODO Tile Biome Data?
-            if (from.Height > 0 && to.Height > 0)
+            if (fromTile.Height > 0 && toTile.Height > 0)
             {
                 //cost of land travel
-                if (to.Height > from.Height)
+                if (toTile.Height > fromTile.Height)
                 {
                     //uphill scalar
-                    cost += (to.Height - from.Height) * 10;
+                    cost += (toTile.Height - fromTile.Height) * 10;
                 }
                 else
                 {
@@ -236,25 +248,28 @@ public class Pathfinder : MonoBehaviour
                     cost += 10;
                 }
             }
-            else if (from.Height < 0 && to.Height < 0)
+            else if (fromTile.Height < 0 && toTile.Height < 0)
             {
                 //cost of water travel
                 cost += 10;
             }
             else
             {
-                if (from.Height >= 0 && to.Height < 0)
+                if (fromTile.Height >= 0 && toTile.Height < 0)
                 {
                     //cost of getting on a boat
                     cost += 1000;
                 }
-                else if (from.Height < 0 && to.Height >= 0)
+                else if (fromTile.Height < 0 && toTile.Height >= 0)
                 {
                     //cost of getting off boat
                     cost += 500;
                 }
             }
         }
+
+        lastCost.Add(cost);
+        lastTiles.Add(toTile);
 
         return cost;
     }
