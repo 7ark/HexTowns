@@ -208,6 +208,11 @@ public class Pathfinder : MonoBehaviour
             if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window) {
                 return false;
             }
+
+            if(to.BuildingOnTile != null && to.BuildingOnTile.DoesTileHaveWorkStation(to))
+            {
+                return false;
+            }
         }
 
         return true;

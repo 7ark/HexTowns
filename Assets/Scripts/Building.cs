@@ -6,15 +6,23 @@ using UnityEngine;
 public class BuildingHexagon
 {
     [SerializeField]
-    public GameObject gameObjectReference;
-    [SerializeField]
     public WallStructureType[] walls;
 
-    int rotated = 0;
+    [SerializeField]
+    private bool hasWorkStation = false;
+    public bool HasWorkStation { get { return hasWorkStation; } }
+
+    [SerializeField]
+    private int rotated = 0;
 
     public void Rotate(int amount)
     {
         rotated += amount;
+    }
+
+    public void AddWorkStation()
+    {
+        hasWorkStation = true;
     }
 
     private int GetWallIndex(int xDiff, int yDiff)
@@ -75,10 +83,6 @@ public class BuildingHexagon
         return walls[wallIndex];
     }
 }
-public class BuildingWall
-{
-
-}
 
 public class Building
 {
@@ -102,6 +106,16 @@ public class Building
         tileToPiece.Add(tile, hex);
 
         tile.BuildingOnTile = this;
+    }
+
+    public bool DoesTileHaveWorkStation(HexTile tile)
+    {
+        if(tiles.Contains(tile))
+        {
+            return tileToPiece[tile].HasWorkStation;
+        }
+
+        return false;
     }
 
     public WallStructureType GetWallBetweenTiles(HexTile from, HexTile to)

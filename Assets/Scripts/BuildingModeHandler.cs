@@ -167,7 +167,10 @@ public class BuildingModeHandler : MonoBehaviour
             copy.SetupForPrefab();
             GameObject copyGO = copy.gameObject;
             BuildingHexagon hex = copy.GenerateHexagon();
-            hex.gameObjectReference = copyGO;
+            if(placeableItemLocations.ContainsKey(copy.Coordinates))
+            {
+                hex.AddWorkStation();
+            }
             Destroy(copy);
             copyGO.transform.position -= YOffset;
             copyGO.transform.SetParent(combined.transform, true);
