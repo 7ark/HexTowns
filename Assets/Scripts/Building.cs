@@ -10,42 +10,69 @@ public class BuildingHexagon
     [SerializeField]
     public WallStructureType[] walls;
 
+    int rotated = 0;
+
+    public void Rotate(int amount)
+    {
+        rotated += amount;
+    }
+
+    private int GetWallIndex(int xDiff, int yDiff)
+    {
+        if (yDiff == 0)
+        {
+            if (xDiff == 1)
+            {
+                return 0;
+            }
+            else
+            {
+                return 3;
+            }
+        }
+        if (xDiff == 0)
+        {
+            if (yDiff == 1)
+            {
+                return 5;
+            }
+            else
+            {
+                return 2;
+            }
+        }
+
+        if (xDiff == 1 && yDiff == -1)
+        {
+            return 1;
+        }
+        else
+        {
+            return 4;
+        }
+    }
+
     public WallStructureType GetWallInDirection(HexCoordinates from, HexCoordinates to)
     {
         int xDiff = from.X - to.X;
         int yDiff = from.Y - to.Y;
 
-        if(yDiff == 0)
+        int wallIndex = GetWallIndex(xDiff, yDiff);
+
+        if(rotated != 0)
         {
-            if(xDiff == 1)
+            wallIndex += rotated;
+            if(wallIndex >= 6)
             {
-                return walls[0];
+                wallIndex -= 6;
             }
-            else
+            if(wallIndex < 0)
             {
-                return walls[3];
-            }
-        }
-        if(xDiff == 0)
-        {
-            if(yDiff == 1)
-            {
-                return walls[5];
-            }
-            else
-            {
-                return walls[2];
+                wallIndex += 6;
             }
         }
 
-        if(xDiff == 1 && yDiff == -1)
-        {
-            return walls[1];
-        }
-        else
-        {
-            return walls[4];
-        }
+        return walls[wallIndex];
     }
 }
 public class BuildingWall

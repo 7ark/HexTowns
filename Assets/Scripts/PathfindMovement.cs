@@ -1,6 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class PathfindMovement : MonoBehaviour
 {
@@ -15,6 +20,8 @@ public class PathfindMovement : MonoBehaviour
     public System.Action<bool> currentArrivedAction;
     public bool shouldDoArrivedActionEventIfCancelled = false;
 
+    Dictionary<HexTile, Pathfinder.HexTileAStarData> debugTileData;
+    
     public HexTile GetTileOn()
     {
         return HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(transform.position));
@@ -42,11 +49,13 @@ public class PathfindMovement : MonoBehaviour
             shouldDoArrivedActionEventIfCancelled = alwaysDoActionEvent;
             IsMoving = true;
             currentArrivedAction = arrivedComplete;
-            HexTile currentTile = GetTileOn();
+            HexTile current = GetTileOn();
 
             Debug.Log(name + " is trying to find a path to a tile");
-            Pathfinder.Instance.FindPathToTile(goal, currentTile, (pathTiles) =>
+            Pathfinder.Instance.FindPathToTile(goal, current, (pathTiles, coordData) => 
             {
+                debugTileData = coordData;
+                Debug.Log($"Coord Data Count: {coordData.Count}");
                 iTween.Stop(gameObject);
                 if (pathTiles.Length == 0)
                 {
@@ -60,13 +69,9 @@ public class PathfindMovement : MonoBehaviour
                 else
                 {
                     Debug.Log(name + " found the path to the tile. Beginning movement.");
-                    List<Vector3> positionPath = new List<Vector3>();
-                    positionPath.Add(transform.position);
-                    for (int i = 0; i < pathTiles.Length; i++)
-                    {
-                        HexTile tile = pathTiles[i];
-                        positionPath.Add(tile.Position + new Vector3(0, Mathf.Max(tile.Height * HexTile.HEIGHT_STEP, HexTile.WATER_LEVEL)));
-                    }
+                    List<Vector3> positionPath = new List<Vector3> {transform.position};
+                    positionPath.AddRange(pathTiles.Select(tile => 
+                        tile.Position + new Vector3(0, Mathf.Max(tile.Height * HexTile.HEIGHT_STEP, HexTile.WATER_LEVEL))));
 
                     if(positionPath.Count <= 1)
                     {
@@ -88,24 +93,35 @@ public class PathfindMovement : MonoBehaviour
         currentArrivedAction = null;
     }
 
-    private void Update()
-    {
-        //if(path != null)
-        //{
-        //    timer -= Time.deltaTime;
-        //    if(timer <= 0)
-        //    {
-        //        HexTile curr = path[0];
-        //        path.RemoveAt(0);
-        //        transform.position = curr.Position + new Vector3(0, curr.Height * HexTile.HEIGHT_STEP);
-        //
-        //        timer = movementDelay;
-        //
-        //        if(path.Count <= 0)
-        //        {
-        //            path = null;
-        //        }
-        //    }
-        //}
+#if UNITY_EDITOR
+    private void OnDrawGizmosSelected() {
+        if (debugTileData == null || debugTileData.Count > 1000) 
+            return;
+        foreach (var tileData in debugTileData) {
+            var tile = tileData.Key;
+            Handles.Label(tile.Position + Vector3.up * tile.Height * .1f, $"{tileData.Value.F:F1}");
+        }
     }
+#endif
+
+    // private void Update()
+    // {
+    //     if(path != null)
+    //     {
+    //         timer -= Time.deltaTime;
+    //         if(timer <= 0)
+    //         {
+    //             HexTile curr = path[0];
+    //             path.RemoveAt(0);
+    //             transform.position = curr.Position + new Vector3(0, curr.Height * HexTile.HEIGHT_STEP);
+    //     
+    //             timer = movementDelay;
+    //     
+    //             if(path.Count <= 0)
+    //             {
+    //                 path = null;
+    //             }
+    //         }
+    //     }
+    // }
 }

@@ -9,7 +9,7 @@ using UnityEngine;
 
 public class Pathfinder : MonoBehaviour
 {
-    private struct HexTileAStarData : IEquatable<HexTileAStarData>
+    public struct HexTileAStarData : IEquatable<HexTileAStarData>
     {
         public HexTile Tile;
         public double F => G + H;
@@ -28,7 +28,7 @@ public class Pathfinder : MonoBehaviour
     {
         public HexTile to;
         public HexTile from;
-        public System.Action<HexTile[]> onComplete;
+        public System.Action<HexTile[], Dictionary<HexTile, HexTileAStarData>> onComplete;
     }
 
     [SerializeField]
@@ -42,7 +42,7 @@ public class Pathfinder : MonoBehaviour
         Instance = this;
     }
 
-    public void FindPathToTile(HexTile to, HexTile from, System.Action<HexTile[]> onComplete)
+    public void FindPathToTile(HexTile to, HexTile from, System.Action<HexTile[], Dictionary<HexTile, HexTileAStarData>> onComplete)
     {
         queuedData.Enqueue(new QueuedPathData()
         {
@@ -57,11 +57,14 @@ public class Pathfinder : MonoBehaviour
         if(queuedData.Count > 0)
         {
             var pathData = queuedData.Dequeue();
-            pathData.onComplete(RunPathing(pathData.to, pathData.from));
+            var path = RunPathing(pathData.to, pathData.from, out var coordData);
+            pathData.onComplete(path, coordData);
         }
     }
-    public HexTile[] RunPathing(HexTile to, HexTile from)
+    public HexTile[] RunPathing(HexTile to, HexTile from, out Dictionary<HexTile, HexTileAStarData> coordsToData)
     {
+        coordsToData = new Dictionary<HexTile, HexTileAStarData>();
+
         if(to == from)
         {
             return new HexTile[] { to };
@@ -91,7 +94,6 @@ public class Pathfinder : MonoBehaviour
 
         HashSet<HexTileAStarData> open = new HashSet<HexTileAStarData>();
         HashSet<HexTileAStarData> closed = new HashSet<HexTileAStarData>();
-        Dictionary<HexTile, HexTileAStarData> coordsToData = new Dictionary<HexTile, HexTileAStarData>();
 
         open.Add(new HexTileAStarData()
         {
@@ -132,10 +134,10 @@ public class Pathfinder : MonoBehaviour
                 return new HexTile[] { };
             }
 
-            coordsToData.Add(current.Tile, current);
+            coordsToData[current.Tile] = current;
             open.Remove(current);
             closed.Add(current);
-
+            
             if (current.Tile == to)
             {
                 break;
@@ -148,7 +150,8 @@ public class Pathfinder : MonoBehaviour
             {
                 HexTileAStarData neighborData = neighbors[i];
                 
-                if (closed.Contains(neighborData))
+                if (closed.Contains(neighborData)
+                    || !IsNavigable(current.Tile, neighborData.Tile))
                 {
                     continue;
                 }
@@ -190,69 +193,43 @@ public class Pathfinder : MonoBehaviour
         return resultingPath.ToArray();
     }
 
-    private double Cost(HexTile fromTile, HexTile toTile) {
-        double cost = 0;
-        if (toTile.CantWalkThrough) {
-            return double.MaxValue;
-        }
-        if(toTile.WorkArea)
-        {
-            cost += 10000;
+    private bool IsNavigable(HexTile from, HexTile to) {
+        if (to.CantWalkThrough || to.WorkArea)
+            return false;
+
+        if (to.Height > from.Height + 20) { //too sheer of a cliff
+            return false;
         }
 
-        if(toTile.BuildingOnTile != null || fromTile.BuildingOnTile != null)
-        {
-            if (toTile.BuildingOnTile != null && fromTile.BuildingOnTile == null)
-            {
-                WallStructureType wallType = toTile.BuildingOnTile.GetWallBetweenTiles(fromTile, toTile);
-                if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
-                {
-                    cost += 100000;
-                }
-            }
-            else if (toTile.BuildingOnTile == null && fromTile.BuildingOnTile != null)
-            {
-                WallStructureType wallType = fromTile.BuildingOnTile.GetWallBetweenTiles(toTile, fromTile);
-                if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
-                {
-                    cost += 100000;
-                }
+        if (to.BuildingOnTile != null || from.BuildingOnTile != null) {
+            var wallType = to.BuildingOnTile?.GetWallBetweenTiles(from, to)
+                        ?? from.BuildingOnTile.GetWallBetweenTiles(to, from);
+            
+            if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window) {
+                return false;
             }
         }
-        else
-        {
-            //TODO Tile Biome Data?
-            if (fromTile.Height > 0 && toTile.Height > 0)
-            {
-                //cost of land travel
-                if (toTile.Height > fromTile.Height)
-                {
-                    //uphill scalar
-                    cost += (toTile.Height - fromTile.Height) * 10;
-                }
-                else
-                {
-                    //even land/downhill
-                    cost += 10;
-                }
+
+        return true;
+    }
+
+    private double Cost(HexTile from, HexTile to) {
+        double cost = 0;
+
+        //TODO Tile Biome Data?
+        if (from.Height > 0 && to.Height > 0) { //cost of land travel
+            if (to.Height > from.Height) { //up hill
+                cost += 1 + (to.Height - from.Height) * HexTile.HEIGHT_STEP;
+            } else { //even land/downhill
+                cost += 1;
             }
-            else if (fromTile.Height < 0 && toTile.Height < 0)
-            {
-                //cost of water travel
-                cost += 10;
-            }
-            else
-            {
-                if (fromTile.Height >= 0 && toTile.Height < 0)
-                {
-                    //cost of getting on a boat
-                    cost += 1000;
-                }
-                else if (fromTile.Height < 0 && toTile.Height >= 0)
-                {
-                    //cost of getting off boat
-                    cost += 500;
-                }
+        } else if (from.Height < 0 && to.Height < 0) { //cost of water travel
+            cost += 1;
+        } else {
+            if (from.Height >= 0 && to.Height < 0) { //cost of getting on a boat
+                cost += 100;
+            } else if (from.Height < 0 && to.Height >= 0) { //cost of getting off boat
+                cost += 5;
             }
         }
 
@@ -268,11 +245,7 @@ public class Pathfinder : MonoBehaviour
         {
             return double.MaxValue;
         }
-        if(two.WorkArea)
-        {
-            extra += 10000;
-        }
 
-        return Vector3.Distance(onePos, twoPos) * HexTile.OUTER_RADIUS * 10 + extra;
+        return Vector3.Distance(onePos, twoPos) * HexTile.OUTER_RADIUS + extra;
     }
 }

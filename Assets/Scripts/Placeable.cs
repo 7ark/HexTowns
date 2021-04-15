@@ -29,6 +29,7 @@ public class Placeable : Workable
     private HexagonPreviewArea.PreviewRenderData previewTerrain = null;
 
     private GameObject associatedPhysicalGameObject;
+    private int rotated = 0;
 
     public string PlaceableName { get; set; }
 
@@ -181,6 +182,7 @@ public class Placeable : Workable
         {
             HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));
 
+            hexagonObjectData[i].Rotate(rotated);
             building.AddPiece(tile, hexagonObjectData[i]);
         }
 
@@ -226,6 +228,11 @@ public class Placeable : Workable
     public void Rotate(int amount)
     {
         associatedPhysicalGameObject.transform.Rotate(new Vector3(0, rotationSnapping * -amount));
+        rotated += amount;
+        if(rotated >= 6)
+        {
+            rotated = 0;
+        }
     }
 
     public override List<HexTile> GetTilesAssociated()
