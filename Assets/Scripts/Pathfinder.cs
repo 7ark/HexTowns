@@ -36,8 +36,6 @@ public class Pathfinder : MonoBehaviour
 
     public static Pathfinder Instance;
     private Queue<QueuedPathData> queuedData = new Queue<QueuedPathData>();
-    private List<double> lastCost = new List<double>();
-    private List<HexTile> lastTiles = new List<HexTile>();
 
     private void Awake()
     {
@@ -64,9 +62,7 @@ public class Pathfinder : MonoBehaviour
     }
     public HexTile[] RunPathing(HexTile to, HexTile from)
     {
-        lastCost.Clear();
-        lastTiles.Clear();
-        if (to == from)
+        if(to == from)
         {
             return new HexTile[] { to };
         }
@@ -194,14 +190,6 @@ public class Pathfinder : MonoBehaviour
         return resultingPath.ToArray();
     }
 
-    private void OnDrawGizmos()
-    {
-        for (int i = 0; i < lastCost.Count; i++)
-        {
-            UnityEditor.Handles.Label(lastTiles[i].Position + new Vector3(0, lastTiles[i].Height * HexTile.HEIGHT_STEP), lastCost[i].ToString("000"));
-        }
-    }
-
     private double Cost(HexTile fromTile, HexTile toTile) {
         double cost = 0;
         if (toTile.CantWalkThrough) {
@@ -267,9 +255,6 @@ public class Pathfinder : MonoBehaviour
                 }
             }
         }
-
-        lastCost.Add(cost);
-        lastTiles.Add(toTile);
 
         return cost;
     }
