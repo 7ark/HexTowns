@@ -429,7 +429,7 @@ public class InteractionHandler : MonoBehaviour
                 if(placeablePreview.Get().Place(tile.Coordinates.ToPosition() + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP), tile))
                 {
                     toCombine.Add(placeablePreview.gameObject);
-                    placeablePreview.Get().OnWorkFinished += () =>
+                    placeablePreview.Get().OnWorkFinished += (success) =>
                     {
                         meshCombiner.searchOptions.parentGOs = toCombine.ToArray();
                         meshCombiner.CombineAll();

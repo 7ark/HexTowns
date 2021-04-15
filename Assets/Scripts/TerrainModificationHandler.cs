@@ -73,12 +73,15 @@ public class TerrainModificationHandler : MonoBehaviour
             Workable workable = new Workable();// newObj.AddComponent<Workable>();
             workable.TilesAssociated = new List<HexTile>(areaTilesList);
             workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
-            workable.OnWorkFinished += () =>
+            workable.OnWorkFinished += (success) =>
             {
                 for (int i = 0; i < areaTilesList.Count; i++)
                 {
                     areaTilesList[i].WorkArea = false;
+                    areaTilesList[i].HeightLocked = false;
                 }
+
+                HexagonPreviewArea.StopDisplay(newObj);
             };
             workable.SetTotalWorkableSlots(Mathf.Max(1, areaTilesList.Count / 5));
             workablesWaitingToStart.Add(workable, areaTilesList.ToArray());
@@ -89,6 +92,7 @@ public class TerrainModificationHandler : MonoBehaviour
                 for (int j = 0; j < tileWorkables.Length; j++)
                 {
                     tileWorkables[j].BeginWorking();
+                    areaTilesList[i].AddWorkableToTile(tileWorkables[j], areaTilesList[i].Height);
                 }
             }
         }

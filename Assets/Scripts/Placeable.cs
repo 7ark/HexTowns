@@ -163,7 +163,14 @@ public class Placeable : Workable
 
         return true;
     }
-    protected override void WorkCompleted()
+
+    public override void CancelWork()
+    {
+        base.CancelWork();
+        DestroySelf();
+    }
+
+    protected override void WorkCompleted(bool completedSuccessfully)
     {
         previewDisplay.SetActive(false);
         visualOptions[selectionType].SetActive(true);
@@ -177,7 +184,7 @@ public class Placeable : Workable
             building.AddPiece(tile, hexagonObjectData[i]);
         }
 
-        base.WorkCompleted();
+        base.WorkCompleted(completedSuccessfully);
     }
 
     public bool CanPlaceHere(HexTile tilePlacedOn)

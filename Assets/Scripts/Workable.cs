@@ -13,7 +13,7 @@ public class Workable
     public bool CanWork { get; private set; } = false;
     public bool WorkFinished { get; private set; } = false;
     public List<HexTile> TilesAssociated { private get; set; } = new List<HexTile>(); //Weird scenario where we do need to set this outside sometimes, but we want to use GetTilesAssociated()
-    public System.Action OnWorkFinished;
+    public System.Action<bool> OnWorkFinished;
     public System.Action<Workable> OnDestroyed;
     public System.Func<bool> OnWorkTick;
     public bool Unreachable { get; private set; }
@@ -57,7 +57,7 @@ public class Workable
             workLeft--;
             if (workLeft <= 0)
             {
-                WorkCompleted();
+                WorkCompleted(true);
                 return true;
             }
 
@@ -68,7 +68,7 @@ public class Workable
 
         if(done)
         {
-            WorkCompleted();
+            WorkCompleted(true);
         }
 
         return done;
@@ -118,7 +118,7 @@ public class Workable
         workLeft = workStepsRequired;
         if (workStepsRequired == 0)
         {
-            WorkCompleted();
+            WorkCompleted(true);
             return;
         }
 
@@ -130,13 +130,13 @@ public class Workable
     {
         if(!WorkFinished)
         {
-            DestroySelf();
+            WorkCompleted(false);
         }
     }
 
-    protected virtual void WorkCompleted()
+    protected virtual void WorkCompleted(bool completedSuccessfully)
     {
-        OnWorkFinished?.Invoke();
+        OnWorkFinished?.Invoke(completedSuccessfully);
 
         WorkFinished = true;
         PeepleJobHandler.Instance.RemoveWorkable(this);

@@ -12,9 +12,14 @@ public class FlagPlaceable : Placeable
 
     public override int ModifiedHeight { get => base.ModifiedHeight; set => base.ModifiedHeight = 0; }
 
-    protected override void WorkCompleted()
+    protected override void WorkCompleted(bool completedSuccessfully)
     {
-        base.WorkCompleted();
+        base.WorkCompleted(completedSuccessfully);
+
+        if(!completedSuccessfully)
+        {
+            return;
+        }
 
         HexTile[] tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(homeTiles[0], 4);
 

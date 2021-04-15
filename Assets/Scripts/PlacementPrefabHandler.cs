@@ -178,6 +178,7 @@ public class PlacementPrefabHandler : MonoBehaviour
                     for (int j = 0; j < workableObjects.Length; j++)
                     {
                         workableObjects[j].BeginWorking();
+                        resultTiles[i].AddWorkableToTile(workableObjects[j], resultTiles[i].Height);
                     }
                 }
             }

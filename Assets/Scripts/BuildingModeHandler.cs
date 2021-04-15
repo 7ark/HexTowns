@@ -204,6 +204,7 @@ public class BuildingModeHandler : MonoBehaviour
         }
         resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
         placementHandler.AddNewPlaceable(name, building, totalCost.ToArray());
+        placeableItemLocations.Clear();
     }
 
     public void ClearBuilding()
@@ -219,6 +220,15 @@ public class BuildingModeHandler : MonoBehaviour
             resourceCostTotal.Add(ResourceHandler.Instance.AllResources[i], 0);
         }
         resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
+
+        foreach(var obj in placeableItemLocations.Values)
+        {
+            for (int i = 0; i < obj.Count; i++)
+            {
+                Destroy(obj[i]);
+            }
+        }
+        placeableItemLocations.Clear();
     }
 
     private void Update()
@@ -268,7 +278,7 @@ public class BuildingModeHandler : MonoBehaviour
                                 bool cantPlace = false;
                                 if(placeableItemLocations.ContainsKey(coordinates))
                                 {
-                                    if(placeableItemLocations[coordinates].Count >= 2)
+                                    if(placeableItemLocations[coordinates].Count >= 1)
                                     {
                                         cantPlace = true;
                                     }
@@ -291,7 +301,7 @@ public class BuildingModeHandler : MonoBehaviour
                                         Vector3 differenceVector = hit.point - centerPosition;
                                         float degrees = Mathf.Atan2(differenceVector.x, differenceVector.z) * Mathf.Rad2Deg;
                                         degrees = Mathf.RoundToInt(degrees / 60) * 60;
-                                        itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, degrees + 30));
+                                        itemPrefabInstance.transform.rotation = Quaternion.Euler(new Vector3(0, degrees));
                                     }
                                     else
                                     {

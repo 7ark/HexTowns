@@ -103,7 +103,7 @@ public class HexTile
 	public void AddEnvironmentItem(Workable obj)
     {
 		Workable envWorkable = obj;
-		envWorkable.OnWorkFinished += () => { environmentalObjectsOnTile.Remove(obj); };
+		envWorkable.OnWorkFinished += (success) => { if(success) environmentalObjectsOnTile.Remove(obj); };
 		envWorkable.TilesAssociated = new List<HexTile>() { this };
 		environmentalObjectsOnTile.Add(obj);
     }

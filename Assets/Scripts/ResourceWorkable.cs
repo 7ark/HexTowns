@@ -25,12 +25,15 @@ public class ResourceWorkable : Workable
         base.BeginWorking();
     }
 
-    protected override void WorkCompleted()
+    protected override void WorkCompleted(bool completedSuccessfully)
     {
-        base.WorkCompleted();
+        base.WorkCompleted(completedSuccessfully);
 
-        ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount);
-        DestroySelf();
+        if(completedSuccessfully)
+        {
+            ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount);
+            DestroySelf();
+        }
         GameObject.Destroy(symbol);
     }
 
