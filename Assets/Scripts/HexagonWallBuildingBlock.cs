@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum WallStructureType { None = -1, Solid, Window, Door, Count_Value }
 public class HexagonWallBuildingBlock : MonoBehaviour
 {
-    public enum WallStructureType { Solid, Window, Door }
     [System.Serializable]
     private struct WallData
     {
@@ -25,7 +25,22 @@ public class HexagonWallBuildingBlock : MonoBehaviour
     [SerializeField]
     private Material highlightMaterial;
 
-    public WallStructureType currentWallType { get; private set; } = WallStructureType.Solid;
+    private WallStructureType wallType = WallStructureType.Solid;
+    public WallStructureType currentWallType
+    {
+        get
+        {
+            if(!gameObject.activeSelf)
+            {
+                return WallStructureType.None;
+            }
+            return wallType;
+        }
+        private set
+        {
+            wallType = value;
+        }
+    }
     private Dictionary<WallStructureType, GameObject> typeToWall = new Dictionary<WallStructureType, GameObject>();
     private List<MeshRenderer> meshRenderers = new List<MeshRenderer>();
 
@@ -112,7 +127,7 @@ public class HexagonWallBuildingBlock : MonoBehaviour
     {
         int val = (int)currentWallType;
         val++;
-        if(val >= System.Enum.GetValues(typeof(WallStructureType)).Length)
+        if(val >= (int)WallStructureType.Count_Value)
         {
             val = 0;
         }

@@ -174,6 +174,8 @@ public class InteractionHandler : MonoBehaviour
         currentCoordinates = new HexCoordinates(v.x, v.y);
     }
 
+    private Peeple selectedPeep;
+
     private void Update()
     {
         if (eventSystem.currentInputModule.IsPointerOverGameObject(-1))
@@ -395,6 +397,20 @@ public class InteractionHandler : MonoBehaviour
     {
         if(tile != null)
         {
+            if(selectedPeep == null)
+            {
+                Peeple[] allPeeps = PeepleHandler.Instance.GetPeepleOnTiles(new HexTile[] { tile });
+                if(allPeeps.Length > 0)
+                {
+                    selectedPeep = allPeeps[0];
+                }
+            }
+            else
+            {
+                selectedPeep.Movement.SetGoal(tile);
+                selectedPeep = null;
+            }
+
             if(multiSelectionsLeft > 0)
             {
                 //Check to make sure this wouldnt intersect

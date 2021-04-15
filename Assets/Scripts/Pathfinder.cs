@@ -199,27 +199,60 @@ public class Pathfinder : MonoBehaviour
         {
             cost += 10000;
         }
-        
-        //TODO Tile Biome Data?
-        if (from.Height > 0 && to.Height > 0) {
-            //cost of land travel
-            if (to.Height > from.Height) {
-                //uphill scalar
-                cost += (to.Height - from.Height) * 10;
-            } else {
-                //even land/downhill
+
+        if(to.BuildingOnTile != null || from.BuildingOnTile != null)
+        {
+            if (to.BuildingOnTile != null && from.BuildingOnTile == null)
+            {
+                WallStructureType wallType = to.BuildingOnTile.GetWallBetweenTiles(from, to);
+                if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
+                {
+                    cost += 100000;
+                }
+            }
+            else if (to.BuildingOnTile == null && from.BuildingOnTile != null)
+            {
+                WallStructureType wallType = from.BuildingOnTile.GetWallBetweenTiles(to, from);
+                if (wallType == WallStructureType.Solid || wallType == WallStructureType.Window)
+                {
+                    cost += 100000;
+                }
+            }
+        }
+        else
+        {
+            //TODO Tile Biome Data?
+            if (from.Height > 0 && to.Height > 0)
+            {
+                //cost of land travel
+                if (to.Height > from.Height)
+                {
+                    //uphill scalar
+                    cost += (to.Height - from.Height) * 10;
+                }
+                else
+                {
+                    //even land/downhill
+                    cost += 10;
+                }
+            }
+            else if (from.Height < 0 && to.Height < 0)
+            {
+                //cost of water travel
                 cost += 10;
             }
-        } else if(from.Height < 0 && to.Height < 0) {
-            //cost of water travel
-            cost += 10;
-        } else {
-            if (from.Height >= 0 && to.Height < 0) {
-                //cost of getting on a boat
-                cost += 1000;
-            } else if (from.Height < 0 && to.Height >= 0) {
-                //cost of getting off boat
-                cost += 500;
+            else
+            {
+                if (from.Height >= 0 && to.Height < 0)
+                {
+                    //cost of getting on a boat
+                    cost += 1000;
+                }
+                else if (from.Height < 0 && to.Height >= 0)
+                {
+                    //cost of getting off boat
+                    cost += 500;
+                }
             }
         }
 

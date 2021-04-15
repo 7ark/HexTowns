@@ -37,6 +37,7 @@ public class HexTile
 	public bool HeightLocked { get; set; }
 	public bool WorkArea { get; set; }
 	public bool HasWorkables { get { return buildingReferences.Count > 0; } }
+	public Building BuildingOnTile { get; set; }
 
 	public bool CantWalkThrough
     {

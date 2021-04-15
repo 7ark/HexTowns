@@ -25,7 +25,6 @@ public class Placeable : Workable
     protected List<HexTile> homeTiles = new List<HexTile>();
     private MeshRenderer[] previewRenderers;
     public System.Action OnPlaced;
-    private GenerateHexagonHandler generateHexagonHandler;
     private HexTile lastHovered;
     private HexagonPreviewArea.PreviewRenderData previewTerrain = null;
 
@@ -49,6 +48,8 @@ public class Placeable : Workable
     }
     [SerializeField, HideInInspector]
     private List<GameObject> objectsToCheckTilesUnder = new List<GameObject>();
+    [SerializeField, HideInInspector]
+    private List<BuildingHexagon> hexagonObjectData = new List<BuildingHexagon>();
 
     public GameObject PhysicalRepresentation { get { return associatedPhysicalGameObject; } }
 
@@ -56,17 +57,16 @@ public class Placeable : Workable
     {
         this.associatedPhysicalGameObject = associatedPhysicalGameObject;
 
-        generateHexagonHandler = associatedPhysicalGameObject.gameObject.AddComponent<GenerateHexagonHandler>();
-
         if (visualOptions.Length > 0)
         {
             Setup();
         }
     }
 
-    public void AddObjectBase(GameObject obj)
+    public void AddObjectBase(GameObject obj, BuildingHexagon hex)
     {
         objectsToCheckTilesUnder.Add(obj);
+        hexagonObjectData.Add(hex);
     }
 
     private void Setup()
@@ -135,7 +135,11 @@ public class Placeable : Workable
         homeTiles.Add(tilePlacedOn);
         for (int i = 0; i < objectsToCheckTilesUnder.Count; i++)
         {
-            homeTiles.Add(HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position)));
+            HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));
+            if(!homeTiles.Contains(tile))
+            {
+                homeTiles.Add(tile);
+            }
         }
 
         HexagonPreviewArea.StopDisplay(previewTerrain);
@@ -163,6 +167,15 @@ public class Placeable : Workable
     {
         previewDisplay.SetActive(false);
         visualOptions[selectionType].SetActive(true);
+
+        //Setup building
+        Building building = new Building();
+        for (int i = 0; i < objectsToCheckTilesUnder.Count; i++)
+        {
+            HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));
+
+            building.AddPiece(tile, hexagonObjectData[i]);
+        }
 
         base.WorkCompleted();
     }

@@ -48,6 +48,8 @@ public class BuildingModeHandler : MonoBehaviour
     private GameObject itemPrefabInstance = null;
     private int tempBuildingCount = 1;
 
+    public static List<Building> test = new List<Building>();
+
     public bool Active { get; private set; }
 
     private void Awake()
@@ -164,10 +166,12 @@ public class BuildingModeHandler : MonoBehaviour
             HexagonBuildingBlock copy = allBuildingBlocks[i];
             copy.SetupForPrefab();
             GameObject copyGO = copy.gameObject;
+            BuildingHexagon hex = copy.GenerateHexagon();
+            hex.gameObjectReference = copyGO;
             Destroy(copy);
             copyGO.transform.position -= YOffset;
             copyGO.transform.SetParent(combined.transform, true);
-            building.Get().AddObjectBase(copyGO);
+            building.Get().AddObjectBase(copyGO, hex);
         }
         for (int i = 0; i < allPlacedItems.Count; i++)
         {

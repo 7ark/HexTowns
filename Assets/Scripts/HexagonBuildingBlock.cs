@@ -58,7 +58,7 @@ public class HexagonBuildingBlock : MonoBehaviour
     {
         for (int i = 0; i < walls.Length; i++)
         {
-            if(walls[i].gameObject.activeSelf && walls[i].currentWallType == HexagonWallBuildingBlock.WallStructureType.Door)
+            if(walls[i].gameObject.activeSelf && walls[i].currentWallType == WallStructureType.Door)
             {
                 return true;
             }
@@ -67,10 +67,26 @@ public class HexagonBuildingBlock : MonoBehaviour
         return false;
     }
 
+    public BuildingHexagon GenerateHexagon()
+    {
+        List<WallStructureType> buildingHexWalls = new List<WallStructureType>();
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X + 1, Coordinates.Y))].currentWallType);
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X + 1, Coordinates.Y - 1))].currentWallType);
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X, Coordinates.Y - 1))].currentWallType);
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X - 1, Coordinates.Y))].currentWallType);
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X - 1, Coordinates.Y + 1))].currentWallType);
+        buildingHexWalls.Add(walls[GetIndexOfNeighbor(new HexCoordinates(Coordinates.X, Coordinates.Y + 1))].currentWallType);
+
+        return new BuildingHexagon()
+        {
+            walls = buildingHexWalls.ToArray()
+        };
+    }
+
     public void SetupForPrefab()
     {
         //SetRendererMaterials(false);
-        top.SetActive(true);
+        top.SetActive(false);
 
         for (int i = 0; i < walls.Length; i++)
         {
