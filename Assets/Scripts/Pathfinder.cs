@@ -194,7 +194,7 @@ public class Pathfinder : MonoBehaviour
     }
 
     private bool IsNavigable(HexTile from, HexTile to) {
-        if (to.CantWalkThrough || to.WorkArea)
+        if (to.CantWalkThrough)
             return false;
 
         if (to.Height > from.Height + 20) { //too sheer of a cliff
@@ -209,7 +209,7 @@ public class Pathfinder : MonoBehaviour
                 return false;
             }
 
-            if(to.BuildingOnTile != null && to.BuildingOnTile.DoesTileHaveWorkStation(to))
+            if(to.BuildingOnTile != null && to.BuildingOnTile.DoesTileHaveWorkStation(to) && !to.BuildingOnTile.GetJobWorkStationOnTile(to).CanStandOn)
             {
                 return false;
             }
@@ -220,6 +220,11 @@ public class Pathfinder : MonoBehaviour
 
     private double Cost(HexTile from, HexTile to) {
         double cost = 0;
+
+        if(to.WorkArea)
+        {
+            cost += 200;
+        }
 
         //TODO Tile Biome Data?
         if (from.Height > 0 && to.Height > 0) { //cost of land travel

@@ -188,6 +188,10 @@ public class Placeable : Workable
             {
                 hexagonObjectData[i].WorkStation.Get().BeginWorking();
             }
+            if(hexagonObjectData[i].HasWorkStation)
+            {
+                hexagonObjectData[i].WorkStation.OnPlaced?.Invoke(tile);
+            }
         }
 
         building.SetupWorkStations();

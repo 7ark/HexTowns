@@ -15,6 +15,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public bool resting;
         public bool hasHome;
         public bool isWorkingHours;
+        public bool isNight;
 
         public PeepleWS(bool initDefault)
         {
@@ -24,7 +25,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             anyJobsAvailable = false;
             resting = false;
             hasHome = false;
-            isWorkingHours = true; //TODO: Change later
+            isWorkingHours = true;
+            isNight = false;
         }
     }
 
@@ -33,6 +35,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     public Workable Job { get { return currentJob; } }
     public bool Unemployed { get { return Job == null; } }
     private HexTile home;
+    private int homeQuality = 0;
     [SerializeField]
     private PeepleWS peepleWorldState = new PeepleWS(true);
 
@@ -44,6 +47,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             peepleWorldState.location = PeepleLocation.InWorkArea;
         }
+        peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Dawn && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Dusk;
+        peepleWorldState.isNight = !GameTime.Instance.IsItDay();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
         peepleWorldState.hasJob = Job != null;
         if(!peepleWorldState.hasJob && peepleWorldState.location == PeepleLocation.Job)
@@ -75,8 +80,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             MoveOutOfWorkArea);
         PrimitiveTask<PeepleWS> relaxTask = new PrimitiveTask<PeepleWS>("Relax",
             (worldState) => { return true ; },
-            (worldState) => { worldState.energy += 1; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true;},
+            (worldState) => { worldState.energy += 2; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true;},
             TakeBreak);
+        PrimitiveTask<PeepleWS> sleepTask = new PrimitiveTask<PeepleWS>("Sleep",
+            (worldState) => { return true; },
+            (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
+            Sleep);
         PrimitiveTask<PeepleWS> moveToHomeTask = new PrimitiveTask<PeepleWS>("MoveToHome",
             (worldState) => { return worldState.hasHome && worldState.location != PeepleLocation.Home; },
             (worldState) => { worldState.location = PeepleLocation.Home; },
@@ -110,6 +119,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             StopResting);
 
         Task htn = new CompoundTask<PeepleWS>("Peeple",
+            new Method<PeepleWS>((ws) => { return ws.isNight; }).AddSubTasks(
+                stopRestingTask,
+                moveToHomeTask,
+                sleepTask
+            ),
             new Method<PeepleWS>().AddSubTasks(
                 stopRestingTask,
                 moveOutOfWorkAreaTask
@@ -137,9 +151,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         SetupHTN(htn);
     }
 
-    public void SetHome(HexTile home)
+    public int GetHomeQuality()
+    {
+        return homeQuality;
+    }
+
+    public void SetHome(HexTile home, int quality)
     {
         this.home = home;
+        homeQuality = quality;
         peepleWorldState.hasHome = true;
     }
 
@@ -379,6 +399,20 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     {
         peepleWorldState.energy += 2;
         if(peepleWorldState.energy > 100)
+        {
+            peepleWorldState.energy = 100;
+        }
+        peepleWorldState.resting = true;
+        restingSymbol.SetActive(peepleWorldState.energy < 100);
+
+        yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        onComplete(true);
+    }
+
+    private IEnumerator Sleep(System.Action<bool> onComplete)
+    {
+        peepleWorldState.energy += 5;
+        if (peepleWorldState.energy > 100)
         {
             peepleWorldState.energy = 100;
         }

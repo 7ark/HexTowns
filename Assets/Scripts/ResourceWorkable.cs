@@ -30,7 +30,7 @@ public class ResourceWorkable : Workable
             return;
         }
 
-        symbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.Destroy, tileOn.Position + new Vector3(0, tileOn.Height * HexTile.HEIGHT_STEP) + new Vector3(0, 6));
+        symbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.Destroy, tileOn.Position + new Vector3(0, tileOn.Height * HexTile.HEIGHT_STEP) + new Vector3(0, 4));
         base.BeginWorking();
     }
 

@@ -154,6 +154,8 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         Instance = this;
 
+        GameTime.Instance.SetTimeSpeed(0);
+
         materialInst = new Material(baseMaterial);
 
         CreateBaseMesh();
@@ -199,6 +201,9 @@ public class HexBoardChunkHandler : MonoBehaviour
         Random.InitState(seed);
 
         StartGeneratingWorld(new Vector2Int(worldSize, worldSize));
+
+        GameTime.Instance.SetTimeSpeed(1);
+        GameTime.Instance.SetTime(8);
     }
 
     public void StartGeneratingWorld(Vector2Int worldSize)

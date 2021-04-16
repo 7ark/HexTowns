@@ -10,6 +10,8 @@ public class PeepleHandler : MonoBehaviour
     private List<Peeple> allPeeple = new List<Peeple>();
     private float actionTickTimer = 0;
 
+    public List<Peeple> AllPeeple { get { return allPeeple; } }
+
     private void Awake()
     {
         Instance = this;

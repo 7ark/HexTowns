@@ -3,37 +3,72 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public enum JobAction { ChopDownNearestTree, PlantTree }
+public enum SpecialItemAction { Bed }
 
 public class JobWorkableGO : MonoBehaviour
 {
     [SerializeField]
+    private bool canStandOn;
+    [SerializeField]
     private JobAction[] actions;
+    [SerializeField]
+    private SpecialItemAction[] specialActions;
     public JobWorkable Get() { return workableObj; }
 
     private JobWorkable workableObj;
     private Dictionary<JobAction, Task> allJobActions = new Dictionary<JobAction, Task>();
     private Peeple activePeeple;
 
+    public System.Action<HexTile> OnPlaced;
+
     public bool RequiresWork { get { return actions.Length > 0; } }
+    public bool CanStandOn { get { return canStandOn; } }
 
     private void Awake()
     {
-        workableObj = new JobWorkable();
-        workableObj.SetTotalWorkableSlots(1);
-
-        allJobActions.Add(JobAction.ChopDownNearestTree,  new PrimitiveTask<Peeple.PeepleWS>("ChopDownNearestTree", null, null, ChopDownNearestTree));
-        allJobActions.Add(JobAction.PlantTree, new PrimitiveTask<Peeple.PeepleWS>("PlantTreeNearby", null, null, PlantTreeNearby));
-
-        workableObj.OnWorkTick += () =>
+        if(RequiresWork)
         {
-            activePeeple = workableObj.GetWorker();
-            for (int i = 0; i < actions.Length; i++)
-            {
-                activePeeple.AddToTasks(allJobActions[actions[i]]);
-            }
+            workableObj = new JobWorkable();
+            workableObj.SetTotalWorkableSlots(1);
 
-            return false;
-        };
+            allJobActions.Add(JobAction.ChopDownNearestTree, new PrimitiveTask<Peeple.PeepleWS>("ChopDownNearestTree", null, null, ChopDownNearestTree));
+            allJobActions.Add(JobAction.PlantTree, new PrimitiveTask<Peeple.PeepleWS>("PlantTreeNearby", null, null, PlantTreeNearby));
+
+            workableObj.OnWorkTick += () =>
+            {
+                activePeeple = workableObj.GetWorker();
+                for (int i = 0; i < actions.Length; i++)
+                {
+                    activePeeple.AddToTasks(allJobActions[actions[i]]);
+                }
+
+                return false;
+            };
+        }
+        else
+        {
+            OnPlaced += (tilePlacedOn) =>
+            {
+                for (int i = 0; i < specialActions.Length; i++)
+                {
+                    switch (specialActions[i])
+                    {
+                        case SpecialItemAction.Bed:
+                            int homeQuality = 10; //TODO: Calculate this somehow
+
+                            for (int j = 0; j < PeepleHandler.Instance.AllPeeple.Count; j++)
+                            {
+                                if (PeepleHandler.Instance.AllPeeple[j].GetHomeQuality() < homeQuality)
+                                {
+                                    PeepleHandler.Instance.AllPeeple[j].SetHome(tilePlacedOn, homeQuality);
+                                    break;
+                                }
+                            }
+                            break;
+                    }
+                }
+            };
+        }
     }
 
     private IEnumerator ChopDownNearestTree(System.Action<bool> onComplete)
