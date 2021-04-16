@@ -208,7 +208,7 @@ public class Placeable : Workable
         }
         for (int i = 0; i < otherTiles.Count; i++)
         {
-            if (otherTiles[i].HeightLocked || otherTiles[i].HasWorkables)
+            if (otherTiles[i] == null || otherTiles[i].HeightLocked || otherTiles[i].HasWorkables)
             {
                 return false;
             }

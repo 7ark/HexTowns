@@ -112,12 +112,14 @@ public class PlannerState<T> where T : struct
     public T worldState;
     public Task decompTask;
     public int methodIndex = 0;
+    public List<int> mtr;
 
     public PlannerState(T worldState)
     {
         this.worldState = worldState;
         finalPlan = new Queue<Task>();
         tasksToProcess = new Stack<Task>();
+        mtr = new List<int>();
     }
 
     public PlannerState(PlannerState<T> state, Task compoundTask)
@@ -127,12 +129,30 @@ public class PlannerState<T> where T : struct
         tasksToProcess = new Stack<Task>(new Stack<Task>(state.tasksToProcess)); //Do this, cause of the nature of a stack itll reverse it otherwise
         methodIndex = state.methodIndex;
         decompTask = compoundTask;
+        mtr = new List<int>();
+        for (int i = 0; i < state.mtr.Count; i++)
+        {
+            mtr.Add(state.mtr[i]);
+        }
     }
 }
+
+public struct HTN_Plan
+{
+    public Queue<Task> Plan;
+    public List<int> MTR;
+
+    public HTN_Plan(Queue<Task> plan, List<int> mtr)
+    {
+        Plan = plan;
+        MTR = mtr;
+    }
+}
+
 public class HTN_Planner<T> where T : struct
 {
 
-    public static Queue<Task> MakePlan(Task constructedHTNRoot, T currentWorldState)
+    public static HTN_Plan MakePlan(Task constructedHTNRoot, T currentWorldState, List<int> mtr = null)
     {
         Stack<PlannerState<T>> plannerStateStack = new Stack<PlannerState<T>>();
 
@@ -148,6 +168,12 @@ public class HTN_Planner<T> where T : struct
 
                 if(satisfiedMethod != null)
                 {
+                    if(mtr != null && mtr.Count > currentState.mtr.Count && mtr[currentState.mtr.Count] < currentState.methodIndex)
+                    {
+                        return new HTN_Plan(null, null);
+                    }
+                    currentState.mtr.Add(currentState.methodIndex);
+
                     plannerStateStack.Push(new PlannerState<T>(currentState, currentTask));
 
                     Stack<Task> reverseStack = new Stack<Task>();
@@ -167,7 +193,7 @@ public class HTN_Planner<T> where T : struct
                 {
                     if(!Restore())
                     {
-                        return currentState.finalPlan;
+                        return new HTN_Plan(currentState.finalPlan, currentState.mtr);
                     }
                     //if(plannerStateStack.Count == 0)
                     //{
@@ -189,13 +215,13 @@ public class HTN_Planner<T> where T : struct
                 {
                     if (!Restore())
                     {
-                        return currentState.finalPlan;
+                        return new HTN_Plan(currentState.finalPlan, currentState.mtr);
                     }
                 }
             }
         }
 
-        return currentState.finalPlan;
+        return new HTN_Plan(currentState.finalPlan, currentState.mtr);
 
         bool Restore()
         {

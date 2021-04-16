@@ -41,12 +41,9 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Camera selectionCamera;
 
     [SerializeField]
-    private Mesh mesh;
-    [SerializeField]
     private Material hexagonPreviewMaterial;
 
-    [SerializeField]
-    private Texture2D[] textures;
+
 
     [System.Serializable]
     public struct HexBufferData
@@ -56,11 +53,9 @@ public class HexBoardChunkHandler : MonoBehaviour
     };
 
     private Material materialInst;
-    private HexBufferData[] renderData;
-    private ComputeBuffer dataBuffer;
-
-    private static readonly int DataBuffer = Shader.PropertyToID("dataBuffer");
-
+    [SerializeField]
+    private Mesh mesh;
+    private Texture2D[] textures;
 
     private Texture2DArray textureArray;
     private HexTile[] globalTiles;
@@ -75,7 +70,6 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Vector2Int[] voronoiPoints;
 
     public static HexBoardChunkHandler Instance;
-    private static Texture2D TEXTURE_ATLAS;
 
     public HexagonTextureReference TextureRef { get { return textureReference; } }
     
