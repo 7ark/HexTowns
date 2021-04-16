@@ -8,8 +8,6 @@ public class PeepleJobHandler : MonoBehaviour
 
     private List<Workable> workables = new List<Workable>();
 
-    private float updateJobTimer = 0;
-
     private void Awake()
     {
         Instance = this;
@@ -22,7 +20,10 @@ public class PeepleJobHandler : MonoBehaviour
 
     public void RemoveWorkable(Workable work)
     {
-        workables.Remove(work);
+        if(workables.Contains(work))
+        {
+            workables.Remove(work);
+        }
     }
 
     public bool AnyOpenJobs()

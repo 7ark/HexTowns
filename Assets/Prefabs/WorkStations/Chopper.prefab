@@ -11,8 +11,9 @@ GameObject:
   - component: {fileID: 5817010756699063213}
   - component: {fileID: 7428115718398512136}
   - component: {fileID: 4679522218826496194}
+  - component: {fileID: 4874352131973739337}
   m_Layer: 0
-  m_Name: ChopperTable
+  m_Name: Chopper
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -85,3 +86,16 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4874352131973739337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6625354540157557015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a9dd97a10e1ac24d96feeacd8584cf1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  actions: 00000000

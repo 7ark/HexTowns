@@ -184,7 +184,13 @@ public class Placeable : Workable
 
             hexagonObjectData[i].Rotate(rotated);
             building.AddPiece(tile, hexagonObjectData[i]);
+            if(hexagonObjectData[i].HasWorkStation && hexagonObjectData[i].WorkStation.RequiresWork)
+            {
+                hexagonObjectData[i].WorkStation.Get().BeginWorking();
+            }
         }
+
+        building.SetupWorkStations();
 
         base.WorkCompleted(completedSuccessfully);
     }

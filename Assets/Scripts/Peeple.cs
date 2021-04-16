@@ -14,6 +14,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public int energy;
         public bool resting;
         public bool hasHome;
+        public bool isWorkingHours;
 
         public PeepleWS(bool initDefault)
         {
@@ -23,6 +24,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             anyJobsAvailable = false;
             resting = false;
             hasHome = false;
+            isWorkingHours = true; //TODO: Change later
         }
     }
 
@@ -51,6 +53,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         return peepleWorldState;
     }
 
+    public void SetPeepleLocation(PeepleLocation loc)
+    {
+        peepleWorldState.location = loc;
+    }
+
     private void Awake()
     {
         Movement = GetComponent<PathfindMovement>();
@@ -58,7 +65,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         int id = PeepleHandler.Instance.AddPeepleToExistance(this);
         name = "Peeple #" + id;
 
-        restingSymbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.PeepleRest, transform.position + new Vector3(0, 5));
+        restingSymbol = SymbolHandler.Instance.DisplaySymbol(SymbolType.PeepleRest, transform.position + new Vector3(0, 2));
         restingSymbol.transform.SetParent(transform, true);
         restingSymbol.SetActive(false);
 
@@ -110,15 +117,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             new Method<PeepleWS>().AddSubTasks(
                 takeBreakIfTiredTask
             ),
-            new Method<PeepleWS>().AddSubTasks(
+            new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
                 stopRestingTask,
                 findJobTask
             ),
-            new Method<PeepleWS>().AddSubTasks(
+            new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
                 stopRestingTask,
                 moveToJobTask
             ),
-            new Method<PeepleWS>().AddSubTasks(
+            new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
                 stopRestingTask,
                 doJobTask
             ),
@@ -257,6 +264,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         onComplete(moveSuccess);
     }
 
+    public IEnumerator MoveToJobSite(Workable workable)
+    {
+        Workable currentWorkable = currentJob;
+        currentJob = workable;
+        yield return MoveToJob(null);
+        currentJob = currentWorkable;
+    }
+
     private IEnumerator MoveToJob(System.Action<bool> onComplete)
     {
         bool movementCompleted = false;
@@ -265,7 +280,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         if (Job == null)
         {
-            onComplete(false);
+            onComplete?.Invoke(false);
             yield break;
         }
 
@@ -275,7 +290,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             if(Job == null)
             {
-                onComplete(false);
+                onComplete?.Invoke(false);
                 yield break;
             }
 
@@ -285,7 +300,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 //Debug.LogError("Job " + currentJob.name + " isn't reachable!", currentJob.gameObject);
                 currentJob.MarkAsUnreachable();
                 currentJob.LeaveWork(this);
-                onComplete(false);
+                onComplete?.Invoke(false);
                 movementCompleted = true;
             }
             else
@@ -302,7 +317,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                         //If we were able to move there, great! 
                         if (success)
                         {
-                            onComplete(true);
+                            onComplete?.Invoke(true);
                             movementCompleted = true;
                             peepleWorldState.location = PeepleLocation.Job;
                         }
@@ -318,7 +333,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     else
                     {
                         //Debug.LogError("Got to job, but its gone!");
-                        onComplete(false);
+                        onComplete?.Invoke(false);
                         movementCompleted = true;
                     }
                 });

@@ -55,6 +55,7 @@ MonoBehaviour:
     previewMatGood: {fileID: 0}
     previewMatBad: {fileID: 0}
     objectsToCheckTilesUnder: []
+    hexagonObjectData: []
   flagPlaceableInstance:
     workStepsRequired: 0
     previewDisplay: {fileID: 3805468926157672171}
@@ -66,6 +67,7 @@ MonoBehaviour:
     previewMatGood: {fileID: 2100000, guid: 22db25dbdd2b2634b81202c666f4d512, type: 2}
     previewMatBad: {fileID: 2100000, guid: 190ed38306925324bb74913f84763ff8, type: 2}
     objectsToCheckTilesUnder: []
+    hexagonObjectData: []
     peepleToSpawn: 5
     peeplePrefab: {fileID: 5218861364646250683, guid: a2ac985ddbe481e4c9d6c0f7eb81c10b, type: 3}
 --- !u!1 &2304634775550328803

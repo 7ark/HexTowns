@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4446859249207665831}
   - component: {fileID: 727807945850612482}
   - component: {fileID: 3313882079618473928}
+  - component: {fileID: -6361728492208526769}
   m_Layer: 0
   m_Name: HexagonBed
   m_TagString: Untagged
@@ -83,3 +84,16 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-6361728492208526769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3962528038203080221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a9dd97a10e1ac24d96feeacd8584cf1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  requiresWork: 1

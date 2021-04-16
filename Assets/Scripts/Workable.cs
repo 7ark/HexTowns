@@ -13,6 +13,7 @@ public class Workable
     public bool CanWork { get; private set; } = false;
     public bool WorkFinished { get; private set; } = false;
     public List<HexTile> TilesAssociated { private get; set; } = new List<HexTile>(); //Weird scenario where we do need to set this outside sometimes, but we want to use GetTilesAssociated()
+    public List<HexTile> WorkableTiles { private get; set; } = null; //Only set if you want to override what tiles can be worked
     public System.Action<bool> OnWorkFinished;
     public System.Action<Workable> OnDestroyed;
     public System.Func<bool> OnWorkTick;
@@ -27,6 +28,11 @@ public class Workable
         {
             return totalWorkSlots - currentWorkers.Count;
         }
+    }
+
+    public Peeple GetWorker(int index = 0)
+    {
+        return currentWorkers[index];
     }
 
     public Workable()
@@ -91,6 +97,11 @@ public class Workable
 
     public HexTile[] GetWorkableTiles()
     {
+        if(WorkableTiles != null)
+        {
+            return WorkableTiles.ToArray();
+        }
+
         List<HexTile> associatedTiles = GetTilesAssociated();
         List<HexTile> goodTiles = new List<HexTile>();
         for (int i = 0; i < associatedTiles.Count; i++)
@@ -113,9 +124,14 @@ public class Workable
         return goodTiles.ToArray();
     }
 
-    public virtual void BeginWorking()
+    public void SetWorkLeft()
     {
         workLeft = workStepsRequired;
+    }
+
+    public virtual void BeginWorking()
+    {
+        SetWorkLeft();
         if (workStepsRequired == 0)
         {
             WorkCompleted(true);

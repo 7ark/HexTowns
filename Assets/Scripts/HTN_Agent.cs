@@ -17,9 +17,17 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     protected abstract T GetCurrentWorldState();
 
+    public void AddToTasks(Task task)
+    {
+        if(currentTaskList != null)
+        {
+            currentTaskList.Enqueue(task);
+        }
+    }
+
     private void CheckToRunAgain()
     {
-        if(currentTaskList == null)
+        if(currentTaskList == null || currentTaskList.Count == 0)
         {
             currentTaskList = HTN_Planner<T>.MakePlan(lifeHTN, GetCurrentWorldState());
 

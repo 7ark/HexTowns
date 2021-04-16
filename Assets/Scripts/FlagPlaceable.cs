@@ -21,10 +21,10 @@ public class FlagPlaceable : Placeable
             return;
         }
 
-        HexTile[] tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(homeTiles[0], 4);
+        List<HexTile> tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(homeTiles[0], 4);
 
         List<HexTile> tileOptions = new List<HexTile>();
-        for (int i = 0; i < tiles.Length; i++)
+        for (int i = 0; i < tiles.Count; i++)
         {
             if (tiles[i] != homeTiles[0] && !tiles[i].CantWalkThrough)
             {

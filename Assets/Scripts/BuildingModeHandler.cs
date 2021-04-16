@@ -43,12 +43,10 @@ public class BuildingModeHandler : MonoBehaviour
     private List<GameObject> allPlacedItems = new List<GameObject>();
     private Dictionary<ResourceType, int> resourceCostTotal = new Dictionary<ResourceType, int>();
     private Dictionary<string, GameObject> placeableItems = new Dictionary<string, GameObject>();
-    private Dictionary<HexCoordinates, List<GameObject>> placeableItemLocations = new Dictionary<HexCoordinates, List<GameObject>>();
+    private Dictionary<HexCoordinates, GameObject> placeableItemLocations = new Dictionary<HexCoordinates, GameObject>();
     private HexagonWallBuildingBlock highlightedWall = null;
     private GameObject itemPrefabInstance = null;
     private int tempBuildingCount = 1;
-
-    public static List<Building> test = new List<Building>();
 
     public bool Active { get; private set; }
 
@@ -169,7 +167,7 @@ public class BuildingModeHandler : MonoBehaviour
             BuildingHexagon hex = copy.GenerateHexagon();
             if(placeableItemLocations.ContainsKey(copy.Coordinates))
             {
-                hex.AddWorkStation();
+                hex.SetWorkStation(placeableItemLocations[copy.Coordinates].GetComponent<JobWorkableGO>());
             }
             Destroy(copy);
             copyGO.transform.position -= YOffset;
@@ -226,10 +224,7 @@ public class BuildingModeHandler : MonoBehaviour
 
         foreach(var obj in placeableItemLocations.Values)
         {
-            for (int i = 0; i < obj.Count; i++)
-            {
-                Destroy(obj[i]);
-            }
+            Destroy(obj);
         }
         placeableItemLocations.Clear();
     }
@@ -281,14 +276,14 @@ public class BuildingModeHandler : MonoBehaviour
                                 bool cantPlace = false;
                                 if(placeableItemLocations.ContainsKey(coordinates))
                                 {
-                                    if(placeableItemLocations[coordinates].Count >= 1)
+                                    if(placeableItemLocations[coordinates] != null)
                                     {
                                         cantPlace = true;
                                     }
-                                    else
-                                    {
-                                        forcedRotation = placeableItemLocations[coordinates][0].transform.rotation.eulerAngles.y + 180;
-                                    }
+                                    //else
+                                    //{
+                                    //    forcedRotation = placeableItemLocations[coordinates][0].transform.rotation.eulerAngles.y + 180;
+                                    //}
                                 }
 
                                 if(cantPlace)
@@ -339,11 +334,11 @@ public class BuildingModeHandler : MonoBehaviour
                     HexCoordinates coords = HexCoordinates.FromPosition(itemPrefabInstance.transform.position);
                     if(!placeableItemLocations.ContainsKey(coords))
                     {
-                        placeableItemLocations.Add(coords, new List<GameObject>());
+                        placeableItemLocations.Add(coords, null);
                     }
-                    if(placeableItemLocations[coords].Count < 2)
+                    if(placeableItemLocations[coords] == null)
                     {
-                        placeableItemLocations[coords].Add(itemPrefabInstance);
+                        placeableItemLocations[coords] = itemPrefabInstance;
                         allPlacedItems.Add(itemPrefabInstance);
                         itemPrefabInstance = null;
                     }

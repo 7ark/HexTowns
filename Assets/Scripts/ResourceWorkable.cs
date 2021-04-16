@@ -12,6 +12,8 @@ public class ResourceWorkable : Workable
     private GameObject symbol;
     private HexTile tileOn;
 
+    public ResourceType ResourceReturn { get { return resourceToReceiveOnCompletion; } }
+
     public ResourceWorkable(HexTile tileOn, int workStepsRequired, ResourceType resourceToReceiveOnCompletion, int resourceAmount) : base(workStepsRequired)
     {
         this.tileOn = tileOn;

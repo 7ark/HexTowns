@@ -728,7 +728,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
     }
 
-    public HexTile[] GetTileNeighborsInDistance(HexTile tile, int distance)
+    public List<HexTile> GetTileNeighborsInDistance(HexTile tile, int distance)
     {
         List<HexTile> allTiles = new List<HexTile>()
         {
@@ -759,7 +759,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             delayedLayer.Clear();
         }
 
-        return allTiles.ToArray();
+        return allTiles;
     }
 
     public HexTile GetTileInDirection(HexTile tile, int directionX, int directionY)

@@ -98,7 +98,10 @@ public class HexTile
 		return buildingReferences[0].WorkableObject;
     }
 
-
+	public void RemoveEnvironmentalItem(Workable obj)
+	{ 
+		environmentalObjectsOnTile.Remove(obj); 
+	}
 
 	public void AddEnvironmentItem(Workable obj)
     {

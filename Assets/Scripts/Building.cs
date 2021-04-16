@@ -8,9 +8,10 @@ public class BuildingHexagon
     [SerializeField]
     public WallStructureType[] walls;
 
+    public bool HasWorkStation { get { return workStation != null; } }
     [SerializeField]
-    private bool hasWorkStation = false;
-    public bool HasWorkStation { get { return hasWorkStation; } }
+    private JobWorkableGO workStation;
+    public JobWorkableGO WorkStation { get { return workStation; } }
 
     [SerializeField]
     private int rotated = 0;
@@ -20,9 +21,9 @@ public class BuildingHexagon
         rotated += amount;
     }
 
-    public void AddWorkStation()
+    public void SetWorkStation(JobWorkableGO workStation)
     {
-        hasWorkStation = true;
+        this.workStation = workStation;
     }
 
     private int GetWallIndex(int xDiff, int yDiff)
@@ -105,7 +106,30 @@ public class Building
         pieceToTile.Add(hex, tile);
         tileToPiece.Add(tile, hex);
 
+
         tile.BuildingOnTile = this;
+    }
+
+    public void SetupWorkStations()
+    {
+        foreach(var hex in pieces)
+        {
+            if (hex.HasWorkStation && hex.WorkStation.RequiresWork)
+            {
+                List<HexTile> valid = new List<HexTile>();
+                List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(pieceToTile[hex]);
+                for (int i = 0; i < neighbors.Count; i++)
+                {
+                    if(tiles.Contains(neighbors[i]) && !tileToPiece[neighbors[i]].HasWorkStation)
+                    {
+                        valid.Add(neighbors[i]);
+                    }
+                }
+
+                hex.WorkStation.Get().TilesAssociated = new List<HexTile>() { pieceToTile[hex] };
+                hex.WorkStation.Get().WorkableTiles = valid;
+            }
+        }
     }
 
     public bool DoesTileHaveWorkStation(HexTile tile)
@@ -116,6 +140,16 @@ public class Building
         }
 
         return false;
+    }
+
+    public JobWorkableGO GetJobWorkStationOnTile(HexTile tile)
+    {
+        if (tiles.Contains(tile))
+        {
+            return tileToPiece[tile].WorkStation;
+        }
+
+        return null;
     }
 
     public WallStructureType GetWallBetweenTiles(HexTile from, HexTile to)
