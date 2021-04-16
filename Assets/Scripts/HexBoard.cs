@@ -353,8 +353,10 @@ public class HexBoard
 
         tile.AddEnvironmentItem(treeWorkable);
 
+        int minMinuteGrowthTime = 3;
+        int maxMinuteGrowthTime = 6;
 
-        HexBoardChunkHandler.Instance.StartCoroutine(GrowTree(referenceGuid, pos, rotate, treePrefabs[0].transform.localScale, Random.Range(120, 360), treeWorkable));
+        HexBoardChunkHandler.Instance.StartCoroutine(GrowTree(referenceGuid, pos, rotate, treePrefabs[0].transform.localScale, Random.Range(minMinuteGrowthTime * 60, maxMinuteGrowthTime * 60), treeWorkable));
     }
 
     private IEnumerator GrowTree(Guid id, Vector3 position, Quaternion rotation, Vector3 finalScale, float timeToGrowFinal, ResourceWorkable treeWorkable)
