@@ -305,6 +305,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             }
             else
             {
+                if(allTiles[jobTileIndex].BuildingOnTile != null && !(Job is JobWorkable))
+                {
+                    jobTileIndex++;
+                    continue;
+                }
                 //Try to move to the job site location.
                 Job.SetTileWorking(allTiles[jobTileIndex]);
                 //Debug.Log("Telling job " + Job.name + " that im gonna work on a tile " + allTiles[jobTileIndex].Coordinates);

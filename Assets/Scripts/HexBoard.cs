@@ -263,8 +263,6 @@ public class HexBoard
 
     public void GenerateEnvironmentalObjects()
     {
-        List<Matrix4x4> treeMatrices = new List<Matrix4x4>();
-        List<Matrix4x4> rockMatices = new List<Matrix4x4>();
         if (!environmentalObjectsGenerated && spawningObject != null)
         {
             List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
@@ -304,12 +302,13 @@ public class HexBoard
                     Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
                     Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
                     Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, treePrefabs[0].transform.localScale);
-                    treeMatrices.Add(matrix);
+
+                    Guid id = environmentalObjectsInstanced[0].AddDataPoint(matrix);
 
                     ResourceWorkable treeWorkable = new ResourceWorkable(allTiles[i], 3, ResourceType.Wood, 2);
                     treeWorkable.OnDestroyed += (w) =>
                     {
-                        environmentalObjectsInstanced[0].RemoveDataPoint(matrix);
+                        environmentalObjectsInstanced[0].RemoveDataPoint(id);
                     };
                     
                     allTiles[i].AddEnvironmentItem(treeWorkable);
@@ -319,27 +318,57 @@ public class HexBoard
                     Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
                     Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
                     Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, rockPrefabs[0].transform.localScale);
-                    rockMatices.Add(matrix);
+
+                    Guid id = environmentalObjectsInstanced[1].AddDataPoint(matrix);
 
                     ResourceWorkable rockWorkable = new ResourceWorkable(allTiles[i], 1, ResourceType.Stone, 1);
                     rockWorkable.OnDestroyed += (w) =>
                     {
-                        environmentalObjectsInstanced[1].RemoveDataPoint(matrix);
+                        environmentalObjectsInstanced[1].RemoveDataPoint(id);
                     };
 
                     allTiles[i].AddEnvironmentItem(rockWorkable);
                 }
             }
 
-            if(treeMatrices.Count > 0)
+            for (int i = 0; i < environmentalObjectsInstanced.Count; i++)
             {
-                environmentalObjectsInstanced[0].SetDataPoints(treeMatrices);
-            }
-            if(rockMatices.Count > 0)
-            {
-                environmentalObjectsInstanced[1].SetDataPoints(rockMatices);
+                environmentalObjectsInstanced[i].FindCenter();
             }
         }
+    }
+
+    public void AddTree(HexTile tile, bool growIt = true)
+    {
+        Vector3 pos = tile.Position + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
+        Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
+        Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, treePrefabs[0].transform.localScale);
+        Guid referenceGuid = environmentalObjectsInstanced[0].AddDataPoint(matrix);
+
+        ResourceWorkable treeWorkable = new ResourceWorkable(tile, 3, ResourceType.Wood, 2, !growIt);
+        treeWorkable.OnDestroyed += (w) =>
+        {
+            environmentalObjectsInstanced[0].RemoveDataPoint(referenceGuid);
+        };
+
+        tile.AddEnvironmentItem(treeWorkable);
+
+
+        HexBoardChunkHandler.Instance.StartCoroutine(GrowTree(referenceGuid, pos, rotate, treePrefabs[0].transform.localScale, Random.Range(120, 360), treeWorkable));
+    }
+
+    private IEnumerator GrowTree(Guid id, Vector3 position, Quaternion rotation, Vector3 finalScale, float timeToGrowFinal, ResourceWorkable treeWorkable)
+    {
+        float timePassed = 0;
+        while(timePassed < timeToGrowFinal)
+        {
+            timePassed += Time.deltaTime;
+            environmentalObjectsInstanced[0].UpdateDataPoint(id, Matrix4x4.TRS(position, rotation, Vector3.Lerp(new Vector3(0.05f, 0.05f, 0.05f), finalScale, timePassed / timeToGrowFinal)));
+
+            yield return null;
+        }
+
+        treeWorkable.AbleToBeHarvested = true;
     }
 
     public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst,  Material materialSelectionInst, Camera drawCamera, Camera selectionCamera, HexagonTextureReference textureReference, GameObject[] treePrefabs, GameObject[] rockPrefabs)
@@ -479,6 +508,7 @@ public class HexBoard
     }
 }
 
+
 public class InstancedEnvironmentalObject
 {
     [System.Serializable]
@@ -495,7 +525,7 @@ public class InstancedEnvironmentalObject
 
     private Mesh meshBasis;
     private List<Material> matInstances = new List<Material>();
-    private List<Matrix4x4> pointInformation;
+    private Dictionary<Guid, Matrix4x4> pointInformation = new Dictionary<Guid, Matrix4x4>();
     private Vector3 center;
     private int submeshCount = 0;
     private Camera drawCamera;
@@ -516,33 +546,41 @@ public class InstancedEnvironmentalObject
         }
     }
 
-    public void RemoveDataPoint(Matrix4x4 pos)
+    public void RemoveDataPoint(Guid pos)
     {
         pointInformation.Remove(pos);
         UpdateBuffer(pointInformation);
     }
 
-    public void AddDataPoint(Matrix4x4 pos)
+    public Guid AddDataPoint(Matrix4x4 pos, bool updateBuffer = true)
     {
-        pointInformation.Add(pos);
+        Guid uniqueId = Guid.NewGuid();
+        pointInformation.Add(uniqueId, pos);
+        if(updateBuffer)
+        {
+            UpdateBuffer(pointInformation);
+        }
+
+        return uniqueId;
+    }
+
+    public void UpdateDataPoint(Guid unqiueInstance, Matrix4x4 pos)
+    {
+        pointInformation[unqiueInstance] = pos;
         UpdateBuffer(pointInformation);
     }
 
-    public void SetDataPoints(List<Matrix4x4> points)
+    public void FindCenter()
     {
-        this.pointInformation = points;
-        
         center = Vector3.zero;
-        for (int i = 0; i < points.Count; i++)
+        foreach(var key in pointInformation.Keys)
         {
-            center += (Vector3)points[i].GetColumn(3); 
+            center += (Vector3)pointInformation[key].GetColumn(3);
         }
-        center /= points.Count;
-
-        UpdateBuffer(points);
+        center /= pointInformation.Count;
     }
 
-    private void UpdateBuffer(List<Matrix4x4> points)
+    private void UpdateBuffer(Dictionary<Guid, Matrix4x4> points)
     {
         if (dataBuffer != null)
         {
@@ -557,12 +595,15 @@ public class InstancedEnvironmentalObject
             renderData = new EnvObjBufferData[points.Count];
         }
 
-        for (var i = 0; i < renderData.Length; i++)
+        int renderIndex = 0;
+        foreach(var guid in points.Keys)
         {
             EnvObjBufferData data;
-            data.world2Obj = points[i].inverse;
-            data.obj2world = points[i];
-            renderData[i] = data;
+            data.world2Obj = points[guid].inverse;
+            data.obj2world = points[guid];
+            renderData[renderIndex] = data;
+
+            renderIndex++;
         }
 
         dataBuffer.SetData(renderData);
