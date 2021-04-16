@@ -30,12 +30,15 @@ public class GameTime : MonoBehaviour
     //private float dayTimer = 0;
     //private float nightTimer = 0;
     private float timeSpeed = 1;
+    private int daysPassed = 0;
 
     public static GameTime Instance;
 
     public float CurrentTime { get { return currentTime; } }
     public float Dawn { get { return dawnTime; } }
     public float Dusk { get { return duskTime; } }
+    public float Sunrise { get { return dawnTime; } }
+    public float Sunset { get { return duskTime - 1; } }
     public float TimeSpeed { get { return timeSpeed; } }
 
     private void Awake()
@@ -46,6 +49,11 @@ public class GameTime : MonoBehaviour
     public bool IsItDay()
     {
         return !(currentTime < dawnTime || currentTime > duskTime);
+    }
+
+    public bool IsItLightOutside()
+    {
+        return !(currentTime < Sunrise || currentTime > Sunset);
     }
 
     public void SetTimeSpeed(float speed)
@@ -109,10 +117,11 @@ public class GameTime : MonoBehaviour
         if(currentTime >= 24f)
         {
             currentTime = 0;
+            daysPassed++;
             //Debug.Log("A full cycle is " + checkTimer + " seconds! With a day being " + dayTimer + " seconds, and a night being " + nightTimer + " seconds");
         }
 
-        timeDisplay.text = System.TimeSpan.FromHours(currentTime).ToString(@"hh\:mm");
+        timeDisplay.text = "Day " + (daysPassed + 1) + " " + System.TimeSpan.FromHours(currentTime).ToString(@"hh\:mm");
 
         UpdateTimeVisuals();
     }

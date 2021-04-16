@@ -99,19 +99,17 @@ public class JobWorkableGO : MonoBehaviour
             }
         }
 
-        yield return activePeeple.MoveToJobSite(tree);
-        tree.SetWorkLeft();
-        while(true)
+        bool waitingToFinish = true;
+        activePeeple.DoUnofficialJob(tree, () =>
         {
-            if (tree == null || tree.DoWork() || tree.WorkFinished)
-            {
-                break;
-            }
+            waitingToFinish = false;
+        });
 
-            yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        while(waitingToFinish)
+        {
+            yield return null;
         }
 
-        activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);
     }
 

@@ -47,8 +47,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             peepleWorldState.location = PeepleLocation.InWorkArea;
         }
-        peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Dawn && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Dusk;
-        peepleWorldState.isNight = !GameTime.Instance.IsItDay();
+        peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Sunrise && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Sunset;
+        peepleWorldState.isNight = !GameTime.Instance.IsItLightOutside();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
         peepleWorldState.hasJob = Job != null;
         if(!peepleWorldState.hasJob && peepleWorldState.location == PeepleLocation.Job)
@@ -282,6 +282,31 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.location = PeepleLocation.Home;
 
         onComplete(moveSuccess);
+    }
+
+    public void DoUnofficialJob(Workable workable, System.Action onComplete)
+    {
+        workable.SetWorkLeft();
+
+        StartCoroutine(UnofficialJobTick(workable, onComplete));
+    }
+
+    private IEnumerator UnofficialJobTick(Workable workable, System.Action onComplete)
+    {
+        yield return MoveToJobSite(workable);
+
+        while(true)
+        {
+            if (workable == null || workable.DoWork() || workable.WorkFinished)
+            {
+                break;
+            }
+
+            yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        }
+
+        peepleWorldState.location = PeepleLocation.Anywhere;
+        onComplete();
     }
 
     public IEnumerator MoveToJobSite(Workable workable)
