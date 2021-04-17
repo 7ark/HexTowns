@@ -64,7 +64,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         currentTaskList = plan.Plan;
         currentMtr = plan.MTR;
 
-        if (currentTaskList != null && currentTaskList.Count > 0)
+        if (currentTaskList != null && currentTaskList.Count > 0 && Time.timeScale != 0)
         {
             runningCoroutine = StartCoroutine(Run());
         }

@@ -32,7 +32,7 @@ public class PathfindMovement : MonoBehaviour
 
     public void SetGoal(HexTile goal, bool instant = false, System.Action<bool> arrivedComplete = null, bool alwaysDoActionEvent = false)
     {
-        if(!gameObject.activeSelf)
+        if(!gameObject.activeSelf || Time.timeScale == 0)
         {
             arrivedComplete?.Invoke(false);
             return;
