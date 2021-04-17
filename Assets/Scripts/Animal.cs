@@ -22,10 +22,26 @@ public class Animal : HTN_Agent<int>
         {
             foreach(var animal in allAnimals)
             {
-                if(animal.Movement.GetTileOn() == tiles[i])
+                if(!animal.Dead && !animal.Sleeping && animal.Movement.GetTileOn() == tiles[i])
                 {
                     result.Add(animal);
                 }
+            }
+        }
+
+        return result;
+    }
+
+    public static HashSet<Animal> GetAnimalsWithinRange(HexTile tile, float distance)
+    {
+        HashSet<Animal> result = new HashSet<Animal>();
+
+        foreach (var animal in allAnimals)
+        {
+            float dist = Vector3.Distance(animal.transform.position, tile.Position + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP));
+            if (dist < distance && !animal.Dead && !animal.Sleeping)
+            {
+                result.Add(animal);
             }
         }
 
@@ -49,32 +65,45 @@ public class Animal : HTN_Agent<int>
         return 0;
     }
 
-    public virtual void MarkToKill()
+    public virtual ResourceWorkable MarkToKill(bool startWork = true)
     {
         if(!Dead && !Sleeping)
         {
-            toKillWorkable = new ResourceWorkable(Movement.GetTileOn(), 1, ResourceType.Food, 1);
+            toKillWorkable = new ResourceWorkable(Movement.GetTileOn(), 2, ResourceType.Food, 1);
             toKillWorkable.TilesAssociated = new List<HexTile>() { Movement.GetTileOn() };
-            toKillWorkable.BeginWorking();
+            if(startWork)
+            {
+                toKillWorkable.BeginWorking();
+                toKillWorkable.DisplayedSymbol.transform.SetParent(transform);
+            }
             toKillWorkable.OnWorkFinished += (success)=> { if(success) Kill(); };
-            toKillWorkable.DisplayedSymbol.transform.SetParent(transform);
+
+            return toKillWorkable;
         }
+
+        return null;
     }
 
     public void Kill()
     {
         Dead = true;
         gameObject.SetActive(false);
-        toKillWorkable.CancelWork();
-        toKillWorkable = null;
+        if(toKillWorkable != null)
+        {
+            toKillWorkable.CancelWork();
+            toKillWorkable = null;
+        }
     }
 
     public void Sleep()
     {
         Sleeping = true;
         gameObject.SetActive(false);
-        toKillWorkable.CancelWork();
-        toKillWorkable = null;
+        if (toKillWorkable != null)
+        {
+            toKillWorkable.CancelWork();
+            toKillWorkable = null;
+        }
     }
 
     public void WakeUp()

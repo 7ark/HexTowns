@@ -14,6 +14,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private float replanTimer = 0;
     private Coroutine runningCoroutine = null;
     private Coroutine delayedCoroutine = null;
+    private bool currentCantBeCancelled = false;
 
     protected void SetupHTN(Task htnRoot)
     {
@@ -66,6 +67,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
         if (currentTaskList != null && currentTaskList.Count > 0 && Time.timeScale != 0)
         {
+            currentCantBeCancelled = false;
             runningCoroutine = StartCoroutine(Run());
         }
         else
@@ -74,6 +76,11 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
             currentMtr = null;
             delayedCoroutine = StartCoroutine(DelayedCheckLater());
         }
+    }
+
+    public void MarkCurrentAsUncancellable()
+    {
+        currentCantBeCancelled = true;
     }
 
     private IEnumerator DelayedCheckLater()
@@ -122,7 +129,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             replanTimer = 0;
 
-            if(currentMtr != null)
+            if(!currentCantBeCancelled && currentMtr != null)
             {
                 HTN_Plan plan = HTN_Planner<T>.MakePlan(lifeHTN, GetCurrentWorldState(), currentMtr);
 

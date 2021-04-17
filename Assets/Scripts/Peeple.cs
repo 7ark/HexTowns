@@ -288,14 +288,17 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     {
         workable.SetWorkLeft();
 
+        Debug.Log("Starting unofficial job");
         StartCoroutine(UnofficialJobTick(workable, onComplete));
     }
 
     private IEnumerator UnofficialJobTick(Workable workable, System.Action onComplete)
     {
+        Debug.Log("Move to unofficial job site");
         yield return MoveToJobSite(workable);
 
-        while(true)
+        Debug.Log("Arrived at site. Doing work");
+        while (true)
         {
             if (workable == null || workable.DoWork() || workable.WorkFinished)
             {
@@ -305,6 +308,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         }
 
+        Debug.Log("Work done!");
         peepleWorldState.location = PeepleLocation.Anywhere;
         onComplete();
     }
@@ -319,6 +323,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator MoveToJob(System.Action<bool> onComplete)
     {
+        if(onComplete != null)
+        {
+            Debug.Log("Move to job");
+        }
         bool movementCompleted = false;
         bool waitingForGoalResults = false;
         int jobTileIndex = 0;
@@ -367,9 +375,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                         //If we were able to move there, great! 
                         if (success)
                         {
+                            if(onComplete != null)
+                            {
+                                peepleWorldState.location = PeepleLocation.Job;
+                            }
                             onComplete?.Invoke(true);
                             movementCompleted = true;
-                            peepleWorldState.location = PeepleLocation.Job;
                         }
                         else
                         {

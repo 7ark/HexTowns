@@ -59,15 +59,15 @@ public class PathfindMovement : MonoBehaviour
             currentArrivedAction = arrivedComplete;
             HexTile current = GetTileOn();
 
-            Debug.Log(name + " is trying to find a path to a tile");
+            //Debug.Log(name + " is trying to find a path to a tile");
             Pathfinder.Instance.FindPathToTile(goal, current, (pathTiles, coordData) => 
             {
                 debugTileData = coordData;
-                Debug.Log($"Coord Data Count: {coordData.Count}");
+                //Debug.Log($"Coord Data Count: {coordData.Count}");
                 iTween.Stop(gameObject);
                 if (pathTiles.Length == 0)
                 {
-                    Debug.Log(name + " tried to find a path, but it wasn't valid");
+                    //Debug.Log(name + " tried to find a path, but it wasn't valid");
                     currentArrivedAction?.Invoke(false);
                 }
                 else if(pathTiles.Length == 1)
@@ -76,7 +76,7 @@ public class PathfindMovement : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log(name + " found the path to the tile. Beginning movement.");
+                    //Debug.Log(name + " found the path to the tile. Beginning movement.");
                     List<Vector3> positionPath = new List<Vector3> {transform.position};
                     positionPath.AddRange(pathTiles.Select(tile => 
                         tile.Position + new Vector3(0, Mathf.Max(tile.Height * HexTile.HEIGHT_STEP, HexTile.WATER_LEVEL))));
@@ -103,7 +103,7 @@ public class PathfindMovement : MonoBehaviour
     private void ArrivedAtLocation()
     {
         IsMoving = false;
-        Debug.Log(name + " arrived at its location!");
+        //Debug.Log(name + " arrived at its location!");
         currentArrivedAction?.Invoke(true);
         currentArrivedAction = null;
     }

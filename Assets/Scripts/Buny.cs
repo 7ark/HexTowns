@@ -79,13 +79,15 @@ public class Buny : Animal
         onComplete?.Invoke(true);
     }
 
-    public override void MarkToKill()
+    public override ResourceWorkable MarkToKill(bool startWork)
     {
-        base.MarkToKill();
+        ResourceWorkable workable = base.MarkToKill(startWork);
         if (movementCoroutine != null)
         {
             StopCoroutine(movementCoroutine);
         }
+
+        return workable;
     }
 
     private void HandleMovement(List<Vector3> path, System.Action onComplete)
@@ -119,7 +121,8 @@ public class Buny : Animal
                 float delta = (float)j / (float)bouncePoints;
                 bouncePositions.Add(Vector3.Lerp(path[i], path[i + 1], delta) + new Vector3(0, bounceCurve.Evaluate(delta)));
             }
-            Quaternion rot = Quaternion.LookRotation(path[i + 1] - path[i]);
+            Vector3 diff = path[i + 1] - path[i];
+            Quaternion rot = diff == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(diff);
             iTween.RotateTo(gameObject, new Vector3(0, rot.eulerAngles.y), Movement.MovementSpeed - 0.2f);
             iTween.MoveTo(gameObject, iTween.Hash("path", bouncePositions.ToArray(), "time", Movement.MovementSpeed, "easetype", iTween.EaseType.easeInCirc, "delay", 0.1f));
 

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum JobAction { ChopDownNearestTree, PlantTree }
+public enum JobAction { ChopDownNearestTree, PlantTree, HuntBuny }
 public enum SpecialItemAction { Bed }
 
 public class JobWorkableGO : MonoBehaviour
@@ -33,6 +33,7 @@ public class JobWorkableGO : MonoBehaviour
 
             allJobActions.Add(JobAction.ChopDownNearestTree, new PrimitiveTask<Peeple.PeepleWS>("ChopDownNearestTree", null, null, ChopDownNearestTree));
             allJobActions.Add(JobAction.PlantTree, new PrimitiveTask<Peeple.PeepleWS>("PlantTreeNearby", null, null, PlantTreeNearby));
+            allJobActions.Add(JobAction.HuntBuny, new PrimitiveTask<Peeple.PeepleWS>("HuntBuny", null, null, HuntBuny));
 
             workableObj.OnWorkTick += () =>
             {
@@ -168,6 +169,42 @@ public class JobWorkableGO : MonoBehaviour
 
         //TODO: Plant tree happen over time
         tileToPlant.ParentBoard.AddTree(tileToPlant);
+
+        activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
+        onComplete(true);
+    }
+
+    private IEnumerator HuntBuny(System.Action<bool> onComplete)
+    {
+        yield return new WaitForSeconds(Random.Range(2, 5));
+
+        activePeeple = workableObj.GetWorker();
+
+        HashSet<Animal> animals = Animal.GetAnimalsWithinRange(workableObj.GetTilesAssociated()[0], 30);
+        Animal animalToHunt = null;
+        foreach(var animal in animals)
+        {
+            animalToHunt = animal;
+            break;
+        }
+
+        if(animalToHunt == null)
+        {
+            onComplete(false);
+            yield break;
+        }
+
+        Workable animalWorkable = animalToHunt.MarkToKill(false);
+        bool waitingToFinish = true;
+        activePeeple.DoUnofficialJob(animalWorkable, () =>
+        {
+            waitingToFinish = false;
+        });
+
+        while (waitingToFinish)
+        {
+            yield return null;
+        }
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);

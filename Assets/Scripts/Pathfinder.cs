@@ -29,6 +29,7 @@ public class Pathfinder : MonoBehaviour
         public HexTile to;
         public HexTile from;
         public System.Action<HexTile[], Dictionary<HexTile, HexTileAStarData>> onComplete;
+        public string trace;
     }
 
     [SerializeField]
@@ -48,7 +49,8 @@ public class Pathfinder : MonoBehaviour
         {
             to = to,
             from = from,
-            onComplete = onComplete
+            onComplete = onComplete,
+            trace = StackTraceUtility.ExtractStackTrace()
         });
     }
 
