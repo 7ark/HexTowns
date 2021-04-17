@@ -79,8 +79,21 @@ public class Buny : Animal
         onComplete?.Invoke(true);
     }
 
+    public override void MarkToKill()
+    {
+        base.MarkToKill();
+        if (movementCoroutine != null)
+        {
+            StopCoroutine(movementCoroutine);
+        }
+    }
+
     private void HandleMovement(List<Vector3> path, System.Action onComplete)
     {
+        if(toKillWorkable != null)
+        {
+            return;
+        }
         if(movementCoroutine != null)
         {
             StopCoroutine(movementCoroutine);

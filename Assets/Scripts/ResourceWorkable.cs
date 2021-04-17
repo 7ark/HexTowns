@@ -14,6 +14,7 @@ public class ResourceWorkable : Workable
 
     public ResourceType ResourceReturn { get { return resourceToReceiveOnCompletion; } }
     public bool AbleToBeHarvested { get; set; }
+    public GameObject DisplayedSymbol { get { return symbol; } }
 
     public ResourceWorkable(HexTile tileOn, int workStepsRequired, ResourceType resourceToReceiveOnCompletion, int resourceAmount, bool canHarvest = true) : base(workStepsRequired)
     {

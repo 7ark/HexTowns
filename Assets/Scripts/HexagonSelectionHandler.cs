@@ -108,7 +108,7 @@ public class HexagonSelectionHandler : MonoBehaviour
         return false;
     }
 
-    public HexTile[] GetFilledAreaBetweenTiles(HexTile[] tiles)
+    public List<HexTile> GetFilledAreaBetweenTiles(HexTile[] tiles)
     {
         List<HexTile> borders = new List<HexTile>(GetBorderBetweenTiles(tiles));
         if(tiles.Length >= 3)
@@ -253,11 +253,11 @@ public class HexagonSelectionHandler : MonoBehaviour
             //    }
             //}
 
-            return filledTiles.ToArray();
+            return filledTiles;
         }
         else
         {
-            return borders.ToArray();
+            return borders;
         }
 
 

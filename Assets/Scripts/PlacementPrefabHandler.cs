@@ -159,8 +159,8 @@ public class PlacementPrefabHandler : MonoBehaviour
     {
         interactionHandler.StartMultiSelection(100, true, (tiles, height) => 
         {
-            HexTile[] resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
-            TerrainModificationHandler.Instance.RequestTerrainModification(resultTiles, height);
+            List<HexTile> resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
+            TerrainModificationHandler.Instance.RequestTerrainModification(resultTiles.ToArray(), height);
         });
     }
 
@@ -168,9 +168,9 @@ public class PlacementPrefabHandler : MonoBehaviour
     {
         interactionHandler.StartMultiSelection(100, false, (tiles, height) =>
         {
-            HexTile[] resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
+            List<HexTile> resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
 
-            for (int i = 0; i < resultTiles.Length; i++)
+            for (int i = 0; i < resultTiles.Count; i++)
             {
                 if(resultTiles[i].HasEnvironmentalItems)
                 {
@@ -181,6 +181,12 @@ public class PlacementPrefabHandler : MonoBehaviour
                         resultTiles[i].AddWorkableToTile(workableObjects[j], resultTiles[i].Height);
                     }
                 }
+            }
+
+            HashSet<Animal> animalsOnTiles = Animal.GetAnimalsOnTiles(resultTiles);
+            foreach(var animal in animalsOnTiles)
+            {
+                animal.MarkToKill();
             }
 
             //TerrainModificationHandler.Instance.RequestTerrainModification(resultTiles, height);
