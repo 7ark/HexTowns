@@ -41,6 +41,10 @@ public class GameTime : MonoBehaviour
     public float Sunset { get { return duskTime - 1; } }
     //public float TimeSpeed { get { return timeSpeed; } }
 
+    public event System.Action OnNewDay;
+    public event System.Action OnDawnBreaks;
+    public event System.Action OnDuskBreaks;
+
     private void Awake()
     {
         Instance = this;
@@ -114,12 +118,22 @@ public class GameTime : MonoBehaviour
         //{
         //    nightTimer += Time.deltaTime;
         //}
+        float cachedTime = currentTime;
         currentTime += Time.deltaTime * (IsItDay() ? dayTimeChangeMultiplier : nightTimeChangeMultiplier) * TIME_CHANGE_ADJUSTMENT;
         if(currentTime >= 24f)
         {
             currentTime = 0;
             daysPassed++;
+            OnNewDay?.Invoke();
             //Debug.Log("A full cycle is " + checkTimer + " seconds! With a day being " + dayTimer + " seconds, and a night being " + nightTimer + " seconds");
+        }
+        if(cachedTime < dawnTime && currentTime >= dawnTime)
+        {
+            OnDawnBreaks?.Invoke();
+        }
+        if (cachedTime < duskTime && currentTime >= duskTime)
+        {
+            OnDuskBreaks?.Invoke();
         }
 
         timeDisplay.text = "Day " + (daysPassed + 1) + " " + System.TimeSpan.FromHours(currentTime).ToString(@"hh\:mm");

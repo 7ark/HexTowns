@@ -28,15 +28,15 @@ public class AnimalHandler : MonoBehaviour
         }
     }
 
-    public Animal SpawnAnimal(AnimalType type, HexTile tile)
+    public HexTile GiveAnimalNewPosition(Animal animal, HexTile tile)
     {
         HexTile tileToSpawnAt = tile;
-        if(tile.CantWalkThrough)
+        if (tile.CantWalkThrough)
         {
             List<HexTile> others = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tile, 3);
             for (int i = 0; i < others.Count; i++)
             {
-                if(!others[i].CantWalkThrough && others[i].ParentBoard == tile.ParentBoard)
+                if (!others[i].CantWalkThrough && others[i].ParentBoard == tile.ParentBoard)
                 {
                     tileToSpawnAt = others[i];
                     break;
@@ -44,7 +44,14 @@ public class AnimalHandler : MonoBehaviour
             }
         }
 
+        return tileToSpawnAt;
+    }
+
+    public Animal SpawnAnimal(AnimalType type, HexTile tile)
+    {
         Animal animal = Instantiate(animalPrefabs[type], transform);
+        HexTile tileToSpawnAt = GiveAnimalNewPosition(animal, tile);
+
         animal.SetHomeBoard(tile.ParentBoard);
         animal.Movement.SetGoal(tileToSpawnAt, true);
 

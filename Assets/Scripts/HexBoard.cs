@@ -181,6 +181,10 @@ public class HexBoard
     {
         hexMesh = new HexMesh();
         board2D = new HexTile[Size.x, Size.y];
+
+        GameTime.Instance.OnDawnBreaks += RespawnDeadAnimals;
+        GameTime.Instance.OnDawnBreaks += WakeUpAnimals;
+        GameTime.Instance.OnDuskBreaks += HaveAnimalsSleep;
     }
 
     public void CreateAllTiles()
@@ -236,7 +240,10 @@ public class HexBoard
 
         foreach (var animal in allAnimalsOnBoard)
         {
-            animal.gameObject.SetActive(true);
+            if(!animal.Dead && !animal.Sleeping && !animal.gameObject.activeSelf)
+            {
+                animal.gameObject.SetActive(true);
+            }
         }
 
         hexMesh.Update();
@@ -252,6 +259,31 @@ public class HexBoard
         foreach(var animal in allAnimalsOnBoard)
         {
             animal.gameObject.SetActive(false);
+        }
+    }
+
+    public void HaveAnimalsSleep()
+    {
+        foreach (var animal in allAnimalsOnBoard)
+        {
+            animal.Sleep();
+        }
+    }
+
+    public void WakeUpAnimals()
+    {
+        foreach (var animal in allAnimalsOnBoard)
+        {
+            animal.WakeUp();
+            AnimalHandler.Instance.GiveAnimalNewPosition(animal, allTiles[Random.Range(0, allTiles.Count)]);
+        }
+    }
+
+    public void RespawnDeadAnimals()
+    {
+        foreach (var animal in allAnimalsOnBoard)
+        {
+            animal.Respawn();
         }
     }
 
