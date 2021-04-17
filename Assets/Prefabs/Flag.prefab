@@ -68,7 +68,7 @@ MonoBehaviour:
     previewMatBad: {fileID: 2100000, guid: 190ed38306925324bb74913f84763ff8, type: 2}
     objectsToCheckTilesUnder: []
     hexagonObjectData: []
-    peepleToSpawn: 1
+    peepleToSpawn: 5
     peeplePrefab: {fileID: 5218861364646250683, guid: a2ac985ddbe481e4c9d6c0f7eb81c10b, type: 3}
 --- !u!1 &2304634775550328803
 GameObject:
