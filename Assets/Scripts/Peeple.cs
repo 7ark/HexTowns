@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using MEC;
 using UnityEngine;
 
 public class Peeple : HTN_Agent<Peeple.PeepleWS>
@@ -199,8 +200,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.location = PeepleLocation.Anywhere;
         }
     }
-
-    private IEnumerator Eat(System.Action<bool> onComplete)
+    
+    private IEnumerator<float> Eat(System.Action<bool> onComplete)
     {
         if(!ResourceHandler.Instance.UseResources(ResourceType.Food, 5))
         {
@@ -220,12 +221,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.hunger = 0;
         }
 
-        yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
 
         onComplete(true);
     }
-
-    private IEnumerator StopResting(System.Action<bool> onComplete)
+    
+    private IEnumerator<float> StopResting(System.Action<bool> onComplete)
     {
         if(peepleWorldState.resting)
         {
@@ -238,7 +239,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         yield break;
     }
 
-    private IEnumerator FindJob(System.Action<bool> onComplete)
+    private IEnumerator<float> FindJob(System.Action<bool> onComplete)
     {
         PeepleJobHandler.Instance.FindJob(this);
         peepleWorldState.hasJob = true;
@@ -248,7 +249,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         yield break;
     }
 
-    private IEnumerator MoveOutOfWorkArea(System.Action<bool> onComplete)
+    private IEnumerator<float> MoveOutOfWorkArea(System.Action<bool> onComplete)
     {
         HexTile tileToMoveTo = null;
         List<HexTile> tilesSeen = new List<HexTile>();
@@ -293,7 +294,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         while(waitToArrive)
         {
-            yield return null;
+            yield return Timing.WaitForOneFrame;
         }
 
         peepleWorldState.location = PeepleLocation.Anywhere;
@@ -301,7 +302,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         onComplete(true);
     }
 
-    private IEnumerator MoveToHome(System.Action<bool> onComplete)
+    private IEnumerator<float> MoveToHome(System.Action<bool> onComplete)
     {
         if(peepleWorldState.location == PeepleLocation.Home)
         {
@@ -329,7 +330,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         while (waitToArrive)
         {
-            yield return null;
+            yield return Timing.WaitForOneFrame;
         }
 
         peepleWorldState.location = PeepleLocation.Home;
@@ -345,10 +346,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         StartCoroutine(UnofficialJobTick(workable, onComplete));
     }
 
-    private IEnumerator UnofficialJobTick(Workable workable, System.Action onComplete)
+    private IEnumerator<float> UnofficialJobTick(Workable workable, System.Action onComplete)
     {
         Debug.Log("Move to unofficial job site");
-        yield return MoveToJobSite(workable);
+        yield return Timing.WaitUntilDone(MoveToJobSite(workable));
 
         Debug.Log("Arrived at site. Doing work");
         while (true)
@@ -358,7 +359,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 break;
             }
 
-            yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+            yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         }
 
         Debug.Log("Work done!");
@@ -366,15 +367,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         onComplete();
     }
 
-    public IEnumerator MoveToJobSite(Workable workable)
+    public IEnumerator<float> MoveToJobSite(Workable workable)
     {
         Workable currentWorkable = currentJob;
         currentJob = workable;
-        yield return MoveToJob(null);
+        yield return Timing.WaitUntilDone(MoveToJob(null));
         currentJob = currentWorkable;
     }
 
-    private IEnumerator MoveToJob(System.Action<bool> onComplete)
+    private IEnumerator<float> MoveToJob(System.Action<bool> onComplete)
     {
         if(onComplete != null)
         {
@@ -460,12 +461,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             while(waitingForGoalResults)
             {
-                yield return null;
+                yield return Timing.WaitForOneFrame;
             }
         }
     }
 
-    private IEnumerator DoJob(System.Action<bool> onComplete)
+    private IEnumerator<float> DoJob(System.Action<bool> onComplete)
     {
         if(Job == null)
         {
@@ -481,11 +482,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.energy = 0;
         }
 
-        yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
     }
 
-    private IEnumerator TakeBreak(System.Action<bool> onComplete)
+    private IEnumerator<float> TakeBreak(System.Action<bool> onComplete)
     {
         peepleWorldState.energy += 2;
         peepleWorldState.hunger++;
@@ -496,11 +497,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.resting = true;
         restingSymbol.SetActive(peepleWorldState.energy < 100);
 
-        yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
     }
 
-    private IEnumerator Sleep(System.Action<bool> onComplete)
+    private IEnumerator<float> Sleep(System.Action<bool> onComplete)
     {
         peepleWorldState.energy += 5;
         if (peepleWorldState.energy > 100)
@@ -510,7 +511,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.resting = true;
         restingSymbol.SetActive(peepleWorldState.energy < 100);
 
-        yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
     }
 
