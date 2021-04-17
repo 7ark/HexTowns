@@ -85,7 +85,14 @@ public class Buny : Animal
         {
             StopCoroutine(movementCoroutine);
         }
-        movementCoroutine = StartCoroutine(BounceMovement(path, onComplete));
+        if(gameObject.activeSelf)
+        {
+            movementCoroutine = StartCoroutine(BounceMovement(path, onComplete));
+        }
+        else
+        {
+            onComplete?.Invoke();
+        }
     }
 
     private IEnumerator BounceMovement(List<Vector3> path, System.Action onComplete)

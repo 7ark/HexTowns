@@ -29,7 +29,7 @@ public class GameTime : MonoBehaviour
     //private float checkTimer = 0;
     //private float dayTimer = 0;
     //private float nightTimer = 0;
-    private float timeSpeed = 1;
+    //private float timeSpeed = 1;
     private int daysPassed = 0;
 
     public static GameTime Instance;
@@ -39,7 +39,7 @@ public class GameTime : MonoBehaviour
     public float Dusk { get { return duskTime; } }
     public float Sunrise { get { return dawnTime; } }
     public float Sunset { get { return duskTime - 1; } }
-    public float TimeSpeed { get { return timeSpeed; } }
+    //public float TimeSpeed { get { return timeSpeed; } }
 
     private void Awake()
     {
@@ -58,7 +58,8 @@ public class GameTime : MonoBehaviour
 
     public void SetTimeSpeed(float speed)
     {
-        timeSpeed = speed;
+        Time.timeScale = speed;
+        //timeSpeed = speed;
     }
 
     public void SetTime(float time)
@@ -92,17 +93,17 @@ public class GameTime : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
-        {
-            if(timeSpeed == 1)
-            {
-                timeSpeed = 10;
-            }
-            else
-            {
-                timeSpeed = 1;
-            }
-        }
+        //if(Input.GetKeyDown(KeyCode.Space))
+        //{
+        //    if(timeSpeed == 1)
+        //    {
+        //        timeSpeed = 10;
+        //    }
+        //    else
+        //    {
+        //        timeSpeed = 1;
+        //    }
+        //}
 
         //checkTimer += Time.deltaTime;
         //if(IsItDay())
@@ -113,7 +114,7 @@ public class GameTime : MonoBehaviour
         //{
         //    nightTimer += Time.deltaTime;
         //}
-        currentTime += Time.deltaTime * (IsItDay() ? dayTimeChangeMultiplier : nightTimeChangeMultiplier) * TIME_CHANGE_ADJUSTMENT * timeSpeed;
+        currentTime += Time.deltaTime * (IsItDay() ? dayTimeChangeMultiplier : nightTimeChangeMultiplier) * TIME_CHANGE_ADJUSTMENT;
         if(currentTime >= 24f)
         {
             currentTime = 0;

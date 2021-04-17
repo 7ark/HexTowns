@@ -393,8 +393,8 @@ namespace CodeRoadOne
 
         private void UpdateState()
         {
-            float newRotation = Mathf.SmoothDampAngle(m_CurrentRotationAngle, m_TargetRotationAngle, ref m_VelocityRotate, m_SmoothRotationSpeed);
-            float newZoom = Mathf.SmoothDamp(m_CurrentZoomLevel, m_TargetZoomLevel, ref m_VelocityZoom, m_SmoothZoomSpeed);
+            float newRotation = Mathf.SmoothDampAngle(m_CurrentRotationAngle, m_TargetRotationAngle, ref m_VelocityRotate, m_SmoothRotationSpeed, float.MaxValue, Time.unscaledDeltaTime);
+            float newZoom = Mathf.SmoothDamp(m_CurrentZoomLevel, m_TargetZoomLevel, ref m_VelocityZoom, m_SmoothZoomSpeed, float.MaxValue, Time.unscaledDeltaTime);
             bool computeNewRotation = false;
             if (newZoom != m_TargetZoomLevel)
             {

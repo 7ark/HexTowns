@@ -205,7 +205,9 @@ public class BuildingModeHandler : MonoBehaviour
         }
         resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
         placementHandler.AddNewPlaceable(name, building, totalCost.ToArray());
+
         placeableItemLocations.Clear();
+        allPlacedItems.Clear();
     }
 
     public void ClearBuilding()
@@ -222,10 +224,11 @@ public class BuildingModeHandler : MonoBehaviour
         }
         resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
 
-        foreach(var obj in placeableItemLocations.Values)
+        for (int i = 0; i < allPlacedItems.Count; i++)
         {
-            Destroy(obj);
+            Destroy(allPlacedItems[i].gameObject);
         }
+        allPlacedItems.Clear();
         placeableItemLocations.Clear();
     }
 

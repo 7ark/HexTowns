@@ -167,7 +167,7 @@ namespace CodeRoadOne
         {
             if(m_ClickWithTouch && !m_OnClickTouch)
             {
-                m_OnClickTimeTouch = Time.time + m_ClickDetectionTime;
+                m_OnClickTimeTouch = Time.unscaledTime + m_ClickDetectionTime;
                 Debug.Log("m_OnClickTouch");
                 m_OnClickTouch = true;
             }
@@ -305,7 +305,7 @@ namespace CodeRoadOne
             switch (Input.touchCount)
             {
                 case 0:
-                    if(m_ClickWithTouch && m_OnClickTouch && m_OnClickTimeTouch > Time.time && m_ClickEvent != null)
+                    if(m_ClickWithTouch && m_OnClickTouch && m_OnClickTimeTouch > Time.unscaledTime && m_ClickEvent != null)
                     {
                         m_ClickEvent.Invoke();
                     }
@@ -367,14 +367,14 @@ namespace CodeRoadOne
                 Vector3 translate = Vector3.zero;
                 if (m_CheckForKeyboardInput && m_PanWithKeyboard)
                 {
-                    translate.x += Input.GetAxis(m_PanKeyboardAxisHorizontal) * m_PanKeyboardMoveSpeed;
-                    translate.z += Input.GetAxis(m_PanKeyboardAxisVertical) * m_PanKeyboardMoveSpeed;
+                    translate.x += Input.GetAxisRaw(m_PanKeyboardAxisHorizontal) * Time.unscaledDeltaTime * m_PanKeyboardMoveSpeed;
+                    translate.z += Input.GetAxisRaw(m_PanKeyboardAxisVertical) * Time.unscaledDeltaTime * m_PanKeyboardMoveSpeed;
                 }
                 if (m_CheckForMouseInput && m_PanWithMouse)
                 {
                     Vector3 mousePosition = Input.mousePosition;
 
-                    if (Input.GetAxis(m_PanMouseHoldButton) != 0)
+                    if (Input.GetAxisRaw(m_PanMouseHoldButton) * Time.unscaledDeltaTime != 0)
                     {
                         if (m_OnDragging)
                         {
@@ -399,8 +399,8 @@ namespace CodeRoadOne
                 }
                 if (m_PanWithJoystick)
                 {
-                    translate.x += Input.GetAxis(m_PanJoystickAxisHorizontal) * m_PanJoystickMoveSpeed;
-                    translate.z += Input.GetAxis(m_PanJoystickAxisVertical) * m_PanJoystickMoveSpeed;
+                    translate.x += Input.GetAxisRaw(m_PanJoystickAxisHorizontal) * Time.unscaledDeltaTime * m_PanJoystickMoveSpeed;
+                    translate.z += Input.GetAxisRaw(m_PanJoystickAxisVertical) * Time.unscaledDeltaTime * m_PanJoystickMoveSpeed;
                 }
                 if (m_PanWithScreenBorder)
                 {
@@ -412,7 +412,7 @@ namespace CodeRoadOne
                     translate.x += (leftRect.Contains(Input.mousePosition) ? -1 : rightRect.Contains(Input.mousePosition) ? 1 : 0) * m_PanBorderMoveSpeed;
                     translate.z += (upRect.Contains(Input.mousePosition) ? 1 : downRect.Contains(Input.mousePosition) ? -1 : 0) * m_PanBorderMoveSpeed;
                 }
-                croCamera.SetTargetedPosition(croCamera.GetTargetedPosition() + croCamera.GetCameraOrientation() * translate * Time.deltaTime);
+                croCamera.SetTargetedPosition(croCamera.GetTargetedPosition() + croCamera.GetCameraOrientation() * translate * Time.unscaledDeltaTime);
                 if (m_OnDragging)
                 {
                     HandleDragging(croCamera, Input.mousePosition);
@@ -428,15 +428,15 @@ namespace CodeRoadOne
             float totalRotationAngle = 0;
             if (m_CheckForKeyboardInput && m_RotateWithKeyboard)
             {
-                totalRotationAngle -= Input.GetAxis(m_RotateKeyboardYAxis) * m_RotateKeyboardSpeed;
+                totalRotationAngle -= Input.GetAxisRaw(m_RotateKeyboardYAxis) * Time.unscaledDeltaTime * m_RotateKeyboardSpeed;
             }
-            if (m_CheckForMouseInput && m_RotateWithMouse && Input.GetAxis(m_RotateMouseHoldButton) != 0)
+            if (m_CheckForMouseInput && m_RotateWithMouse && Input.GetAxisRaw(m_RotateMouseHoldButton) * Time.unscaledDeltaTime != 0)
             {
-                totalRotationAngle -= Input.GetAxis(m_RotateMouseYAxis) * m_RotateMouseSpeed;
+                totalRotationAngle -= Input.GetAxisRaw(m_RotateMouseYAxis) * Time.unscaledDeltaTime * m_RotateMouseSpeed;
             }
             if (m_RotateWithJoystick)
             {
-                totalRotationAngle -= Input.GetAxis(m_RotateJoystickYAxis) * m_RotateJoystickSpeed;
+                totalRotationAngle -= Input.GetAxisRaw(m_RotateJoystickYAxis) * Time.unscaledDeltaTime * m_RotateJoystickSpeed;
             }
             if(!totalRotationAngle.Equals(0))
             {
@@ -448,15 +448,15 @@ namespace CodeRoadOne
             float zoom = 0;
             if (m_CheckForKeyboardInput && m_ZoomWithKeyboard)
             {
-                zoom += Input.GetAxis(m_ZoomKeyboardAxis) * m_ZoomKeyboardSpeed;
+                zoom += Input.GetAxisRaw(m_ZoomKeyboardAxis) * Time.unscaledDeltaTime * m_ZoomKeyboardSpeed;
             }
             if (m_ZoomWithMouseWheel)
             {
-                zoom += Input.GetAxis(m_ZoomMouseWheelAxis) * m_ZoomMouseSpeed;
+                zoom += Input.GetAxisRaw(m_ZoomMouseWheelAxis) * Time.unscaledDeltaTime * m_ZoomMouseSpeed;
             }
             if (m_ZoomWithJoystick)
             {
-                zoom += Input.GetAxis(m_ZoomJoystickAxis) * m_ZoomJoystickSpeed;
+                zoom += Input.GetAxisRaw(m_ZoomJoystickAxis) * Time.unscaledDeltaTime * m_ZoomJoystickSpeed;
             }
 
             croCamera.SetTargetedZoomLevel(croCamera.GetTargetedZoomLevel() - zoom);
@@ -465,17 +465,17 @@ namespace CodeRoadOne
             #region Clicking
             if(m_CheckForKeyboardInput && m_ClickWithKeyboard)
             {
-                if(Input.GetAxis(m_ClickKeyboardButton) != 0)
+                if(Input.GetAxisRaw(m_ClickKeyboardButton) * Time.unscaledDeltaTime != 0)
                 {
                     if (!m_OnClickKeyboard)
                     {
                         m_OnClickKeyboard = true;
-                        m_OnClickTimeKeyboard = Time.time + m_ClickDetectionTime;
+                        m_OnClickTimeKeyboard = Time.unscaledTime + m_ClickDetectionTime;
                     }
                 }
                 else
                 {
-                    if(m_OnClickKeyboard && m_OnClickTimeKeyboard > Time.time && m_ClickEvent != null)
+                    if(m_OnClickKeyboard && m_OnClickTimeKeyboard > Time.unscaledTime && m_ClickEvent != null)
                     {
                         m_ClickEvent.Invoke();
                     }
@@ -484,17 +484,17 @@ namespace CodeRoadOne
             }
             if(m_CheckForMouseInput && m_ClickWithMouse)
             {
-                if (Input.GetAxis(m_ClickMouseButton) != 0)
+                if (Input.GetAxisRaw(m_ClickMouseButton) * Time.unscaledDeltaTime != 0)
                 {
                     if (!m_OnClickMouse)
                     {
                         m_OnClickMouse = true;
-                        m_OnClickTimeMouse = Time.time + m_ClickDetectionTime;
+                        m_OnClickTimeMouse = Time.unscaledTime + m_ClickDetectionTime;
                     }
                 }
                 else
                 {
-                    if (m_OnClickMouse && m_OnClickTimeMouse > Time.time && m_ClickEvent != null)
+                    if (m_OnClickMouse && m_OnClickTimeMouse > Time.unscaledTime && m_ClickEvent != null)
                     {
                         m_ClickEvent.Invoke();
                     }
@@ -503,17 +503,17 @@ namespace CodeRoadOne
             }
             if (m_ClickWithJoystick)
             {
-                if (Input.GetAxis(m_ClickJoystickButton) != 0)
+                if (Input.GetAxisRaw(m_ClickJoystickButton) * Time.unscaledDeltaTime != 0)
                 {
                     if (!m_OnClickJoystick)
                     {
                         m_OnClickJoystick = true;
-                        m_OnClickTimeJoystick = Time.time + m_ClickDetectionTime;
+                        m_OnClickTimeJoystick = Time.unscaledTime + m_ClickDetectionTime;
                     }
                 }
                 else
                 {
-                    if (m_OnClickJoystick && m_OnClickTimeJoystick > Time.time && m_ClickEvent != null)
+                    if (m_OnClickJoystick && m_OnClickTimeJoystick > Time.unscaledTime && m_ClickEvent != null)
                     {
                         m_ClickEvent.Invoke();
                     }
