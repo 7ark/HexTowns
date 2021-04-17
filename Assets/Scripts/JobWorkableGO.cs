@@ -13,6 +13,8 @@ public class JobWorkableGO : MonoBehaviour
     private JobAction[] actions;
     [SerializeField]
     private SpecialItemAction[] specialActions;
+    [SerializeField]
+    private ResourceCount[] cost;
     public JobWorkable Get() { return workableObj; }
 
     private JobWorkable workableObj;
@@ -23,6 +25,7 @@ public class JobWorkableGO : MonoBehaviour
 
     public bool RequiresWork { get { return actions.Length > 0; } }
     public bool CanStandOn { get { return canStandOn; } }
+    public ResourceCount[] Cost { get { return cost; } }
 
     private void Awake()
     {

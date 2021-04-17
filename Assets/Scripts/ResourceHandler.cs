@@ -52,9 +52,21 @@ public class ResourceHandler : MonoBehaviour
         UpdateDisplayImages();
     }
 
+    private void Start()
+    {
+        GameTime.Instance.OnNewDay += (daysPassed) =>
+        {
+            if (daysPassed % 3 == 0)
+            {
+                GainResource(ResourceType.Flags, 1);
+            }
+        };
+    }
+
     private void SetDefaultValues()
     {
         resources[ResourceType.Flags] = 1;
+        resources[ResourceType.Food] = 200;
     }
 
     public void UpdateDisplayImages(bool forceUpdate = true)

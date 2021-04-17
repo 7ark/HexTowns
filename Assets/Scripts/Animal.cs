@@ -69,7 +69,7 @@ public class Animal : HTN_Agent<int>
     {
         if(!Dead && !Sleeping)
         {
-            toKillWorkable = new ResourceWorkable(Movement.GetTileOn(), 2, ResourceType.Food, 1);
+            toKillWorkable = new ResourceWorkable(Movement.GetTileOn(), 2, ResourceType.Food, 15);
             toKillWorkable.TilesAssociated = new List<HexTile>() { Movement.GetTileOn() };
             if(startWork)
             {

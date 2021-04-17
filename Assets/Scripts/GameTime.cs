@@ -41,7 +41,7 @@ public class GameTime : MonoBehaviour
     public float Sunset { get { return duskTime - 1; } }
     //public float TimeSpeed { get { return timeSpeed; } }
 
-    public event System.Action OnNewDay;
+    public event System.Action<int> OnNewDay;
     public event System.Action OnDawnBreaks;
     public event System.Action OnDuskBreaks;
 
@@ -124,7 +124,7 @@ public class GameTime : MonoBehaviour
         {
             currentTime = 0;
             daysPassed++;
-            OnNewDay?.Invoke();
+            OnNewDay?.Invoke(daysPassed);
             //Debug.Log("A full cycle is " + checkTimer + " seconds! With a day being " + dayTimer + " seconds, and a night being " + nightTimer + " seconds");
         }
         if(cachedTime < dawnTime && currentTime >= dawnTime)

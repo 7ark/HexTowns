@@ -99,3 +99,6 @@ MonoBehaviour:
   canStandOn: 1
   actions: 
   specialActions: 00000000
+  cost:
+  - ResourceType: 2
+    Amount: 5

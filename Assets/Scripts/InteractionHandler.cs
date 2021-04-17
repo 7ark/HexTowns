@@ -196,7 +196,7 @@ public class InteractionHandler : MonoBehaviour
 
         Hover(currentTile);
 
-        holdTimer -= Time.deltaTime;
+        holdTimer -= Time.unscaledDeltaTime;
 
         bool cancellingAction = false;
         if(Mouse.current.rightButton.wasPressedThisFrame)

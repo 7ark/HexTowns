@@ -96,4 +96,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a9dd97a10e1ac24d96feeacd8584cf1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canStandOn: 0
   actions: 01000000
+  specialActions: 
+  cost:
+  - ResourceType: 2
+    Amount: 5

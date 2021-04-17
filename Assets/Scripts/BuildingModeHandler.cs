@@ -12,7 +12,7 @@ public class BuildingModeHandler : MonoBehaviour
     private struct ItemData
     {
         public string itemName;
-        public GameObject objectPrefab;
+        public JobWorkableGO objectPrefab;
     }
 
     [SerializeField]
@@ -40,12 +40,12 @@ public class BuildingModeHandler : MonoBehaviour
 
     private HexagonBuildingBlock currentBuildingBlockPrefabInstance;
     private List<HexagonBuildingBlock> allBuildingBlocks = new List<HexagonBuildingBlock>();
-    private List<GameObject> allPlacedItems = new List<GameObject>();
+    private List<JobWorkableGO> allPlacedItems = new List<JobWorkableGO>();
     private Dictionary<ResourceType, int> resourceCostTotal = new Dictionary<ResourceType, int>();
-    private Dictionary<string, GameObject> placeableItems = new Dictionary<string, GameObject>();
-    private Dictionary<HexCoordinates, GameObject> placeableItemLocations = new Dictionary<HexCoordinates, GameObject>();
+    private Dictionary<string, JobWorkableGO> placeableItems = new Dictionary<string, JobWorkableGO>();
+    private Dictionary<HexCoordinates, JobWorkableGO> placeableItemLocations = new Dictionary<HexCoordinates, JobWorkableGO>();
     private HexagonWallBuildingBlock highlightedWall = null;
-    private GameObject itemPrefabInstance = null;
+    private JobWorkableGO itemPrefabInstance = null;
     private int tempBuildingCount = 1;
 
     public bool Active { get; private set; }
@@ -176,7 +176,7 @@ public class BuildingModeHandler : MonoBehaviour
         }
         for (int i = 0; i < allPlacedItems.Count; i++)
         {
-            GameObject item = allPlacedItems[i];
+            JobWorkableGO item = allPlacedItems[i];
             item.transform.position -= YOffset;
             item.transform.SetParent(combined.transform, true);
         }
@@ -341,6 +341,24 @@ public class BuildingModeHandler : MonoBehaviour
                     }
                     if(placeableItemLocations[coords] == null)
                     {
+                        //Cost
+                        HexagonBuildingBlock blockAssociated = null;
+                        for (int i = 0; i < allBuildingBlocks.Count; i++)
+                        {
+                            if (allBuildingBlocks[i].Coordinates == coords)
+                            {
+                                blockAssociated = allBuildingBlocks[i];
+                                break;
+                            }
+                        }
+
+                        for (int i = 0; i < itemPrefabInstance.Cost.Length; i++)
+                        {
+                            resourceCostTotal[itemPrefabInstance.Cost[i].ResourceType] += itemPrefabInstance.Cost[i].Amount;
+                            blockAssociated.AddAssociatedResourceCost(itemPrefabInstance.Cost[i]);
+                        }
+                        resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
+
                         placeableItemLocations[coords] = itemPrefabInstance;
                         allPlacedItems.Add(itemPrefabInstance);
                         itemPrefabInstance = null;

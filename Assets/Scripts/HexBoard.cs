@@ -652,6 +652,11 @@ public class InstancedEnvironmentalObject
             dataBuffer.Release();
         }
 
+        if(points.Count <= 0)
+        {
+            return;
+        }
+
         dataBuffer = new ComputeBuffer(points.Count,
             UnsafeUtility.SizeOf<EnvObjBufferData>());
 

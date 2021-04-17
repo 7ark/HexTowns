@@ -111,9 +111,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         PrimitiveTask<PeepleWS> eatTask = new PrimitiveTask<PeepleWS>("Eat",
             (worldState) => { return true; },
-            (worldState) => { worldState.eating = true; worldState.hunger -= 5; if (worldState.hunger < 0) { worldState.hunger = 0; worldState.eating = false; } },
+            (worldState) => { worldState.eating = true; worldState.hunger -= 20; if (worldState.hunger < 0) { worldState.hunger = 0; worldState.eating = false; } },
             Eat);
-        CompoundTask<PeepleWS> goHomeAndEatTask = new CompoundTask<PeepleWS>("EatFood",
+        CompoundTask<PeepleWS> goHomeAndEatTask = new CompoundTask<PeepleWS>("EatFood", //TODO: Change this to go to the nearest food storage
             new Method<PeepleWS>((worldState) => { return true; }).AddSubTasks(
                 moveToHomeTask,
                 eatTask
@@ -138,7 +138,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             StopResting);
 
         Task htn = new CompoundTask<PeepleWS>("Peeple",
-            new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.eating || ws.hunger > 50); }).AddSubTasks(
+            new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.eating || ws.hunger >= 100); }).AddSubTasks(
                 goHomeAndEatTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isNight; }).AddSubTasks(
@@ -209,12 +209,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             yield break;
         }
 
-        peepleWorldState.hunger -= 5;
+        peepleWorldState.hunger -= 20;
         peepleWorldState.eating = true;
-        if(peepleWorldState.hunger < 0)
+        if(peepleWorldState.hunger < 10)
+        {
+            peepleWorldState.eating = false;
+        }
+        if (peepleWorldState.hunger < 0)
         {
             peepleWorldState.hunger = 0;
-            peepleWorldState.eating = false;
         }
 
         yield return new WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);

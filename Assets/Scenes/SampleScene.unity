@@ -8272,13 +8272,13 @@ MonoBehaviour:
   prefabParent: {fileID: 71199198}
   allItemsAvailable:
   - itemName: Bed
-    objectPrefab: {fileID: 3962528038203080221, guid: e1b53d390995ab0448a26b46b60e29ce, type: 3}
+    objectPrefab: {fileID: -6361728492208526769, guid: e1b53d390995ab0448a26b46b60e29ce, type: 3}
   - itemName: Planter
-    objectPrefab: {fileID: 3419387764126392438, guid: f3100a2bfbf943743bef3bc300bc8f76, type: 3}
+    objectPrefab: {fileID: 8814155159858941509, guid: f3100a2bfbf943743bef3bc300bc8f76, type: 3}
   - itemName: Chopper
-    objectPrefab: {fileID: 6625354540157557015, guid: e2577b1e5a2b9f54b9d51a2c77583acb, type: 3}
+    objectPrefab: {fileID: 4874352131973739337, guid: e2577b1e5a2b9f54b9d51a2c77583acb, type: 3}
   - itemName: Hunter
-    objectPrefab: {fileID: 1086550141152388533, guid: 593364d8c965ba1428a9736082147d17, type: 3}
+    objectPrefab: {fileID: 1042868822406248687, guid: 593364d8c965ba1428a9736082147d17, type: 3}
 --- !u!4 &1864580406
 Transform:
   m_ObjectHideFlags: 0
