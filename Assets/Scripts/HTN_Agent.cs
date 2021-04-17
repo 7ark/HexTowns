@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using MEC;
 using UnityEngine;
 
 public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
@@ -12,9 +13,10 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private List<int> currentMtr = null;
     private bool canContinueToNextTask = false;
     private float replanTimer = 0;
-    private Coroutine runningCoroutine = null;
-    private Coroutine delayedCoroutine = null;
+
     private bool currentCantBeCancelled = false;
+    private CoroutineHandle runningCoroutine;
+    private CoroutineHandle delayedCoroutine;
 
     protected void SetupHTN(Task htnRoot)
     {
@@ -35,13 +37,13 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     protected virtual void OnDisable()
     {
-        if(runningCoroutine != null)
+        if(runningCoroutine.IsValid)
         {
-            StopCoroutine(runningCoroutine);
+            Timing.KillCoroutines(runningCoroutine);
         }
-        if(delayedCoroutine != null)
+        if(delayedCoroutine.IsValid)
         {
-            StopCoroutine(delayedCoroutine);
+            Timing.KillCoroutines(delayedCoroutine);
         }
     }
 
@@ -68,46 +70,48 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         if (currentTaskList != null && currentTaskList.Count > 0 && Time.timeScale != 0)
         {
             currentCantBeCancelled = false;
-            runningCoroutine = StartCoroutine(Run());
+            runningCoroutine = Timing.RunCoroutine(_Run());
+
         }
         else
         {
             currentTaskList = null;
             currentMtr = null;
-            delayedCoroutine = StartCoroutine(DelayedCheckLater());
+            delayedCoroutine = Timing.RunCoroutine(_DelayedCheckLater());
         }
     }
+
 
     public void MarkCurrentAsUncancellable()
     {
         currentCantBeCancelled = true;
     }
-
-    private IEnumerator DelayedCheckLater()
+    
+    private IEnumerator<float> _DelayedCheckLater()
     {
-        yield return new WaitForSeconds(1);
+        yield return Timing.WaitForSeconds(1);
 
         CheckToRunAgain();
     }
 
-    private IEnumerator Run()
+    private IEnumerator<float> _Run()
     {
         bool cancelAll = false;
         while(currentTaskList.Count > 0)
         {
             canContinueToNextTask = false;
             PrimitiveTask<T> current = currentTaskList.Dequeue() as PrimitiveTask<T>;
-            yield return current.GetFinalRunResult()((didItGoWell) => 
+            yield return Timing.WaitUntilDone(current.GetFinalRunResult()((didItGoWell) => 
             { 
                 canContinueToNextTask = true; 
                 if(!didItGoWell)
                 {
                     cancelAll = true;
                 }
-            });
+            }));
             while(!canContinueToNextTask)
             {
-                yield return null;
+                yield return Timing.WaitForOneFrame;
             }
 
             if(cancelAll)
@@ -135,7 +139,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
                 if(plan.Plan != null && !currentMtr.SequenceEqual(plan.MTR))
                 {
-                    StopCoroutine(runningCoroutine);
+                    Timing.KillCoroutines(runningCoroutine);
                     TryRunPlan(plan);
                 }
             }

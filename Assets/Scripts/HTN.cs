@@ -14,9 +14,9 @@ public class PrimitiveTask<T> : Task
 {
     private System.Action<T> taskOperator;
     private System.Predicate<T> taskConditionOperator;
-    private System.Func<System.Action<bool>, IEnumerator> taskResultOperator;
+    private System.Func<System.Action<bool>, IEnumerator<float>> taskResultOperator;
 
-    public PrimitiveTask(string name, System.Predicate<T> taskConditionOperator, System.Action<T> taskOperator, System.Func<System.Action<bool>, IEnumerator> taskResultOperator) : base(name)
+    public PrimitiveTask(string name, System.Predicate<T> taskConditionOperator, System.Action<T> taskOperator, System.Func<System.Action<bool>, IEnumerator<float>> taskResultOperator) : base(name)
     {
         this.taskOperator = taskOperator;
         this.taskConditionOperator = taskConditionOperator;
@@ -33,7 +33,7 @@ public class PrimitiveTask<T> : Task
         taskOperator?.Invoke(worldState);
     }
 
-    public System.Func<System.Action<bool>, IEnumerator> GetFinalRunResult()
+    public System.Func<System.Action<bool>, IEnumerator<float>> GetFinalRunResult()
     {
         return taskResultOperator;
     }

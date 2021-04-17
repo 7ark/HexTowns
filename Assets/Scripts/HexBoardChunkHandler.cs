@@ -4,6 +4,7 @@ using UnityEngine;
 using MeshCombineStudio;
 using TMPro;
 using System.IO;
+using System.Linq;
 using Random = UnityEngine.Random;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
@@ -718,7 +719,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         var index = tile.GlobalIndex;
         var offset = tile.Coordinates.Y % 2 == 0 ? -1 : 1;
-        var neighbors = new List<HexTile>();
+        var neighbors = new List<HexTile>(6);
 
         CheckAndAdd(index - 1);
         CheckAndAdd(index + 1);
@@ -746,36 +747,20 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     public List<HexTile> GetTileNeighborsInDistance(HexTile tile, int distance)
     {
-        List<HexTile> allTiles = new List<HexTile>()
-        {
-            tile
-        };
-
-        List<HexTile> newLayer = new List<HexTile>()
-        {
-            tile
-        };
-        List<HexTile> delayedLayer = new List<HexTile>();
-        for (int i = 0; i < distance; i++)
-        {
-            for (int j = 0; j < newLayer.Count; j++)
-            {
-                List<HexTile> neighbors = GetTileNeighbors(newLayer[j]);
-                for (int k = 0; k < neighbors.Count; k++)
-                {
-                    if (!allTiles.Contains(neighbors[k]))
-                    {
-                        allTiles.Add(neighbors[k]);
-                        delayedLayer.Add(neighbors[k]);
-                    }
+        var allTiles = new HashSet<HexTile> { tile };
+        for (int i = -distance; i <= distance; i++) {
+            for (int j = Mathf.Max(-distance, -i - distance); j <= Mathf.Min(distance, -i + distance); j++) {
+                if (i == 0 && j == 0) {
+                    continue;
+                }
+                var neighbor = GetTileInDirection(tile, i, j);
+                if (neighbor != null) {
+                    allTiles.Add(neighbor);
                 }
             }
-            newLayer.Clear();
-            newLayer.AddRange(delayedLayer);
-            delayedLayer.Clear();
         }
-
-        return allTiles;
+        
+        return allTiles.ToList();
     }
 
     public HexTile GetTileInDirection(HexTile tile, int directionX, int directionY)

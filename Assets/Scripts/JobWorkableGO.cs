@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using MEC;
 using UnityEngine;
 
 public enum JobAction { ChopDownNearestTree, PlantTree, HuntBuny }
@@ -72,7 +73,7 @@ public class JobWorkableGO : MonoBehaviour
         }
     }
 
-    private IEnumerator ChopDownNearestTree(System.Action<bool> onComplete)
+    private IEnumerator<float> ChopDownNearestTree(System.Action<bool> onComplete)
     {
         activePeeple = workableObj.GetWorker();
 
@@ -108,15 +109,15 @@ public class JobWorkableGO : MonoBehaviour
 
         while(waitingToFinish)
         {
-            yield return null;
+            yield return Timing.WaitForOneFrame;
         }
 
         onComplete(true);
     }
 
-    private IEnumerator PlantTreeNearby(System.Action<bool> onComplete)
+    private IEnumerator<float> PlantTreeNearby(System.Action<bool> onComplete)
     {
-        yield return new WaitForSeconds(Random.Range(4, 9));
+        yield return Timing.WaitForSeconds(Random.Range(4, 9));
 
         activePeeple = workableObj.GetWorker();
 
@@ -164,7 +165,7 @@ public class JobWorkableGO : MonoBehaviour
 
         while(!arrived)
         {
-            yield return null;
+            yield return Timing.WaitForOneFrame;
         }
 
         //TODO: Plant tree happen over time
@@ -174,9 +175,9 @@ public class JobWorkableGO : MonoBehaviour
         onComplete(true);
     }
 
-    private IEnumerator HuntBuny(System.Action<bool> onComplete)
+    private IEnumerator<float> HuntBuny(System.Action<bool> onComplete)
     {
-        yield return new WaitForSeconds(Random.Range(2, 5));
+        yield return Timing.WaitForSeconds(Random.Range(2, 5));
 
         activePeeple = workableObj.GetWorker();
 
@@ -203,7 +204,7 @@ public class JobWorkableGO : MonoBehaviour
 
         while (waitingToFinish)
         {
-            yield return null;
+            yield return Timing.WaitForOneFrame;
         }
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
