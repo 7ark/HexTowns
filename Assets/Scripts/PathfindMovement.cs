@@ -19,6 +19,9 @@ public class PathfindMovement : MonoBehaviour
     public bool OnBoard { get; private set; } = false;
     public System.Action<bool> currentArrivedAction;
     public bool shouldDoArrivedActionEventIfCancelled = false;
+    public System.Action<List<Vector3>, System.Action> OverrideMovementHandling;
+
+    public float MovementSpeed { get { return movementDelay; } }
 
     Dictionary<HexTile, Pathfinder.HexTileAStarData> debugTileData;
     
@@ -77,7 +80,14 @@ public class PathfindMovement : MonoBehaviour
                     {
                         Debug.LogError("Trying to move with one given position\n" + StackTraceUtility.ExtractStackTrace(), gameObject);
                     }
-                    iTween.MoveTo(gameObject, iTween.Hash("path", positionPath.ToArray(), "time", positionPath.Count * movementDelay, "easetype", iTween.EaseType.linear, "orienttopath", true, "looktime", movementDelay, "delay", 0.1f, "oncomplete", "ArrivedAtLocation"));
+                    if(OverrideMovementHandling != null)
+                    {
+                        OverrideMovementHandling(positionPath, ArrivedAtLocation);
+                    }
+                    else
+                    {
+                        iTween.MoveTo(gameObject, iTween.Hash("path", positionPath.ToArray(), "time", positionPath.Count * movementDelay, "easetype", iTween.EaseType.linear, "orienttopath", true, "looktime", movementDelay, "delay", 0.1f, "oncomplete", "ArrivedAtLocation"));
+                    }
                 }
             });
         }
@@ -103,25 +113,4 @@ public class PathfindMovement : MonoBehaviour
         }
     }
 #endif
-
-    // private void Update()
-    // {
-    //     if(path != null)
-    //     {
-    //         timer -= Time.deltaTime;
-    //         if(timer <= 0)
-    //         {
-    //             HexTile curr = path[0];
-    //             path.RemoveAt(0);
-    //             transform.position = curr.Position + new Vector3(0, curr.Height * HexTile.HEIGHT_STEP);
-    //     
-    //             timer = movementDelay;
-    //     
-    //             if(path.Count <= 0)
-    //             {
-    //                 path = null;
-    //             }
-    //         }
-    //     }
-    // }
 }

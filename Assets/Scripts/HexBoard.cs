@@ -153,6 +153,7 @@ public class HexBoard
     private HexMesh hexMesh;
     private bool environmentalObjectsGenerated = false;
     private List<InstancedEnvironmentalObject> environmentalObjectsInstanced = new List<InstancedEnvironmentalObject>();
+    private HashSet<Animal> allAnimalsOnBoard = new HashSet<Animal>();
 
     public bool GeneratingTiles { get; private set; }
     public Vector2Int GridPosition { get; set; }
@@ -232,11 +233,25 @@ public class HexBoard
     public void Update()
     {
         GenerateEnvironmentalObjects();
+
+        foreach (var animal in allAnimalsOnBoard)
+        {
+            animal.gameObject.SetActive(true);
+        }
+
         hexMesh.Update();
 
         for (int i = 0; i < environmentalObjectsInstanced.Count; i++)
         {
             environmentalObjectsInstanced[i].Update();
+        }
+    }
+
+    public void StoppedDisplaying()
+    {
+        foreach(var animal in allAnimalsOnBoard)
+        {
+            animal.gameObject.SetActive(false);
         }
     }
 
@@ -334,6 +349,22 @@ public class HexBoard
             for (int i = 0; i < environmentalObjectsInstanced.Count; i++)
             {
                 environmentalObjectsInstanced[i].FindCenter();
+            }
+
+            //Animals
+            int amountOfBunies = 0;
+            if(BiomeTerrain == Biome.Forest)
+            {
+                amountOfBunies = Random.Range(4, 8);
+            }
+            else if(BiomeTerrain == Biome.Plains)
+            {
+                amountOfBunies = Random.Range(0, 4);
+            }
+
+            for (int i = 0; i < amountOfBunies; i++)
+            {
+                allAnimalsOnBoard.Add(AnimalHandler.Instance.SpawnAnimal(AnimalType.Buny, allTiles[Random.Range(0, allTiles.Count)]));
             }
         }
     }

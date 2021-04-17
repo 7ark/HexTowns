@@ -122,7 +122,7 @@ public class JobWorkableGO : MonoBehaviour
         HexTile tileToPlant = null;
         HexTile tileToMoveTo = null;
         var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated()[0], 10);
-        Shuffle(ref tiles);
+        tiles.Shuffle();
         for (int i = 0; i < tiles.Count; i++)
         {
             if(tiles[i].HeightLocked || tiles[i].HasWorkables || tiles[i].BuildingOnTile != null || tiles[i].WorkArea || tiles[i].CantWalkThrough)
@@ -171,17 +171,5 @@ public class JobWorkableGO : MonoBehaviour
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);
-    }
-    public static void Shuffle<T>(ref List<T> list)
-    {
-        int n = list.Count;
-        while (n > 1)
-        {
-            n--;
-            int k = Random.Range(0, n + 1);
-            T value = list[k];
-            list[k] = list[n];
-            list[n] = value;
-        }
     }
 }

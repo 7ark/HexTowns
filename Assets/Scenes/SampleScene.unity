@@ -2313,6 +2313,7 @@ Transform:
   - {fileID: 1864580406}
   - {fileID: 1154636013}
   - {fileID: 1868739194}
+  - {fileID: 748664510}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3452,6 +3453,52 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 9016287149713673702, guid: 13b78216f0e55c945b402022888728f0, type: 3}
   m_PrefabInstance: {fileID: 733615209}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &748664509
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 748664510}
+  - component: {fileID: 748664511}
+  m_Layer: 0
+  m_Name: AnimalHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &748664510
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748664509}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 396379748}
+  m_RootOrder: 11
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &748664511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748664509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5522da776bc7e2343b384f5f1af4437b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animalDatas:
+  - animalType: 0
+    prefab: {fileID: -55802869075076045, guid: 4280cfd684069fb48ba3f6f4b1ddedb8, type: 3}
 --- !u!1 &783637765
 GameObject:
   m_ObjectHideFlags: 0
@@ -6120,10 +6167,8 @@ MonoBehaviour:
   baseMaterialSelection: {fileID: 2100000, guid: 95f1f57c8b51bef459fab80856994eed, type: 2}
   drawingCamera: {fileID: 1023898293}
   selectionCamera: {fileID: 435334066}
-  mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
   hexagonPreviewMaterial: {fileID: 2100000, guid: 1e9d3c058453f7948b4a84c9f7ec39ee, type: 2}
-  textures:
-  - {fileID: 2800000, guid: 819311b7a66a8f740b104cf9f9ffadf5, type: 3}
+  mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
 --- !u!4 &1407722124
 Transform:
   m_ObjectHideFlags: 0

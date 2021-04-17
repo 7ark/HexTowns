@@ -25,7 +25,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     [SerializeField]
     private HexagonTextureReference textureReference;
     [SerializeField]
-    private int cameraViewRange = 10;
+    private Vector2Int cameraViewRange = new Vector2Int(1, 10);
     [SerializeField]
     private GameObject[] treePrefabs;
     [SerializeField]
@@ -42,7 +42,6 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Material hexagonPreviewMaterial;
-
 
 
     [System.Serializable]
@@ -68,6 +67,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     bool waitOne = false;
     private int seed;
     private Vector2Int[] voronoiPoints;
+    private HashSet<HexBoard> lastRendered = new HashSet<HexBoard>();
 
     public static HexBoardChunkHandler Instance;
 
@@ -148,7 +148,6 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         Instance = this;
 
-        GameTime.Instance.SetTimeSpeed(0);
 
         materialInst = new Material(baseMaterial);
 
@@ -178,6 +177,7 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     private void Start()
     {
+        GameTime.Instance.SetTimeSpeed(0);
         HexagonPreviewArea.Initialize(mesh, hexagonPreviewMaterial, drawingCamera);
     }
 
@@ -263,15 +263,19 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         HexagonPreviewArea.Update();
 
+        float currentZoom = cameraController.GetTargetedZoomLevel();
         Vector3 cameraPosition = cameraController.GetTargetedPosition();
         int camX = (int)(cameraPosition.x / HexBoard.FullSize.x);
         int camY = (int)(cameraPosition.z / HexBoard.FullSize.y);
 
+        HashSet<HexBoard> renderedThisFrame = new HashSet<HexBoard>();
+
+        int range = (int)Mathf.Lerp(cameraViewRange.x, cameraViewRange.y, currentZoom);
         if(allBoards != null && allBoards.Length > 0)
         {
-            for (int x = camX - cameraViewRange; x <= camX + cameraViewRange; x++)
+            for (int x = camX - range; x <= camX + range; x++)
             {
-                for (int y = camY - cameraViewRange; y <= camY + cameraViewRange; y++)
+                for (int y = camY - range; y <= camY + range; y++)
                 {
                     bool valid =
                         x >= 0 &&
@@ -282,11 +286,24 @@ public class HexBoardChunkHandler : MonoBehaviour
 
                     if (valid)
                     {
+                        renderedThisFrame.Add(allBoards[x, y]);
+                        lastRendered.Add(allBoards[x, y]);
                         allBoards[x, y].Update();
                     }
                 }
             }
         }
+
+        foreach (var board in lastRendered)
+        {
+            if(!renderedThisFrame.Contains(board))
+            {
+                board.StoppedDisplaying();
+            }
+        }
+        lastRendered.Clear();
+        lastRendered = renderedThisFrame;
+
         //for (int x = 0; x < allBoards.GetLength(0); x++)
         //{
         //    for (int y = 0; y < allBoards.GetLength(1); y++)

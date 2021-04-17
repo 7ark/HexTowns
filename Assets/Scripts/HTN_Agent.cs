@@ -13,6 +13,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private bool canContinueToNextTask = false;
     private float replanTimer = 0;
     private Coroutine runningCoroutine = null;
+    private Coroutine delayedCoroutine = null;
 
     protected void SetupHTN(Task htnRoot)
     {
@@ -31,9 +32,26 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         }
     }
 
+    protected virtual void OnDisable()
+    {
+        if(runningCoroutine != null)
+        {
+            StopCoroutine(runningCoroutine);
+        }
+        if(delayedCoroutine != null)
+        {
+            StopCoroutine(delayedCoroutine);
+        }
+    }
+
+    protected virtual void OnEnable()
+    {
+        CheckToRunAgain();
+    }
+
     private void CheckToRunAgain()
     {
-        if(currentTaskList == null || currentTaskList.Count == 0)
+        if(lifeHTN != null && (currentTaskList == null || currentTaskList.Count == 0))
         {
             HTN_Plan plan = HTN_Planner<T>.MakePlan(lifeHTN, GetCurrentWorldState());
 
@@ -54,7 +72,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             currentTaskList = null;
             currentMtr = null;
-            StartCoroutine(DelayedCheckLater());
+            delayedCoroutine = StartCoroutine(DelayedCheckLater());
         }
     }
 
