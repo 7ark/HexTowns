@@ -124,6 +124,11 @@ public class Placeable : Workable
         //HexagonPreviewArea.AddAreaToDisplay(tilesDisplay.ToArray(), tileHoveringAt.Height + ModifiedHeight, terrainHeightPreview, null);
     }
 
+    public void CancelPlacing()
+    {
+        HexagonPreviewArea.StopDisplay(previewTerrain);
+    }
+
     public bool Place(Vector3 position, HexTile tilePlacedOn)
     {
         if(!CanPlaceHere(tilePlacedOn))

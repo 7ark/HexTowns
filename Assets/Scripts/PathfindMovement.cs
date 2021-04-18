@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using MEC;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -20,6 +21,7 @@ public class PathfindMovement : MonoBehaviour
     public System.Action<bool> currentArrivedAction;
     public bool shouldDoArrivedActionEventIfCancelled = false;
     public System.Action<List<Vector3>, System.Action> OverrideMovementHandling;
+    private CoroutineHandle safetyHandle;
 
     public float MovementSpeed { get { return movementDelay; } }
 
@@ -91,6 +93,7 @@ public class PathfindMovement : MonoBehaviour
                     }
                     else
                     {
+                        safetyHandle = Timing.RunCoroutine(SafetyArrivalCheck(positionPath.Count * movementDelay + 0.5f), gameObject);
                         iTween.MoveTo(gameObject, iTween.Hash("path", positionPath.ToArray(), "time", positionPath.Count * movementDelay, "easetype", iTween.EaseType.linear, "orienttopath", true, "looktime", movementDelay, "delay", 0.1f, "oncomplete", "ArrivedAtLocation"));
                     }
                 }
@@ -100,8 +103,22 @@ public class PathfindMovement : MonoBehaviour
         currentTile = goal;
     }
 
+    private IEnumerator<float> SafetyArrivalCheck(float time)
+    {
+        yield return Timing.WaitForSeconds(time);
+
+        if(IsMoving || currentArrivedAction != null)
+        {
+            IsMoving = false;
+            currentArrivedAction?.Invoke(false);
+            currentArrivedAction = null;
+        }
+    }
+
     private void ArrivedAtLocation()
     {
+        Timing.KillCoroutines(safetyHandle);
+
         IsMoving = false;
         //Debug.Log(name + " arrived at its location!");
         currentArrivedAction?.Invoke(true);

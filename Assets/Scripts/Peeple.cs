@@ -56,6 +56,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.location = PeepleLocation.InWorkArea;
         }
         peepleWorldState.foodAvailable = ResourceHandler.Instance.IsThereEnoughResource(ResourceType.Food, 5);
+        if(!peepleWorldState.foodAvailable)
+        {
+            peepleWorldState.eating = false;
+        }
+        if(peepleWorldState.resting && peepleWorldState.energy >= 100)
+        {
+            peepleWorldState.resting = false;
+        }
         peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Sunrise && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Sunset;
         peepleWorldState.isNight = !GameTime.Instance.IsItLightOutside();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
@@ -332,6 +340,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         while (waitToArrive)
         {
+            if(!Movement.IsMoving)
+            {
+                //What the fuck happened here
+                moveSuccess = false;
+                break;
+            }
             yield return Timing.WaitForOneFrame;
         }
 
@@ -342,6 +356,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     public void DoUnofficialJob(Workable workable, System.Action onComplete)
     {
+        if(workable == null)
+        {
+            onComplete();
+            return;
+        }
         workable.SetWorkLeft();
 
         Debug.Log("Starting unofficial job");
@@ -500,11 +519,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         peepleWorldState.energy += 2;
         peepleWorldState.hunger++;
-        if(peepleWorldState.energy > 100)
+        peepleWorldState.resting = true;
+        if (peepleWorldState.energy > 100)
         {
             peepleWorldState.energy = 100;
+            peepleWorldState.resting = false;
         }
-        peepleWorldState.resting = true;
         restingSymbol.SetActive(peepleWorldState.energy < 100);
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);

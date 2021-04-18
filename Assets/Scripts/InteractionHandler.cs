@@ -154,6 +154,7 @@ public class InteractionHandler : MonoBehaviour
     {
         if(placeablePreview != null)
         {
+            placeablePreview.Get().CancelPlacing();
             Destroy(placeablePreview.gameObject);
             placeablePreview = null;
             hoverDisplay.transform.localScale = Vector3.one;
