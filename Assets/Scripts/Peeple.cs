@@ -43,6 +43,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     public bool Unemployed { get { return Job == null; } }
     private HexTile home;
     private int homeQuality = 0;
+    private Workable currentWorkable = null;
     [SerializeField]
     private PeepleWS peepleWorldState = new PeepleWS(true);
 
@@ -140,6 +141,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         Task htn = new CompoundTask<PeepleWS>("Peeple",
             new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.eating || ws.hunger >= 100); }).AddSubTasks(
+                stopRestingTask,
                 goHomeAndEatTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isNight; }).AddSubTasks(
@@ -343,7 +345,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         workable.SetWorkLeft();
 
         Debug.Log("Starting unofficial job");
-        StartCoroutine(UnofficialJobTick(workable, onComplete));
+        Timing.RunCoroutine(UnofficialJobTick(workable, onComplete));
     }
 
     private IEnumerator<float> UnofficialJobTick(Workable workable, System.Action onComplete)
@@ -369,10 +371,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     public IEnumerator<float> MoveToJobSite(Workable workable)
     {
-        Workable currentWorkable = currentJob;
+        currentWorkable = currentJob;
         currentJob = workable;
         yield return Timing.WaitUntilDone(MoveToJob(null));
         currentJob = currentWorkable;
+        currentWorkable = null;
     }
 
     private IEnumerator<float> MoveToJob(System.Action<bool> onComplete)
@@ -488,6 +491,13 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> TakeBreak(System.Action<bool> onComplete)
     {
+        if(currentWorkable != null)
+        {
+            currentJob = currentWorkable;
+            peepleWorldState.hasJob = true;
+            peepleWorldState.location = PeepleLocation.Anywhere;
+        }
+
         peepleWorldState.energy += 2;
         peepleWorldState.hunger++;
         if(peepleWorldState.energy > 100)

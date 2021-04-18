@@ -35,7 +35,7 @@ public class ResourceHandler : MonoBehaviour
         AllResources = new ResourceType[System.Enum.GetValues(typeof(ResourceType)).Length];
         for (int i = 0; i < AllResources.Length; i++)
         {
-            resources.Add((ResourceType)i, 0);
+            resources.Add((ResourceType)i, 1000);
             ResourceVisuals.Add((ResourceType)i, null);
             AllResources[i] = (ResourceType)i;
         }
