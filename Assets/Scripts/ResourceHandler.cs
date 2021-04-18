@@ -35,7 +35,7 @@ public class ResourceHandler : MonoBehaviour
         AllResources = new ResourceType[System.Enum.GetValues(typeof(ResourceType)).Length];
         for (int i = 0; i < AllResources.Length; i++)
         {
-            resources.Add((ResourceType)i, 1000);
+            resources.Add((ResourceType)i, 0);
             ResourceVisuals.Add((ResourceType)i, null);
             AllResources[i] = (ResourceType)i;
         }
@@ -67,6 +67,8 @@ public class ResourceHandler : MonoBehaviour
     {
         resources[ResourceType.Flags] = 1;
         resources[ResourceType.Food] = 200;
+        resources[ResourceType.Wood] = 50;
+        resources[ResourceType.Stone] = 25;
     }
 
     public void UpdateDisplayImages(bool forceUpdate = true)

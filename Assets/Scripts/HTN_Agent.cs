@@ -6,8 +6,6 @@ using UnityEngine;
 
 public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 {
-    private const float TIME_TO_CHECK_FOR_REPLAN = 1;
-
     protected Task lifeHTN;
     protected Queue<Task> currentTaskList = null;
     private List<int> currentMtr = null;
@@ -71,7 +69,6 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             currentCantBeCancelled = false;
             runningCoroutine = Timing.RunCoroutine(_Run());
-
         }
         else
         {
@@ -125,13 +122,18 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         CheckToRunAgain();
     }
 
+    private void SetReplanTimer()
+    {
+        replanTimer = Random.Range(1f, 2f);
+    }
+
     private void Update()
     {
-        replanTimer += Time.deltaTime;
+        replanTimer -= Time.deltaTime;
 
-        if(replanTimer >= TIME_TO_CHECK_FOR_REPLAN)
+        if(replanTimer <= 0)
         {
-            replanTimer = 0;
+            SetReplanTimer();
 
             if(!currentCantBeCancelled && currentMtr != null)
             {
