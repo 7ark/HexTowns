@@ -6,6 +6,9 @@ using UnityEngine;
 
 public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 {
+    [SerializeField]
+    private List<string> HTN_LOG = new List<string>();
+
     protected Task lifeHTN;
     protected Queue<Task> currentTaskList = null;
     private List<int> currentMtr = null;
@@ -15,6 +18,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private bool currentCantBeCancelled = false;
     private CoroutineHandle runningCoroutine;
     private CoroutineHandle delayedCoroutine;
+    private bool canBeCancelled = true;
 
     protected void SetupHTN(Task htnRoot)
     {
@@ -35,11 +39,16 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     protected virtual void OnDisable()
     {
-        if(runningCoroutine.IsValid)
+        KillCoroutines();
+    }
+
+    private void KillCoroutines()
+    {
+        if (runningCoroutine.IsValid)
         {
             Timing.KillCoroutines(runningCoroutine);
         }
-        if(delayedCoroutine.IsValid)
+        if (delayedCoroutine.IsValid)
         {
             Timing.KillCoroutines(delayedCoroutine);
         }
@@ -67,11 +76,13 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
         if (currentTaskList != null && currentTaskList.Count > 0 && Time.timeScale != 0)
         {
+            HTN_LOG.Add("Running plan");
             currentCantBeCancelled = false;
             runningCoroutine = Timing.RunCoroutine(_Run());
         }
         else
         {
+            HTN_LOG.Add("Plan not valid, waiting to try again");
             currentTaskList = null;
             currentMtr = null;
             delayedCoroutine = Timing.RunCoroutine(_DelayedCheckLater());
@@ -98,6 +109,8 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             canContinueToNextTask = false;
             PrimitiveTask<T> current = currentTaskList.Dequeue() as PrimitiveTask<T>;
+            canBeCancelled = current.CanBeCancelled;
+            HTN_LOG.Add("Task Start: " + current.TaskName);
             yield return Timing.WaitUntilDone(current.GetFinalRunResult()((didItGoWell) => 
             { 
                 canContinueToNextTask = true; 
@@ -105,6 +118,8 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
                 {
                     cancelAll = true;
                 }
+
+                HTN_LOG.Add("Task " + current.TaskName + " Completed with: " + didItGoWell);
             }));
             while(!canContinueToNextTask)
             {
@@ -113,6 +128,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
             if(cancelAll)
             {
+                HTN_LOG.Add("Current plan cancelled");
                 break;
             }
         }
@@ -139,9 +155,10 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
             {
                 HTN_Plan plan = HTN_Planner<T>.MakePlan(lifeHTN, GetCurrentWorldState(), currentMtr);
 
-                if(plan.Plan != null && !currentMtr.SequenceEqual(plan.MTR))
+                if(plan.Plan != null && !currentMtr.SequenceEqual(plan.MTR) && canBeCancelled)
                 {
-                    Timing.KillCoroutines(runningCoroutine);
+                    HTN_LOG.Add("Replan succeeded, running replan");
+                    KillCoroutines();
                     TryRunPlan(plan);
                 }
             }

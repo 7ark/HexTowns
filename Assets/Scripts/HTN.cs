@@ -9,18 +9,22 @@ public class Task
     {
         taskName = name;
     }
+
+    public string TaskName { get { return taskName; } }
 }
 public class PrimitiveTask<T> : Task
 {
     private System.Action<T> taskOperator;
     private System.Predicate<T> taskConditionOperator;
     private System.Func<System.Action<bool>, IEnumerator<float>> taskResultOperator;
+    public bool CanBeCancelled { get; private set; }
 
-    public PrimitiveTask(string name, System.Predicate<T> taskConditionOperator, System.Action<T> taskOperator, System.Func<System.Action<bool>, IEnumerator<float>> taskResultOperator) : base(name)
+    public PrimitiveTask(string name, System.Predicate<T> taskConditionOperator, System.Action<T> taskOperator, System.Func<System.Action<bool>, IEnumerator<float>> taskResultOperator, bool canBeCancelled = true) : base(name)
     {
         this.taskOperator = taskOperator;
         this.taskConditionOperator = taskConditionOperator;
         this.taskResultOperator = taskResultOperator;
+        CanBeCancelled = canBeCancelled;
     }
 
     public bool IsConditionMet(T worldState)

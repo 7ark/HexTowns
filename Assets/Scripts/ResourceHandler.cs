@@ -25,6 +25,8 @@ public class ResourceHandler : MonoBehaviour
     private Dictionary<Image, TextMeshProUGUI> imageToText = new Dictionary<Image, TextMeshProUGUI>();
     public Dictionary<ResourceType, Sprite> ResourceVisuals { get; private set; } = new Dictionary<ResourceType, Sprite>();
     private bool displayingOther = false;
+    private int flagDayIncrement = 3;
+    private int flagDay = 3;
 
     public ResourceType[] AllResources { get; private set; }
 
@@ -56,8 +58,10 @@ public class ResourceHandler : MonoBehaviour
     {
         GameTime.Instance.OnNewDay += (daysPassed) =>
         {
-            if (daysPassed % 3 == 0)
+            if ((daysPassed + 1) == flagDay)
             {
+                flagDay += flagDayIncrement;
+                flagDayIncrement++;
                 GainResource(ResourceType.Flags, 1);
             }
         };

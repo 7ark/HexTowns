@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using MEC;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -54,6 +55,15 @@ public class Workable
     public void MarkAsUnreachable()
     {
         Unreachable = true;
+
+        Timing.RunCoroutine(DelayedTryAgain());
+    }
+
+    private IEnumerator<float> DelayedTryAgain()
+    {
+        yield return Timing.WaitForSeconds(2);
+
+        Unreachable = false;
     }
 
     public virtual bool DoWork()

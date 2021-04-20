@@ -13,13 +13,13 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public bool hasJob;
         public bool anyJobsAvailable;
         public int energy;
-        public bool resting;
         public bool hasHome;
         public bool isWorkingHours;
         public bool isNight;
         public int hunger;
-        public bool eating;
         public bool foodAvailable;
+        public bool resting;
+        public bool eating;
 
         public PeepleWS(bool initDefault)
         {
@@ -27,15 +27,17 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             energy = 100;
             hasJob = false;
             anyJobsAvailable = false;
-            resting = false;
             hasHome = false;
             isWorkingHours = true;
             isNight = false;
             hunger = 0;
             foodAvailable = false;
+            resting = false;
             eating = false;
         }
     }
+
+    private enum PeepleAIState { DoingNothing, Resting, DoingJob, EatingFood, Sleeping }
 
     public PathfindMovement Movement { get; private set; }
     private Workable currentJob;
@@ -44,6 +46,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private HexTile home;
     private int homeQuality = 0;
     private Workable currentWorkable = null;
+    [SerializeField]
+    private PeepleAIState currentAIState = PeepleAIState.DoingNothing;
     [SerializeField]
     private PeepleWS peepleWorldState = new PeepleWS(true);
 
@@ -56,14 +60,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.location = PeepleLocation.InWorkArea;
         }
         peepleWorldState.foodAvailable = ResourceHandler.Instance.IsThereEnoughResource(ResourceType.Food, 5);
-        if(!peepleWorldState.foodAvailable)
-        {
-            peepleWorldState.eating = false;
-        }
-        if(peepleWorldState.resting && peepleWorldState.energy >= 100)
-        {
-            peepleWorldState.resting = false;
-        }
         peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Sunrise && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Sunset;
         peepleWorldState.isNight = !GameTime.Instance.IsItLightOutside();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
@@ -78,6 +74,26 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     public void SetPeepleLocation(PeepleLocation loc)
     {
         peepleWorldState.location = loc;
+    }
+
+    private void SetAIState(PeepleAIState newState)
+    {
+        if(newState == currentAIState)
+        {
+            return;
+        }
+
+        currentAIState = newState;
+
+        if(currentAIState != PeepleAIState.Resting)
+        {
+            restingSymbol.SetActive(false);
+            peepleWorldState.eating = false;
+        }
+        if(currentAIState != PeepleAIState.EatingFood)
+        {
+            peepleWorldState.eating = false;
+        }
     }
 
     private void Awake()
@@ -97,18 +113,18 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             MoveOutOfWorkArea);
         PrimitiveTask<PeepleWS> relaxTask = new PrimitiveTask<PeepleWS>("Relax",
             (worldState) => { return true ; },
-            (worldState) => { worldState.energy += 2; worldState.hunger++; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true;},
+            (worldState) => { worldState.energy += 2; worldState.hunger++; if (worldState.energy > 100) worldState.energy = 100; },
             TakeBreak);
         PrimitiveTask<PeepleWS> sleepTask = new PrimitiveTask<PeepleWS>("Sleep",
             (worldState) => { return true; },
-            (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
+            (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100;  },
             Sleep);
         PrimitiveTask<PeepleWS> moveToHomeTask = new PrimitiveTask<PeepleWS>("MoveToHome",
             (worldState) => { return worldState.hasHome; },
             (worldState) => { worldState.location = PeepleLocation.Home; },
             MoveToHome);
         CompoundTask<PeepleWS> takeBreakIfTiredTask = new CompoundTask<PeepleWS>("TakeABreak",
-            new Method<PeepleWS>((worldState) => { return worldState.energy < 25 || (worldState.resting && worldState.energy < 75); }).AddSubTasks(
+            new Method<PeepleWS>((worldState) => { return worldState.energy < 25 || worldState.resting; }).AddSubTasks(
                 relaxTask
                 )
             );
@@ -121,8 +137,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
         PrimitiveTask<PeepleWS> eatTask = new PrimitiveTask<PeepleWS>("Eat",
             (worldState) => { return true; },
-            (worldState) => { worldState.eating = true; worldState.hunger -= 15; if (worldState.hunger < 0) { worldState.hunger = 0; worldState.eating = false; } },
-            Eat);
+            (worldState) => { worldState.hunger -= 15; if (worldState.hunger < 0) { worldState.hunger = 0; } },
+            Eat,
+            canBeCancelled: false);
         CompoundTask<PeepleWS> goHomeAndEatTask = new CompoundTask<PeepleWS>("EatFood", //TODO: Change this to go to the nearest food storage
             new Method<PeepleWS>((worldState) => { return true; }).AddSubTasks(
                 moveToHomeTask,
@@ -142,38 +159,28 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             (worldState) => { return worldState.hasJob && worldState.location == PeepleLocation.Job; },
             (worldState) => { worldState.hunger += 2; worldState.energy -= 1; if (worldState.energy < 0) worldState.energy = 0; },
             DoJob);
-        PrimitiveTask<PeepleWS> stopRestingTask = new PrimitiveTask<PeepleWS>("StopResting",
-            (worldState) => { return true; },
-            (worldState) => { worldState.resting = false; },
-            StopResting);
 
         Task htn = new CompoundTask<PeepleWS>("Peeple",
-            new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.eating || ws.hunger >= 100); }).AddSubTasks(
-                stopRestingTask,
+            new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.hunger >= 100 || ws.eating); }).AddSubTasks(
                 goHomeAndEatTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isNight; }).AddSubTasks(
-                stopRestingTask,
                 moveToHomeTask,
                 sleepTask
             ),
             new Method<PeepleWS>().AddSubTasks(
-                stopRestingTask,
                 moveOutOfWorkAreaTask
             ),
             new Method<PeepleWS>().AddSubTasks(
                 takeBreakIfTiredTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 findJobTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 moveToJobTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 doJobTask
             ),
             new Method<PeepleWS>().AddSubTasks(
@@ -213,44 +220,32 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     
     private IEnumerator<float> Eat(System.Action<bool> onComplete)
     {
-        if(!ResourceHandler.Instance.UseResources(ResourceType.Food, 5))
+        SetAIState(PeepleAIState.EatingFood);
+        while (peepleWorldState.hunger > 10)
         {
-            peepleWorldState.eating = false;
-            onComplete(false);
-            yield break;
-        }
+            if (!ResourceHandler.Instance.UseResources(ResourceType.Food, 5))
+            {
+                onComplete(false);
+                yield break;
+            }
+            peepleWorldState.eating = true;
 
-        peepleWorldState.hunger -= 15;
-        peepleWorldState.eating = true;
-        if(peepleWorldState.hunger < 10)
-        {
-            peepleWorldState.eating = false;
-        }
-        if (peepleWorldState.hunger < 0)
-        {
-            peepleWorldState.hunger = 0;
-        }
+            peepleWorldState.hunger -= 15;
+            if (peepleWorldState.hunger < 0)
+            {
+                peepleWorldState.hunger = 0;
+            }
 
-        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+            yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        }
+        peepleWorldState.eating = false;
 
         onComplete(true);
-    }
-    
-    private IEnumerator<float> StopResting(System.Action<bool> onComplete)
-    {
-        if(peepleWorldState.resting)
-        {
-            restingSymbol.SetActive(false);
-            peepleWorldState.resting = false;
-        }
-
-        onComplete(true);
-
-        yield break;
     }
 
     private IEnumerator<float> FindJob(System.Action<bool> onComplete)
     {
+        SetAIState(PeepleAIState.DoingJob);
         PeepleJobHandler.Instance.FindJob(this);
         peepleWorldState.hasJob = true;
 
@@ -261,6 +256,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> MoveOutOfWorkArea(System.Action<bool> onComplete)
     {
+        SetAIState(PeepleAIState.DoingNothing);
         HexTile tileToMoveTo = null;
         List<HexTile> tilesSeen = new List<HexTile>();
         Queue<HexTile> currentTiles = new Queue<HexTile>();
@@ -319,6 +315,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             onComplete(true);
             yield break;
         }
+        SetAIState(PeepleAIState.DoingNothing);
 
         bool waitToArrive = true;
         bool moveSuccess = true;
@@ -399,7 +396,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> MoveToJob(System.Action<bool> onComplete)
     {
-        if(onComplete != null)
+        SetAIState(PeepleAIState.DoingJob);
+        if (onComplete != null)
         {
             Debug.Log("Move to job");
         }
@@ -492,11 +490,16 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     {
         if(Job == null)
         {
+            peepleWorldState.location = PeepleLocation.Anywhere;
             onComplete(false);
             yield break;
         }
+        SetAIState(PeepleAIState.DoingJob);
 
-        Job.DoWork();
+        if(Job.DoWork())
+        {
+            peepleWorldState.location = PeepleLocation.Anywhere;
+        }
         peepleWorldState.hunger += 2;
         peepleWorldState.energy -= 1;
         if(peepleWorldState.energy < 0)
@@ -510,36 +513,42 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> TakeBreak(System.Action<bool> onComplete)
     {
-        if(currentWorkable != null)
+        SetAIState(PeepleAIState.Resting);
+        if (currentWorkable != null)
         {
             currentJob = currentWorkable;
             peepleWorldState.hasJob = true;
             peepleWorldState.location = PeepleLocation.Anywhere;
         }
 
-        peepleWorldState.energy += 2;
-        peepleWorldState.hunger++;
-        peepleWorldState.resting = true;
-        if (peepleWorldState.energy > 100)
+        while(peepleWorldState.energy < 100)
         {
-            peepleWorldState.energy = 100;
-            peepleWorldState.resting = false;
-        }
-        restingSymbol.SetActive(peepleWorldState.energy < 100);
+            peepleWorldState.resting = true;
+            peepleWorldState.energy += 2;
+            peepleWorldState.hunger++;
+            if (peepleWorldState.energy > 100)
+            {
+                peepleWorldState.energy = 100;
+                break;
+            }
+            restingSymbol.SetActive(true);
 
-        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+            yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        }
+        restingSymbol.SetActive(false);
+        peepleWorldState.resting = false;
+
         onComplete(true);
     }
 
     private IEnumerator<float> Sleep(System.Action<bool> onComplete)
     {
+        SetAIState(PeepleAIState.Sleeping);
         peepleWorldState.energy += 5;
         if (peepleWorldState.energy > 100)
         {
             peepleWorldState.energy = 100;
         }
-        peepleWorldState.resting = true;
-        restingSymbol.SetActive(peepleWorldState.energy < 100);
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
