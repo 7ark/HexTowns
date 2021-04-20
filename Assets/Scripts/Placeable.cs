@@ -178,28 +178,31 @@ public class Placeable : Workable
 
     protected override void WorkCompleted(bool completedSuccessfully)
     {
-        previewDisplay.SetActive(false);
-        visualOptions[selectionType].SetActive(true);
-
-        //Setup building
-        Building building = new Building();
-        for (int i = 0; i < objectsToCheckTilesUnder.Count; i++)
+        if(completedSuccessfully)
         {
-            HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));
+            previewDisplay.SetActive(false);
+            visualOptions[selectionType].SetActive(true);
 
-            hexagonObjectData[i].Rotate(rotated);
-            building.AddPiece(tile, hexagonObjectData[i]);
-            if(hexagonObjectData[i].HasWorkStation && hexagonObjectData[i].WorkStation.RequiresWork)
+            //Setup building
+            Building building = new Building();
+            for (int i = 0; i < objectsToCheckTilesUnder.Count; i++)
             {
-                hexagonObjectData[i].WorkStation.Get().BeginWorking();
+                HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));
+
+                hexagonObjectData[i].Rotate(rotated);
+                building.AddPiece(tile, hexagonObjectData[i]);
+                if (hexagonObjectData[i].HasWorkStation && hexagonObjectData[i].WorkStation.RequiresWork)
+                {
+                    hexagonObjectData[i].WorkStation.Get().BeginWorking();
+                }
+                if (hexagonObjectData[i].HasWorkStation)
+                {
+                    hexagonObjectData[i].WorkStation.OnPlaced?.Invoke(tile);
+                }
             }
-            if(hexagonObjectData[i].HasWorkStation)
-            {
-                hexagonObjectData[i].WorkStation.OnPlaced?.Invoke(tile);
-            }
+
+            building.SetupWorkStations();
         }
-
-        building.SetupWorkStations();
 
         base.WorkCompleted(completedSuccessfully);
     }

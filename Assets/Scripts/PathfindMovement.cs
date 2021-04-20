@@ -111,8 +111,6 @@ public class PathfindMovement : MonoBehaviour
 
         if(IsMoving || currentArrivedAction != null)
         {
-            if(name.Contains("Peeple"))
-                Debug.LogError("Failed Arrived");
             IsMoving = false;
             currentArrivedAction?.Invoke(false);
             currentArrivedAction = null;
@@ -122,9 +120,6 @@ public class PathfindMovement : MonoBehaviour
     private void ArrivedAtLocation()
     {
         Timing.KillCoroutines(safetyHandle);
-
-        if (name.Contains("Peeple"))
-            Debug.LogError("Arrived");
 
         IsMoving = false;
         //Debug.Log(name + " arrived at its location!");
