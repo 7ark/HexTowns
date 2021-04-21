@@ -60,8 +60,8 @@ public class ResourceHandler : MonoBehaviour
         {
             if ((daysPassed + 1) == flagDay)
             {
-                flagDay += flagDayIncrement;
                 flagDayIncrement++;
+                flagDay += flagDayIncrement;
                 GainResource(ResourceType.Flags, 1);
             }
         };

@@ -120,7 +120,7 @@ public class JobWorkableGO : MonoBehaviour
 
     private IEnumerator<float> PlantTreeNearby(System.Action<bool> onComplete)
     {
-        yield return Timing.WaitForSeconds(Random.Range(4, 9));
+        yield return Timing.WaitForSeconds(Random.Range(3, 6));
 
         activePeeple = workableObj.GetWorker();
 

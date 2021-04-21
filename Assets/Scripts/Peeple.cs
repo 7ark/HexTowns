@@ -119,6 +119,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             (worldState) => { return true; },
             (worldState) => { worldState.energy += 2; worldState.hunger++; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
             TakeBreak);
+        PrimitiveTask<PeepleWS> idleTask = new PrimitiveTask<PeepleWS>("Idle",
+            (worldState) => { return true; },
+            (worldState) => { },
+            Idle);
         PrimitiveTask<PeepleWS> sleepTask = new PrimitiveTask<PeepleWS>("Sleep",
             (worldState) => { return true; },
             (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
@@ -197,7 +201,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 doJobTask
             ),
             new Method<PeepleWS>().AddSubTasks(
-                relaxTask
+                relaxTask,
+                idleTask
             )
         );
 
@@ -553,14 +558,50 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.energy += 2;
         peepleWorldState.hunger++;
         peepleWorldState.resting = true;
+        restingSymbol.SetActive(true);
         if (peepleWorldState.energy > 100)
         {
             peepleWorldState.energy = 100;
             peepleWorldState.resting = false;
+            restingSymbol.SetActive(false);
         }
-        restingSymbol.SetActive(peepleWorldState.energy < 100);
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+        onComplete(true);
+    }
+    private IEnumerator<float> Idle(System.Action<bool> onComplete)
+    {
+        SetAIState(PeepleAIState.DoingNothing);
+
+        yield return Timing.WaitForSeconds(Random.Range(1f, 6f));
+
+        HexTile tileOn = Movement.GetTileOn();
+        List<HexTile> tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 3);
+        tileOptions.Shuffle();
+
+        HexTile tileToMoveTo = null;
+        for (int i = 0; i < tileOptions.Count; i++)
+        {
+            if (tileOptions[i].CantWalkThrough || tileOptions[i].BuildingOnTile != null)
+            {
+                continue;
+            }
+
+            tileToMoveTo = tileOptions[i];
+            break;
+        }
+
+        bool waitingToFinish = true;
+        Movement.SetGoal(tileToMoveTo, arrivedComplete: (success) =>
+        {
+            waitingToFinish = false;
+        });
+
+        while (waitingToFinish)
+        {
+            yield return Timing.WaitForOneFrame;
+        }
+
         onComplete(true);
     }
 
@@ -573,7 +614,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.energy = 100;
         }
         peepleWorldState.resting = true;
-        restingSymbol.SetActive(peepleWorldState.energy < 100);
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
