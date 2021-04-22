@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[Serializable]
 public class Task
 {
     private string taskName;
@@ -10,7 +12,9 @@ public class Task
         taskName = name;
     }
 
-    public string TaskName { get { return taskName; } }
+    public string TaskName => taskName;
+
+    public override string ToString() => taskName;
 }
 public class PrimitiveTask<T> : Task
 {

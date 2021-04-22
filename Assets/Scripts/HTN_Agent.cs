@@ -16,8 +16,8 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private float replanTimer = 0;
 
     private bool currentCantBeCancelled = false;
-    private CoroutineHandle runningCoroutine;
-    private CoroutineHandle delayedCoroutine;
+    private CoroutineHandle planHandle;
+    private CoroutineHandle currentTaskHandle;
     private bool canBeCancelled = true;
     private float delayCheckAgainTimer = 0;
 
@@ -40,18 +40,15 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     protected virtual void OnDisable()
     {
-        KillCoroutines();
+        KillCoroutines(); //todo pause?
     }
 
     private void KillCoroutines()
     {
-        if (runningCoroutine.IsValid)
-        {
-            Timing.KillCoroutines(runningCoroutine);
-        }
-        if (delayedCoroutine.IsValid)
-        {
-            Timing.KillCoroutines(delayedCoroutine);
+        if (planHandle.IsValid) {
+            HTN_LOG.Add("Killing Coroutines");
+            Timing.KillCoroutines(planHandle);
+            Timing.KillCoroutines(currentTaskHandle);
         }
     }
 
@@ -62,8 +59,12 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     private void CheckToRunAgain()
     {
+        HTN_LOG.Add("Check to run again");
         if(lifeHTN != null && (currentTaskList == null || currentTaskList.Count == 0))
         {
+            if (planHandle.IsValid) {
+                HTN_LOG.Add("Running again, but current is valid?");
+            }
             HTN_Plan plan = HTN_Planner<T>.MakePlan(lifeHTN, GetCurrentWorldState());
 
             TryRunPlan(plan);
@@ -79,7 +80,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             HTN_LOG.Add("Running plan");
             currentCantBeCancelled = false;
-            runningCoroutine = Timing.RunCoroutine(_Run(), gameObject);
+            planHandle = Timing.RunCoroutine(_Run(), gameObject, gameObject.name);
         }
         else
         {
@@ -97,6 +98,10 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     private IEnumerator<float> _Run()
     {
+        if (!planHandle.IsValid) {
+            planHandle = Timing.CurrentCoroutine;
+        }
+        
         bool cancelAll = false;
         while(currentTaskList.Count > 0)
         {
@@ -104,29 +109,20 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
             PrimitiveTask<T> current = currentTaskList.Dequeue() as PrimitiveTask<T>;
             canBeCancelled = current.CanBeCancelled;
             HTN_LOG.Add("Task Start: " + current.TaskName);
-            //CoroutineHandle subTask = Timing.RunCoroutine(current.GetFinalRunResult()((didItGoWell) =>
-            yield return Timing.WaitUntilDone(current.GetFinalRunResult()((didItGoWell) =>
-            {
+            var taskOperator = current.GetFinalRunResult()(success => {
                 canContinueToNextTask = true;
-                if (!didItGoWell)
-                {
+                if (!success) {
                     cancelAll = true;
                 }
 
-                HTN_LOG.Add("Task " + current.TaskName + " Completed with: " + didItGoWell);
-            }));//, runningCoroutine.Segment);
-            //Timing.LinkCoroutines(runningCoroutine, subTask);
-            //yield return Timing.WaitUntilDone(subTask);
-            while(!canContinueToNextTask)
-            {
-                //if(!subTask.IsValid || !subTask.IsRunning)
-                //{
-                //    canContinueToNextTask = true;
-                //    cancelAll = true;
-                //}
-
-                yield return Timing.WaitForOneFrame;
+                HTN_LOG.Add("Task " + current.TaskName + " Completed with: " + success);
+            });
+            currentTaskHandle = Timing.RunCoroutine(taskOperator, gameObject, gameObject.name);
+            if (!currentTaskHandle.IsValid) {
+                Debug.LogError("SubTask Not Valid");
             }
+            
+            yield return Timing.WaitUntilDone(currentTaskHandle);
 
             if(cancelAll)
             {
@@ -136,8 +132,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         }
         currentTaskList = null;
         currentMtr = null;
-
-        CheckToRunAgain();
+        planHandle = default;
     }
 
     private void SetReplanTimer()
@@ -171,16 +166,16 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
                 }
             }
         }
-
-        delayCheckAgainTimer -= Time.deltaTime;
-        if(delayCheckAgainTimer <= 0)
+        
+        if(!planHandle.IsValid || !planHandle.IsRunning)
         {
-            delayCheckAgainTimer = 2f;
-
-            if(!runningCoroutine.IsValid || !runningCoroutine.IsRunning)
-            {
+            delayCheckAgainTimer -= Time.deltaTime;
+            
+            if (delayCheckAgainTimer <= 0) {
+                delayCheckAgainTimer = 2f;
                 CheckToRunAgain();
             }
+
         }
     }
 }
