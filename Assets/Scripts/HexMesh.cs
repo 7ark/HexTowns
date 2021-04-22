@@ -120,28 +120,11 @@ public class HexMesh
         if(meshBasis != null)
         {
             Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
-            bool drawInGameView = true;
-#if UNITY_EDITOR
-            foreach (var svObj in UnityEditor.SceneView.sceneViews)
-            {
-                UnityEditor.SceneView sv = svObj as UnityEditor.SceneView;
-                if (sv != null)
-                {
-                    if(sv == UnityEditor.SceneView.currentDrawingSceneView)
-                        drawInGameView = false;
-                    Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
-                        ShadowCastingMode.On, true, 6, sv.camera);
-                }
-            }
-#endif
-            if(drawInGameView)
-            {
-                Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
-                    ShadowCastingMode.On, true, 6, drawCamera);
+            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
+                ShadowCastingMode.On, true, 6);
 
-                Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matSelectionInstance, bound, allTiles.Length, null,
-                    ShadowCastingMode.Off, false, 6, selectionCamera);
-            }
+            Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matSelectionInstance, bound, allTiles.Length, null,
+                ShadowCastingMode.Off, false, 6, selectionCamera);
         }
     }
 
