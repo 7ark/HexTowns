@@ -133,6 +133,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         currentTaskList = null;
         currentMtr = null;
         planHandle = default;
+        delayCheckAgainTimer = 0;
     }
 
     private void SetReplanTimer()
