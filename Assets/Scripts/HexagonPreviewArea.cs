@@ -55,7 +55,7 @@ public static class HexagonPreviewArea
                 //Draw that shit
                 Bounds bound = currDisplay.bounds;
                 Graphics.DrawMeshInstancedProcedural(meshBasis, 0, currDisplay.matInstance, bound, currDisplay.renderData.Length, null,
-                    ShadowCastingMode.On, true, 6);
+                    ShadowCastingMode.On, true, 0);
             }
 
         }

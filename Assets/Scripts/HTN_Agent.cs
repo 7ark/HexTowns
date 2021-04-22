@@ -12,7 +12,6 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     protected Task lifeHTN;
     protected Queue<Task> currentTaskList = null;
     private List<int> currentMtr = null;
-    private bool canContinueToNextTask = false;
     private float replanTimer = 0;
 
     private bool currentCantBeCancelled = false;
@@ -105,12 +104,10 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         bool cancelAll = false;
         while(currentTaskList.Count > 0)
         {
-            canContinueToNextTask = false;
             PrimitiveTask<T> current = currentTaskList.Dequeue() as PrimitiveTask<T>;
             canBeCancelled = current.CanBeCancelled;
             HTN_LOG.Add("Task Start: " + current.TaskName);
             var taskOperator = current.GetFinalRunResult()(success => {
-                canContinueToNextTask = true;
                 if (!success) {
                     cancelAll = true;
                 }

@@ -398,7 +398,7 @@ public class InteractionHandler : MonoBehaviour
     {
         if(tile != null)
         {
-            if(selectedPeep == null)
+            if (selectedPeep == null)
             {
                 Peeple[] allPeeps = PeepleHandler.Instance.GetPeepleOnTiles(new HexTile[] { tile });
                 if(allPeeps.Length > 0)
@@ -477,6 +477,10 @@ public class InteractionHandler : MonoBehaviour
                 //board.ChunkHandler.FlattenArea(tiles.ToArray(), tile.Height);
             }
             //AdjustHeightOfTile(board, tile, tile.Height + 1);
+        }
+        else
+        {
+            Debug.Log("fucking how");
         }
 
     }
