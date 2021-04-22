@@ -47,7 +47,7 @@ public class PlacementPrefabHandler : MonoBehaviour
 
             int index = i;
             string buildingName = prefabData[index].Name;
-            Button newButton = AddButtonItem(buildingName);
+            Button newButton = AddButtonItem(buildingName, buildingName);
 
             data.ButtonReference = newButton;
             prefabData[i] = data;
@@ -56,15 +56,15 @@ public class PlacementPrefabHandler : MonoBehaviour
         SetupDictionaries();
     }
 
-    private Button AddButtonItem(string buildingName)
+    private Button AddButtonItem(string buildingName, string uniqueNameReference)
     {
         Button newButton = Instantiate(buttonPrefab, buttonParent);
         newButton.GetComponentInChildren<TextMeshProUGUI>().text = buildingName;
-        newButton.onClick.AddListener(() => { StartPlacingItem(buildingName); });
+        newButton.onClick.AddListener(() => { StartPlacingItem(uniqueNameReference); });
         EventTrigger eventTrigger = newButton.gameObject.AddComponent<EventTrigger>();
         EventTrigger.Entry entryPointerEnter = new EventTrigger.Entry();
         entryPointerEnter.eventID = EventTriggerType.PointerEnter;
-        entryPointerEnter.callback.AddListener((eventData) => { resourceHandler.OverrideResourceDisplay(nameToResourceDictionaries[buildingName], Color.green); });
+        entryPointerEnter.callback.AddListener((eventData) => { resourceHandler.OverrideResourceDisplay(nameToResourceDictionaries[uniqueNameReference], Color.green); });
         eventTrigger.triggers.Add(entryPointerEnter);
         EventTrigger.Entry entryPointerExit = new EventTrigger.Entry();
         entryPointerExit.eventID = EventTriggerType.PointerExit;
@@ -97,11 +97,12 @@ public class PlacementPrefabHandler : MonoBehaviour
 
     public void AddNewPlaceable(string placeableName, PlaceableGO prefab, ResourceCount[] resources)
     {
-        Button newButton = AddButtonItem(placeableName);
+        string unqiueName = placeableName + System.Guid.NewGuid();
+        Button newButton = AddButtonItem(placeableName, unqiueName);
         prefabData.Add(new PlacementPrefabData()
         {
             ButtonReference = newButton,
-            Name = placeableName,
+            Name = unqiueName,
             PlaceablePrefab = prefab,
             ResourcesUsed = resources
         });

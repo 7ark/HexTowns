@@ -124,16 +124,18 @@ public class BuildingModeHandler : MonoBehaviour
         Active = active;
     }
 
-    private bool AnyOthersHere(HexCoordinates coords)
+    private bool AnyOthersHere(HexCoordinates coords, out HexagonBuildingBlock buildingBlock)
     {
         for (int i = 0; i < allBuildingBlocks.Count; i++)
         {
             if(allBuildingBlocks[i].Coordinates == coords)
             {
+                buildingBlock = allBuildingBlocks[i];
                 return true;
             }
         }
 
+        buildingBlock = null;
         return false;
     }
 
@@ -305,8 +307,9 @@ public class BuildingModeHandler : MonoBehaviour
                         Vector3 centerPosition = coordinates.ToPosition() + new Vector3(0, hit.point.y);
                         if(itemPrefabInstance != null)
                         {
+                            HexagonBuildingBlock block;
                             currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
-                            if (AnyOthersHere(coordinates))
+                            if (AnyOthersHere(coordinates, out block))
                             {
                                 float forcedRotation = -1;
                                 bool cantPlace = false;
@@ -350,9 +353,27 @@ public class BuildingModeHandler : MonoBehaviour
                         }
                         else
                         {
-                            if (AnyOthersHere(coordinates))
+                            HexagonBuildingBlock block;
+                            if (AnyOthersHere(coordinates, out block))
                             {
                                 currentBuildingBlockPrefabInstance.gameObject.SetActive(false);
+
+                                if(Mouse.current.rightButton.wasPressedThisFrame)
+                                {
+                                    allBuildingBlocks.Remove(block);
+
+                                    if (placeableItemLocations.ContainsKey(coordinates))
+                                    {
+                                        JobWorkableGO placedItem = placeableItemLocations[coordinates];
+                                        allPlacedItems.Remove(placedItem);
+                                        Destroy(placedItem.gameObject);
+                                    }
+
+                                    Destroy(block.gameObject);
+
+                                    resourceHandler.OverrideResourceDisplay(resourceCostTotal, Color.green);
+                                    UpdateAllNeighbors();
+                                }
                             }
                             else
                             {
