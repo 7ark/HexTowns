@@ -19,6 +19,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     private CoroutineHandle runningCoroutine;
     private CoroutineHandle delayedCoroutine;
     private bool canBeCancelled = true;
+    private float delayCheckAgainTimer = 0;
 
     protected void SetupHTN(Task htnRoot)
     {
@@ -78,14 +79,13 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         {
             HTN_LOG.Add("Running plan");
             currentCantBeCancelled = false;
-            runningCoroutine = Timing.RunCoroutine(_Run());
+            runningCoroutine = Timing.RunCoroutine(_Run(), gameObject);
         }
         else
         {
             HTN_LOG.Add("Plan not valid, waiting to try again");
             currentTaskList = null;
             currentMtr = null;
-            delayedCoroutine = Timing.RunCoroutine(_DelayedCheckLater());
         }
     }
 
@@ -93,13 +93,6 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
     public void MarkCurrentAsUncancellable()
     {
         currentCantBeCancelled = true;
-    }
-    
-    private IEnumerator<float> _DelayedCheckLater()
-    {
-        yield return Timing.WaitForSeconds(1);
-
-        CheckToRunAgain();
     }
 
     private IEnumerator<float> _Run()
@@ -111,18 +104,27 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
             PrimitiveTask<T> current = currentTaskList.Dequeue() as PrimitiveTask<T>;
             canBeCancelled = current.CanBeCancelled;
             HTN_LOG.Add("Task Start: " + current.TaskName);
-            yield return Timing.WaitUntilDone(current.GetFinalRunResult()((didItGoWell) => 
-            { 
-                canContinueToNextTask = true; 
-                if(!didItGoWell)
+            //CoroutineHandle subTask = Timing.RunCoroutine(current.GetFinalRunResult()((didItGoWell) =>
+            yield return Timing.WaitUntilDone(current.GetFinalRunResult()((didItGoWell) =>
+            {
+                canContinueToNextTask = true;
+                if (!didItGoWell)
                 {
                     cancelAll = true;
                 }
 
                 HTN_LOG.Add("Task " + current.TaskName + " Completed with: " + didItGoWell);
-            }));
+            }));//, runningCoroutine.Segment);
+            //Timing.LinkCoroutines(runningCoroutine, subTask);
+            //yield return Timing.WaitUntilDone(subTask);
             while(!canContinueToNextTask)
             {
+                //if(!subTask.IsValid || !subTask.IsRunning)
+                //{
+                //    canContinueToNextTask = true;
+                //    cancelAll = true;
+                //}
+
                 yield return Timing.WaitForOneFrame;
             }
 
@@ -143,6 +145,11 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         replanTimer = Random.Range(1f, 2f);
     }
 
+    protected virtual void Replanning()
+    {
+
+    }
+
     private void Update()
     {
         replanTimer -= Time.deltaTime;
@@ -158,9 +165,21 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
                 if(plan.Plan != null && !currentMtr.SequenceEqual(plan.MTR) && canBeCancelled)
                 {
                     HTN_LOG.Add("Replan succeeded, running replan");
+                    Replanning();
                     KillCoroutines();
                     TryRunPlan(plan);
                 }
+            }
+        }
+
+        delayCheckAgainTimer -= Time.deltaTime;
+        if(delayCheckAgainTimer <= 0)
+        {
+            delayCheckAgainTimer = 2f;
+
+            if(!runningCoroutine.IsValid || !runningCoroutine.IsRunning)
+            {
+                CheckToRunAgain();
             }
         }
     }

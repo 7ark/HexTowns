@@ -36,7 +36,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             eating = false;
         }
     }
-    private enum PeepleAIState { DoingNothing, Resting, DoingJob, EatingFood, Sleeping }
+    private enum PeepleAIState { DoingNothing, Idling, Resting, Moving, DoingJob, EatingFood, Sleeping }
 
     public PathfindMovement Movement { get; private set; }
     private Workable currentJob;
@@ -214,6 +214,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         return homeQuality;
     }
 
+    protected override void Replanning()
+    {
+        Movement.CancelCurrentMovement();
+        base.Replanning();
+    }
+
     public void SetHome(HexTile home, int quality)
     {
         this.home = home;
@@ -289,7 +295,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> MoveOutOfWorkArea(System.Action<bool> onComplete)
     {
-        SetAIState(PeepleAIState.DoingNothing);
+        SetAIState(PeepleAIState.Moving);
         HexTile tileToMoveTo = null;
         List<HexTile> tilesSeen = new List<HexTile>();
         Queue<HexTile> currentTiles = new Queue<HexTile>();
@@ -348,7 +354,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             onComplete(true);
             yield break;
         }
-        SetAIState(PeepleAIState.DoingNothing);
+        SetAIState(PeepleAIState.Moving);
 
         bool waitToArrive = true;
         bool moveSuccess = true;
@@ -429,7 +435,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> MoveToJob(System.Action<bool> onComplete)
     {
-        SetAIState(PeepleAIState.DoingJob);
+        SetAIState(PeepleAIState.Moving);
         if (onComplete != null)
         {
             Debug.Log("Move to job");
@@ -525,6 +531,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             onComplete(false);
             yield break;
         }
+        Vector3 diff = Job.GetAssociatedTileNextToTile(Movement.GetTileOn()).Position - Movement.GetTileOn().Position;
+        iTween.RotateTo(gameObject, new Vector3(0, Quaternion.LookRotation(diff).eulerAngles.y, 0), 0.5f);
+
         if(Job.WorkFinished)
         {
             //Not sure how we got here but fuck it
@@ -571,7 +580,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     }
     private IEnumerator<float> Idle(System.Action<bool> onComplete)
     {
-        SetAIState(PeepleAIState.DoingNothing);
+        SetAIState(PeepleAIState.Idling);
 
         yield return Timing.WaitForSeconds(Random.Range(1f, 6f));
 

@@ -104,6 +104,19 @@ public class Workable
     {
         currentTilesWorking.Remove(tile);
     }
+    public HexTile GetAssociatedTileNextToTile(HexTile tile)
+    {
+        List<HexTile> associated = GetTilesAssociated();
+        for (int i = 0; i < associated.Count; i++)
+        {
+            if (HexCoordinates.HexDistance(associated[i].Coordinates, tile.Coordinates) <= 1)
+            {
+                return associated[i];
+            }
+        }
+
+        return null;
+    }
 
     public HexTile[] GetWorkableTiles()
     {

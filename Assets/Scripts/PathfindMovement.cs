@@ -117,6 +117,16 @@ public class PathfindMovement : MonoBehaviour
         }
     }
 
+    public void CancelCurrentMovement()
+    {
+        Timing.KillCoroutines(safetyHandle);
+
+        IsMoving = false;
+        //Debug.Log(name + " arrived at its location!");
+        currentArrivedAction?.Invoke(false);
+        currentArrivedAction = null;
+    }
+
     private void ArrivedAtLocation()
     {
         Timing.KillCoroutines(safetyHandle);
