@@ -65,6 +65,10 @@ public class HexTile
 			WorkableObject = workable,
 			Height = height
 		});
+		workable.OnWorkFinished += (success) =>
+		{
+			RemoveWorkableFromTile(workable);
+		};
     }
 
 	public void RemoveWorkableFromTile(Workable workable)

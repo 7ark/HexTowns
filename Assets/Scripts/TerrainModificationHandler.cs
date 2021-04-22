@@ -256,6 +256,10 @@ public class TerrainModificationHandler : MonoBehaviour
         }
         else
         {
+            for (int i = 0; i < areaTiles.Length; i++)
+            {
+                areaTiles[i].WorkArea = false;
+            }
             objToAssociatedCompleteAction[obj]?.Invoke();
 
             objToAssociatedHeight.Remove(obj);

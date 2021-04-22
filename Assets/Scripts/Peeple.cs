@@ -531,27 +531,31 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             onComplete(false);
             yield break;
         }
-        Vector3 diff = Job.GetAssociatedTileNextToTile(Movement.GetTileOn()).Position - Movement.GetTileOn().Position;
-        iTween.RotateTo(gameObject, new Vector3(0, Quaternion.LookRotation(diff).eulerAngles.y, 0), 0.5f);
-
-        if(Job.WorkFinished)
+        else if(Job.WorkFinished)
         {
             //Not sure how we got here but fuck it
             PeepleJobHandler.Instance.RemoveWorkable(Job);
             Job.LeaveWork(this);
+            onComplete(false);
         }
-        SetAIState(PeepleAIState.DoingJob);
-
-        Job.DoWork();
-        peepleWorldState.hunger += 2;
-        peepleWorldState.energy -= 1;
-        if (peepleWorldState.energy < 0)
+        else
         {
-            peepleWorldState.energy = 0;
-        }
+            Vector3 diff = Job.GetAssociatedTileNextToTile(Movement.GetTileOn()).Position - Movement.GetTileOn().Position;
+            iTween.RotateTo(gameObject, new Vector3(0, Quaternion.LookRotation(diff).eulerAngles.y, 0), 0.5f);
 
-        yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
-        onComplete(true);
+            SetAIState(PeepleAIState.DoingJob);
+
+            Job.DoWork();
+            peepleWorldState.hunger += 2;
+            peepleWorldState.energy -= 1;
+            if (peepleWorldState.energy < 0)
+            {
+                peepleWorldState.energy = 0;
+            }
+
+            yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+            onComplete(true);
+        }
     }
 
     private IEnumerator<float> TakeBreak(System.Action<bool> onComplete)

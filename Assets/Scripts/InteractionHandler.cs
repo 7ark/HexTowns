@@ -478,10 +478,6 @@ public class InteractionHandler : MonoBehaviour
             }
             //AdjustHeightOfTile(board, tile, tile.Height + 1);
         }
-        else
-        {
-            Debug.Log("fucking how");
-        }
 
     }
 }
