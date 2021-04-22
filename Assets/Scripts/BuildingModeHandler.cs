@@ -4,6 +4,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using TMPro;
 
 public class BuildingModeHandler : MonoBehaviour
 {
@@ -37,6 +38,10 @@ public class BuildingModeHandler : MonoBehaviour
     private Transform prefabParent;
     [SerializeField]
     private ItemData[] allItemsAvailable;
+    [SerializeField]
+    private GameObject namePanel;
+    [SerializeField]
+    private TMP_InputField nameInputField;
 
     private HexagonBuildingBlock currentBuildingBlockPrefabInstance;
     private List<HexagonBuildingBlock> allBuildingBlocks = new List<HexagonBuildingBlock>();
@@ -46,7 +51,7 @@ public class BuildingModeHandler : MonoBehaviour
     private Dictionary<HexCoordinates, JobWorkableGO> placeableItemLocations = new Dictionary<HexCoordinates, JobWorkableGO>();
     private HexagonWallBuildingBlock highlightedWall = null;
     private JobWorkableGO itemPrefabInstance = null;
-    private int tempBuildingCount = 1;
+    private int defaultNamedCount = 1;
 
     public bool Active { get; private set; }
 
@@ -132,23 +137,51 @@ public class BuildingModeHandler : MonoBehaviour
         return false;
     }
 
-    public void SaveBuilding(string name)
+    public void DisplayNamePanel()
+    {
+        if (GetAmountOfDoors() == 0)
+        {
+            return;
+        }
+
+        namePanel.SetActive(true);
+        nameInputField.text = "Default Name #" + defaultNamedCount;
+        nameInputField.Select();
+    }
+
+    public void ConfirmBuilding()
+    {
+        if(nameInputField.text != string.Empty)
+        {
+            SaveBuilding(nameInputField.text);
+
+            if(nameInputField.text == "Default Name #" + defaultNamedCount)
+            {
+                defaultNamedCount++;
+            }
+        }
+    }
+
+    private int GetAmountOfDoors()
     {
         int doorCount = 0;
         for (int i = 0; i < allBuildingBlocks.Count; i++)
         {
-            if(allBuildingBlocks[i].HasDoor())
+            if (allBuildingBlocks[i].HasDoor())
             {
                 doorCount++;
             }
         }
 
-        if(doorCount == 0)
+        return doorCount;
+    }
+
+    public void SaveBuilding(string name)
+    {
+        if(GetAmountOfDoors() == 0)
         {
             return;
         }
-
-        name = "DefaultTestingBuilding" + tempBuildingCount++;
 
         PlaceableGO building = Instantiate(placeablePrefab, prefabParent);
         GameObject combined = new GameObject("CombinedBuildingShape");
