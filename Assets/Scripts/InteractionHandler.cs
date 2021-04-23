@@ -206,7 +206,7 @@ public class InteractionHandler : MonoBehaviour
         }
         if(cancelTimer > 0)
         {
-            cancelTimer -= Time.deltaTime;
+            cancelTimer -= Time.unscaledDeltaTime;
         }
         if(Mouse.current.rightButton.wasReleasedThisFrame)
         {

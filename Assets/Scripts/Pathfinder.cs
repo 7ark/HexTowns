@@ -181,6 +181,10 @@ public class Pathfinder : MonoBehaviour
         while (currentCheck != from)
         {
             resultingPath.Add(currentCheck);
+            if(!coordsToData.ContainsKey(currentCheck))
+            {
+                return new HexTile[] { }; //Somehow breaks at random times
+            }
             currentCheck = coordsToData[currentCheck].Parent;
         }
         resultingPath.Add(from);
