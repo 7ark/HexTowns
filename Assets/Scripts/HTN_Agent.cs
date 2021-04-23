@@ -97,6 +97,11 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     private IEnumerator<float> _Run()
     {
+        if(currentTaskList == null)
+        {
+            yield break;
+        }
+
         if (!planHandle.IsValid) {
             planHandle = Timing.CurrentCoroutine;
         }

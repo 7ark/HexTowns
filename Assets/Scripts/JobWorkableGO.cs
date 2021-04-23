@@ -6,6 +6,70 @@ using UnityEngine;
 public enum JobAction { ChopDownNearestTree, PlantTree, HuntBuny }
 public enum SpecialItemAction { Bed }
 
+public struct BedInfo
+{
+    public HexTile TileOn;
+    public int Quality;
+}
+
+public static class BedTracker
+{
+    private static HashSet<BedInfo> allBeds = new HashSet<BedInfo>();
+    private static Dictionary<BedInfo, Peeple> takenBeds = new Dictionary<BedInfo, Peeple>();
+    private static Dictionary<Peeple, BedInfo> peepleInBeds = new Dictionary<Peeple, BedInfo>();
+
+    public static BedInfo AddBed(HexTile tileBedIsOn, int bedQuality)
+    {
+        BedInfo bed = new BedInfo()
+        {
+            TileOn = tileBedIsOn,
+            Quality = bedQuality
+        };
+        allBeds.Add(bed);
+        takenBeds.Add(bed, null);
+
+        return bed;
+    }
+
+    public static bool AnyBetterBedsAvailable(int qualityThreshold)
+    {
+        foreach (var bed in allBeds)
+        {
+            if (takenBeds[bed] == null && bed.Quality > qualityThreshold)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool TryGetBetterBed(int qualityThreshold, Peeple peepleLookingForBed)
+    {
+        foreach(var bed in allBeds)
+        {
+            if(takenBeds[bed] == null && bed.Quality > qualityThreshold)
+            {
+                if(peepleInBeds.ContainsKey(peepleLookingForBed))
+                {
+                    takenBeds[peepleInBeds[peepleLookingForBed]] = null;
+                }
+                else
+                {
+                    peepleInBeds.Add(peepleLookingForBed, bed);
+                }
+
+                takenBeds[bed] = peepleLookingForBed;
+                peepleLookingForBed.SetHome(bed.TileOn, bed.Quality);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 public class JobWorkableGO : MonoBehaviour
 {
     [SerializeField]
@@ -61,14 +125,7 @@ public class JobWorkableGO : MonoBehaviour
                         case SpecialItemAction.Bed:
                             int homeQuality = 10; //TODO: Calculate this somehow
 
-                            for (int j = 0; j < PeepleHandler.Instance.AllPeeple.Count; j++)
-                            {
-                                if (PeepleHandler.Instance.AllPeeple[j].GetHomeQuality() < homeQuality)
-                                {
-                                    PeepleHandler.Instance.AllPeeple[j].SetHome(tilePlacedOn, homeQuality);
-                                    break;
-                                }
-                            }
+                            BedTracker.AddBed(tilePlacedOn, homeQuality);
                             break;
                     }
                 }

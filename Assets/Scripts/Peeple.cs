@@ -12,6 +12,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public PeepleLocation location;
         public bool hasJob;
         public bool anyJobsAvailable;
+        public bool anyBetterBedsAvailable;
         public int energy;
         public bool resting;
         public bool hasHome;
@@ -34,6 +35,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             hunger = 0;
             foodAvailable = false;
             eating = false;
+            anyBetterBedsAvailable = false;
         }
     }
     private enum PeepleAIState { DoingNothing, Idling, Resting, Moving, DoingJob, EatingFood, Sleeping }
@@ -67,6 +69,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             peepleWorldState.resting = false;
         }
+        peepleWorldState.anyBetterBedsAvailable = BedTracker.AnyBetterBedsAvailable(homeQuality);
         peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Sunrise && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Sunset;
         peepleWorldState.isNight = !GameTime.Instance.IsItLightOutside();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
@@ -166,38 +169,34 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             (worldState) => { return worldState.hasJob && worldState.location == PeepleLocation.Job; },
             (worldState) => { worldState.hunger += 2; worldState.energy -= 1; if (worldState.energy < 0) worldState.energy = 0; },
             DoJob);
-        PrimitiveTask<PeepleWS> stopRestingTask = new PrimitiveTask<PeepleWS>("StopResting",
+        PrimitiveTask<PeepleWS> checkForBetterBedTask = new PrimitiveTask<PeepleWS>("CheckForBetterBed",
             (worldState) => { return true; },
-            (worldState) => { worldState.resting = false; },
-            StopResting);
+            (worldState) => { },
+            CheckForBetterBed);
 
         Task htn = new CompoundTask<PeepleWS>("Peeple",
             new Method<PeepleWS>((ws) => { return ws.foodAvailable && (ws.eating || ws.hunger >= 100); }).AddSubTasks(
-                stopRestingTask,
+                checkForBetterBedTask,
                 goHomeAndEatTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isNight; }).AddSubTasks(
-                stopRestingTask,
+                checkForBetterBedTask,
                 moveToHomeTask,
                 sleepTask
             ),
             new Method<PeepleWS>().AddSubTasks(
-                stopRestingTask,
                 moveOutOfWorkAreaTask
             ),
             new Method<PeepleWS>().AddSubTasks(
                 takeBreakIfTiredTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 findJobTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 moveToJobTask
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
-                stopRestingTask,
                 doJobTask
             ),
             new Method<PeepleWS>().AddSubTasks(
@@ -266,6 +265,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
 
         onComplete(true);
+    }
+
+    private IEnumerator<float> CheckForBetterBed(System.Action<bool> onComplete)
+    {
+        BedTracker.TryGetBetterBed(homeQuality, this);
+        onComplete(true);
+
+        yield break;
     }
 
     private IEnumerator<float> StopResting(System.Action<bool> onComplete)
@@ -436,10 +443,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private IEnumerator<float> MoveToJob(System.Action<bool> onComplete)
     {
         SetAIState(PeepleAIState.Moving);
-        if (onComplete != null)
-        {
-            Debug.Log("Move to job");
-        }
         bool movementCompleted = false;
         bool waitingForGoalResults = false;
         int jobTileIndex = 0;
@@ -540,7 +543,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         }
         else
         {
-            Vector3 diff = Job.GetAssociatedTileNextToTile(Movement.GetTileOn()).Position - Movement.GetTileOn().Position;
+            HexTile getNearbyTile = Job.GetAssociatedTileNextToTile(Movement.GetTileOn());
+            if(getNearbyTile == null)
+            {
+                peepleWorldState.location = PeepleLocation.Anywhere;
+                onComplete(false);
+                yield break;
+            }
+            Vector3 diff = getNearbyTile.Position - Movement.GetTileOn().Position;
             iTween.RotateTo(gameObject, new Vector3(0, Quaternion.LookRotation(diff).eulerAngles.y, 0), 0.5f);
 
             SetAIState(PeepleAIState.DoingJob);
@@ -585,8 +595,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private IEnumerator<float> Idle(System.Action<bool> onComplete)
     {
         SetAIState(PeepleAIState.Idling);
-
-        yield return Timing.WaitForSeconds(Random.Range(1f, 6f));
+        peepleWorldState.location = PeepleLocation.Anywhere;
 
         HexTile tileOn = Movement.GetTileOn();
         List<HexTile> tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 3);
@@ -614,6 +623,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             yield return Timing.WaitForOneFrame;
         }
+
+        yield return Timing.WaitForSeconds(Random.Range(1f, 6f));
 
         onComplete(true);
     }
