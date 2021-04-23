@@ -208,7 +208,7 @@ public class Workable
         currentWorkers.Remove(peeple);
         peeple.SetCurrentJob(null);
     }
-    protected virtual void DestroySelf()
+    public virtual void DestroySelf()
     {
         List<HexTile> tiles = GetTilesAssociated();
         for (int i = 0; i < tiles.Count; i++)

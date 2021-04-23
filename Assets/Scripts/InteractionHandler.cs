@@ -462,6 +462,10 @@ public class InteractionHandler : MonoBehaviour
                 {
                     tile.GetWorkable().CancelWork();
                 }
+                else if(tile.BuildingOnTile != null)
+                {
+                    tile.BuildingOnTile.DestroyBuilding();
+                }
             }
             else
             {

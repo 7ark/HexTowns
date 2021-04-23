@@ -173,7 +173,17 @@ public class Placeable : Workable
     public override void CancelWork()
     {
         base.CancelWork();
-        DestroySelf();
+        if(!WorkFinished)
+        {
+            DestroySelf();
+        }
+    }
+
+    public override void DestroySelf()
+    {
+        base.DestroySelf();
+
+        GameObject.Destroy(associatedPhysicalGameObject);
     }
 
     protected override void WorkCompleted(bool completedSuccessfully)
@@ -184,7 +194,7 @@ public class Placeable : Workable
             visualOptions[selectionType].SetActive(true);
 
             //Setup building
-            Building building = new Building();
+            Building building = new Building(this);
             for (int i = 0; i < objectsToCheckTilesUnder.Count; i++)
             {
                 HexTile tile = HexBoardChunkHandler.Instance.GetTileFromCoordinate(HexCoordinates.FromPosition(objectsToCheckTilesUnder[i].transform.position));

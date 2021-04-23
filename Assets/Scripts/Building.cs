@@ -91,12 +91,33 @@ public class Building
     private HashSet<HexTile> tiles = new HashSet<HexTile>();
     private Dictionary<BuildingHexagon, HexTile> pieceToTile = new Dictionary<BuildingHexagon, HexTile>();
     private Dictionary<HexTile, BuildingHexagon> tileToPiece = new Dictionary<HexTile, BuildingHexagon>();
+    private Placeable physicalBuilding;
 
     public static List<Building> AllBuildings { get; private set; } = new List<Building>();
 
-    public Building()
+    public Building(Placeable physicalBuilding)
     {
+        this.physicalBuilding = physicalBuilding;
         AllBuildings.Add(this);
+    }
+
+    public void DestroyBuilding()
+    {
+        foreach(var piece in pieces)
+        {
+            if(piece.HasWorkStation)
+            {
+                piece.WorkStation.Get().CancelWork();
+            }
+        }
+
+        foreach(var tile in tiles)
+        {
+            tile.BuildingOnTile = null;
+        }
+
+        physicalBuilding.DestroySelf();
+        AllBuildings.Remove(this);
     }
 
     public void AddPiece(HexTile tile, BuildingHexagon hex)
