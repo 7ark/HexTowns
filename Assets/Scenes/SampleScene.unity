@@ -7237,6 +7237,7 @@ MonoBehaviour:
   drawingCamera: {fileID: 1023898293}
   selectionCamera: {fileID: 435334066}
   hexagonPreviewMaterial: {fileID: 2100000, guid: 1e9d3c058453f7948b4a84c9f7ec39ee, type: 2}
+  debugSeed: 7
   mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
 --- !u!4 &1407722124
 Transform:

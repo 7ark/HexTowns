@@ -123,6 +123,22 @@ public struct HexCoordinates : System.IEquatable<HexCoordinates>
     {
         return !(one.X == two.X && one.Y == two.Y && one.Z == two.Z);
     }
+
+    public static HexCoordinates operator +(HexCoordinates one, HexCoordinates two)
+    {
+        return new HexCoordinates(one.X + two.X, one.Y + two.Y);
+    }
+    public static HexCoordinates operator -(HexCoordinates one, HexCoordinates two)
+    {
+        return new HexCoordinates(one.X - two.X, one.Y - two.Y);
+    }
+
+    public static bool AreOpposites(HexCoordinates one, HexCoordinates two)
+    {
+        HexCoordinates coords = one + two;
+
+        return coords.X == 0 && coords.Y == 0;
+    }
 }
 
 public enum Biome { None, Mountains, Hills, Plains, Ocean, Desert, Forest }
@@ -298,7 +314,6 @@ public class HexBoard
     public void RunTerrainGeneration(BoardCorners cornerData, Biome biome)
     {
         BiomeTerrain = biome;
-        CreateAllTiles();
 
         GenerateTerrainAlgorithm(cornerData, biome);
 

@@ -43,6 +43,8 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Material hexagonPreviewMaterial;
+    [SerializeField]
+    private int debugSeed;
 
 
     [System.Serializable]
@@ -70,7 +72,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     private HexBoard[,] allBoards;
     bool waitOne = false;
     private int seed;
-    private Vector2Int[] voronoiPoints;
+    private HashSet<Vector2Int> voronoiPoints;
     private HashSet<HexBoard> lastRendered = new HashSet<HexBoard>();
 
     public static HexBoardChunkHandler Instance;
@@ -197,6 +199,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
 
         Random.InitState(seed);
+        Random.InitState(debugSeed);
 
         StartGeneratingWorld(new Vector2Int(worldSize, worldSize));
 
@@ -212,7 +215,6 @@ public class HexBoardChunkHandler : MonoBehaviour
         globalTiles = new HexTile[cachedLengths.x * cachedLengths.y];
         FillTiles();
 
-        GenerateBiomesData();
         FillBoards(0, 0);
     }
 
@@ -386,75 +388,62 @@ public class HexBoardChunkHandler : MonoBehaviour
         Dictionary<Vector2Int, Vector2Int> chunkToVoronoiPoint = new Dictionary<Vector2Int, Vector2Int>();
         Dictionary<Vector2Int, Biome> voronoiToBiome = new Dictionary<Vector2Int, Biome>();
 
-        voronoiPoints = new Vector2Int[boardSize.x * boardSize.y];
-        for (int i = 0; i < voronoiPoints.Length; i++)
+        voronoiPoints = new HashSet<Vector2Int>();
+        int length = boardSize.x * boardSize.y / 4;
+        for (int i = 0; i < length; i++)
         {
-            voronoiPoints[i] = new Vector2Int(Random.Range(0, boardSize.x), Random.Range(0, boardSize.y));
-            if(!voronoiChunks.ContainsKey(voronoiPoints[i]))
+
+            HexTile tile = null;
+            while(tile == null)
             {
-                voronoiChunks.Add(voronoiPoints[i], new List<Vector2Int>());
-                voronoiToBiome.Add(voronoiPoints[i], GetRandomBiome());
+                tile = globalTiles[Random.Range(0, globalTiles.Length)];
             }
-        }
-
-
-        for (int x = 0; x < boardSize.x; x++)
-        for (int y = 0; y < boardSize.y; y++)
-        {
-            Vector2Int pos = new Vector2Int(x, y);
-            Vector2Int voronoiPointClosestTo = new Vector2Int(0, 0);
-            float voronoiDistance = float.MaxValue;
-            for (int i = 0; i < voronoiPoints.Length; i++)
+            Vector3 randomTile = tile.Position;
+            Vector2Int point = new Vector2Int((int)randomTile.x, (int)randomTile.z);// new Vector2Int(Random.Range(0, boardSize.x + 1), Random.Range(0, boardSize.y + 1));
+            if(!voronoiPoints.Contains(point))
             {
-                float dist = (voronoiPoints[i] - pos).magnitude;
-
-                if(dist < voronoiDistance)
-                {
-                    voronoiDistance = dist;
-                    voronoiPointClosestTo = voronoiPoints[i];
-                }
+                voronoiPoints.Add(point);
             }
-
-            voronoiChunks[voronoiPointClosestTo].Add(pos);
-            chunkToVoronoiPoint.Add(pos, voronoiPointClosestTo);
+            //voronoiPoints[i] = point;
+            //if(!voronoiChunks.ContainsKey(voronoiPoints[i]))
+            //{
+            //    voronoiChunks.Add(voronoiPoints[i], new List<Vector2Int>());
+            //    voronoiToBiome.Add(voronoiPoints[i], GetRandomBiome());
+            //}
         }
 
-        for (int x = 0; x < boardSize.x; x++)
-        for (int y = 0; y < boardSize.y; y++)
-        {
-            Vector2Int voronoiPoint = chunkToVoronoiPoint[new Vector2Int(x, y)];
-            biomeLayout.Add(new Vector2Int(x, y), voronoiToBiome[voronoiPoint]);
-        }
-    }
-
-    private void CheckForFillMap()
-    {
-        int xCameraReference = Mathf.RoundToInt(cameraController.transform.position.x / 100f);
-        int yCameraReference = Mathf.RoundToInt(cameraController.transform.position.z / 100f);
-
-        bool updateall = false;
-        for (int x = xCameraReference - boardSize.x; x <= xCameraReference + boardSize.x; x++)
-        {
-            for (int y = yCameraReference - boardSize.y; y <= yCameraReference + boardSize.y; y++)
-            {
-                if (!globalBoards.ContainsKey(new Vector2Int(x, y)) && !queuedBoards.ContainsKey(new Vector2Int(x, y)))
-                {
-                    updateall = true;
-                    break;
-                }
-            }
-            if(updateall)
-            {
-                break;
-            }
-        }
-
-        if(updateall)
-        {
-            int increasedDist = 2;
-            FillBoards(xCameraReference, yCameraReference, increasedDist);
-        }
-
+        
+        //for (int x = -boardSize.x; x <= boardSize.x; x++)
+        //{
+        //    for (int y = -boardSize.y; y <= boardSize.y; y++)
+        //    {
+        //        Vector2Int pos = new Vector2Int(x, y);
+        //        Vector2Int voronoiPointClosestTo = new Vector2Int(0, 0);
+        //        float voronoiDistance = float.MaxValue;
+        //        for (int i = 0; i < voronoiPoints.Length; i++)
+        //        {
+        //            float dist = (voronoiPoints[i] - pos).magnitude;
+        //
+        //            if(dist < voronoiDistance)
+        //            {
+        //                voronoiDistance = dist;
+        //                voronoiPointClosestTo = voronoiPoints[i];
+        //            }
+        //        }
+        //
+        //        voronoiChunks[voronoiPointClosestTo].Add(pos);
+        //        chunkToVoronoiPoint.Add(pos, voronoiPointClosestTo);
+        //    }
+        //}
+        //
+        //for (int x = -boardSize.x; x <= boardSize.x; x++)
+        //{
+        //    for (int y = -boardSize.y; y <= boardSize.y; y++)
+        //    {
+        //        Vector2Int voronoiPoint = chunkToVoronoiPoint[new Vector2Int(x, y)];
+        //        biomeLayout.Add(new Vector2Int(x, y), voronoiToBiome[voronoiPoint]);
+        //    }
+        //}
     }
 
     private void FillBoards(int offsetX, int offsetY, int increasedDistance = 1)
@@ -471,6 +460,12 @@ public class HexBoardChunkHandler : MonoBehaviour
                 }
             }
         }
+
+
+        GenerateBiomesData();
+
+        //GenerateTerrain();
+        StartCoroutine(GenerateTerrain());
 
         //Debug.Log("Boards to update step 1: " + boardsToUpdate.Count);
 
@@ -501,6 +496,705 @@ public class HexBoardChunkHandler : MonoBehaviour
         for (int i = 0; i < boardsToUpdate.Count; i++)
         {
             AddBoardToRender(boardsToUpdate[i]);
+        }
+    }
+
+    public enum TectonicPlateType { Continental, Oceanic }
+    public class TectonicPlate
+    {
+        public HashSet<HexTile> tilesInPlate = new HashSet<HexTile>();
+        public HashSet<HexTile> tileBorders = new HashSet<HexTile>();
+        public HexCoordinates movementDirection;
+
+        public int density = 0;
+        public TectonicPlateType plateType;
+    }
+
+    private struct ExtraTerrainMod
+    {
+        public HexTile tile;
+        public Vector2Int generalHeightRange;
+        public Vector2Int heightFalloutRange;
+        public bool heightIncrease;
+    }
+
+    private struct Droplet
+    {
+        public HexTile position;
+        public float speed;
+        public float water;
+        public float sediment;
+        public HexCoordinates direction;
+    }
+
+    private IEnumerator GenerateTerrain()
+    {
+        System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+        stopwatch.Start();
+        //Dictionary<HexTile, TectonicPlate> tilePlateParent = new Dictionary<HexTile, TectonicPlate>();
+        Dictionary<Vector2Int, TectonicPlate> plates = new Dictionary<Vector2Int, TectonicPlate>();
+        Dictionary<HexTile, int> tempTileHeights = new Dictionary<HexTile, int>();
+        HexCoordinates[] directions = new HexCoordinates[]
+        {
+            new HexCoordinates(1, 0),
+            new HexCoordinates(0, 1),
+            new HexCoordinates(-1, 0),
+            new HexCoordinates(0, -1),
+            new HexCoordinates(1, -1),
+            new HexCoordinates(-1, 1),
+        };
+        foreach(var point in voronoiPoints)
+        {
+            plates.Add(point, new TectonicPlate()
+            {
+                movementDirection = directions[Random.Range(0, directions.Length)],
+                density = Random.Range(0, 3),
+                plateType = Random.Range(0, 3) == 0 ? TectonicPlateType.Oceanic : TectonicPlateType.Continental
+            });
+        }
+        Debug.Log("Time to create plates " + stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
+        for (int i = 0; i < globalTiles.Length; i++)
+        {
+            if(globalTiles[i] == null)
+            {
+                continue;
+            }
+            float closestDist = float.MaxValue;
+            Vector2Int closestVoronoi = new Vector2Int(-1, -1);
+
+            foreach (var point in voronoiPoints)
+            {
+                float dist = Vector2.Distance(new Vector2(globalTiles[i].Position.x, globalTiles[i].Position.z), point);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closestVoronoi = point;
+                }
+            }
+
+            plates[closestVoronoi].tilesInPlate.Add(globalTiles[i]);
+            globalTiles[i].Plate = plates[closestVoronoi];
+            //tilePlateParent.Add(globalTiles[i], plates[closestVoronoi]);
+            tempTileHeights.Add(globalTiles[i], 0);
+        }
+        Debug.Log("Time to assign tiles to plates " + stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
+
+        foreach (var plate in plates.Values)
+        {
+            foreach (var tile in plate.tilesInPlate)
+            {
+                var tileNeighbors = tile.Neighbors;
+                bool isNeighbor = true;
+                for (int i = 0; i < tileNeighbors.Count; i++)
+                {
+                    if(tileNeighbors[i].Plate != plate)
+                    {
+                        isNeighbor = false;
+                        break;
+                    }
+                }
+                if(!isNeighbor)
+                {
+                    plate.tileBorders.Add(tile);
+                }
+            }
+        }
+
+        foreach (var plate in plates.Values)
+        {
+            foreach (var tile in plate.tilesInPlate)
+            {
+                if(plate.plateType == TectonicPlateType.Oceanic)
+                {
+                    //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.blue, 60);
+
+                    tile.SetHeight(-75);
+                }
+                else
+                {
+
+                    tile.SetHeight(10);
+                    //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.green, 60);
+                }
+            }
+        }
+        for (int smoothness = 0; smoothness < 10; smoothness++)
+        {
+            for (int i = 0; i < globalTiles.Length; i++)
+            {
+                if (globalTiles[i] == null)
+                {
+                    continue;
+                }
+
+                var neighbors = globalTiles[i].Neighbors;
+                int avgHeight = 0;
+                for (int j = 0; j < neighbors.Count; j++)
+                {
+                    avgHeight += neighbors[j].Height;
+                }
+                avgHeight /= neighbors.Count;
+                if (avgHeight != globalTiles[i].Height)
+                {
+                    int newHeight = avgHeight + Random.Range(-2, 3);
+                    if (globalTiles[i].Height >= 0 && newHeight < 0)
+                    {
+                        newHeight = 0;
+                    }
+                    globalTiles[i].SetHeight(newHeight);
+                }
+            }
+        }
+
+        for (int i = 0; i < globalTiles.Length; i++)
+        {
+            if (globalTiles[i] == null)
+            {
+                continue;
+            }
+
+            tempTileHeights[globalTiles[i]] = globalTiles[i].Height;
+        }
+
+
+        int primaryDetailIterations = 50;
+        Vector2Int volcanoIterationRange = new Vector2Int(5, 15);
+        int tileDistanceEffect = 5; //Was 15
+        int tileLargeDistanceEffect = 15; //Was 30
+        int tileDistanceIncrease = 4;
+        int exponentialIncrease = 3;
+        int mountainIterations = 5;
+
+        for (int tectonicIterations = 0; tectonicIterations < primaryDetailIterations; tectonicIterations++)
+        {
+            foreach (var plate in plates.Values)
+            {
+                foreach (var tile in plate.tileBorders)
+                {
+                    HexCoordinates forwardMovedDirection = tile.Coordinates + plate.movementDirection;
+                    HexTile tileInSpaceForward = GetTileFromCoordinate(forwardMovedDirection);
+
+                    if (tileInSpaceForward != null)
+                    {
+                        //The movement direction is running into another plate
+                        if (tileInSpaceForward.Plate != plate)
+                        {
+                            if (HexCoordinates.AreOpposites(plate.movementDirection, tileInSpaceForward.Plate.movementDirection))
+                            {
+                                if (plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Continental)
+                                {
+                                    for (int i = 0; i < mountainIterations; i++)
+                                    {
+                                        var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect + 20);
+                                        HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
+                                        bool extra = false;// tectonicIterations > primaryDetailIterations - 2;
+                                        ChangeTileHeight(heightTile, extra ? 1 : Random.Range(1, 6), true, extra ? new Vector2Int(0, 2) : new Vector2Int(1, 2), extra ? 5 : 100);
+                                    }
+                                }
+                                else if (plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
+                                {
+                                    var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect);
+                                    HexTile heightTileOcean = nearby[Random.Range(0, nearby.Count)];
+                                    HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
+                                    ChangeTileHeight(heightTileOcean, Random.Range(1, 5), false, new Vector2Int(5, 10), 100, TectonicPlateType.Oceanic);
+                                    ChangeTileHeight(heightTile, Random.Range(1, 5), true, new Vector2Int(1, 2));
+                                }
+                                else if (plate.plateType == TectonicPlateType.Oceanic && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
+                                {
+                                    var nearby = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
+                                    HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
+                                    ChangeTileHeight(heightTile, Random.Range(1, 5), false, new Vector2Int(1, 2), 100, TectonicPlateType.Oceanic);
+
+                                    var nearbyVolcano = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
+                                    HexTile heightVolcanoTile = nearbyVolcano[Random.Range(0, nearbyVolcano.Count)];
+                                    int volcanoIterations = Random.Range(volcanoIterationRange.x, volcanoIterationRange.y);
+                                    for (int i = 0; i < volcanoIterations; i++)
+                                    {
+                                        ChangeTileHeight(heightVolcanoTile, Random.Range(1, 4), true, new Vector2Int(1, 2));
+                                    }
+                                    //if (Random.Range(0, 100) == 0)
+                                    //{
+                                    //    List<HexTile> nearby = GetTileNeighborsInDistance(tile, 50);
+                                    //    HexTile newVolcano = nearby[Random.Range(0, nearby.Count)];
+                                    //    if (!extraTerrainMods.ContainsKey(newVolcano) && !claimed.Contains(newVolcano))
+                                    //    {
+                                    //        extraTerrainMods.Add(newVolcano, new ExtraTerrainMod()
+                                    //        {
+                                    //            tile = newVolcano,
+                                    //            generalHeightRange = new Vector2Int(1, 5),
+                                    //            heightFalloutRange = new Vector2Int(2, 12),
+                                    //            heightIncrease = true
+                                    //        });
+                                    //    }
+                                    //}
+                                }
+                            }
+                            else
+                            {
+                                //if(plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Continental) //if (Random.Range(0, 50) == 0)
+                                {
+                                    var nearby = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
+                                    HexTile newVolcano = nearby[Random.Range(0, nearby.Count)];
+                                    for (int i = 0; i < 1; i++)
+                                    {
+                                        ChangeTileHeight(newVolcano, Random.Range(1, 3), true, tectonicIterations < 5 ? new Vector2Int(0, 2) : new Vector2Int(1, 2), 5);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    HexCoordinates backwardMovedDirection = tile.Coordinates - plate.movementDirection;
+                    HexTile tileInSpaceBackward = GetTileFromCoordinate(backwardMovedDirection);
+
+                    if (tileInSpaceBackward != null)
+                    {
+                        //The behind movement direction is running into another plate
+                        if (tileInSpaceBackward.Plate != plate)
+                        {
+                            if (HexCoordinates.AreOpposites(plate.movementDirection, tileInSpaceBackward.Plate.movementDirection))
+                            {
+                                var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect);
+                                HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
+                                ChangeTileHeight(heightTile, Random.Range(1, 5), false, new Vector2Int(1, 2));
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            if(tectonicIterations != 0 && tectonicIterations % 10 == 0)
+            {
+                tileDistanceEffect += tileDistanceIncrease;
+                tileLargeDistanceEffect += tileDistanceIncrease;
+                tileDistanceIncrease += exponentialIncrease;
+            }
+
+            foreach (var tile in tempTileHeights.Keys)
+            {
+                tile.SetHeight(tempTileHeights[tile]);
+            }
+            yield return RefreshForTest(0.01f);
+        }
+
+
+
+        yield return RefreshForTest(5f);
+
+        #region Erosion
+        //Erosion
+        int erosionIterations = 10;
+        for (int erosion = 0; erosion < erosionIterations; erosion++)
+        {
+            int rainDroplets = Random.Range(globalTiles.Length / 5000, globalTiles.Length / 1000);
+            for (int rain = 0; rain < rainDroplets; rain++)
+            {
+                var options = GetTileFromCoordinate(new HexCoordinates(139, 204)).GetTileNeighborsInDistance(20);
+                HexTile tileRainHits = null;// GetTileFromCoordinate(new HexCoordinates(139, 204));//null;
+                while(tileRainHits == null)
+                {
+                    tileRainHits = options[Random.Range(0, options.Count)];
+                }
+
+                Droplet currentDroplet = new Droplet()
+                {
+                    position = tileRainHits,
+                    speed = 100f,
+                    sediment = 0,
+                    water = 50f,
+                    direction = new HexCoordinates(0, 0)
+                };
+
+                HexTile startingTileDirection = null;
+                {
+                    int lowestHeight = int.MaxValue;
+                    var neighboringTiles = currentDroplet.position.Neighbors;
+                    for (int i = 0; i < neighboringTiles.Count; i++)
+                    {
+                        if (neighboringTiles[i].Height < lowestHeight)
+                        {
+                            lowestHeight = neighboringTiles[i].Height;
+                            startingTileDirection = neighboringTiles[i];
+                        }
+                    }
+                }
+                currentDroplet.direction = startingTileDirection.Coordinates - tileRainHits.Coordinates;
+
+                List<HexTile> path = new List<HexTile>();
+
+                for (int dropletLifetime = 0; dropletLifetime < 30; dropletLifetime++)
+                {
+                    path.Add(currentDroplet.position);
+
+                    //Calculate where droplet is moving
+                    HexTile goodTileToMove = GetTileFromCoordinate(currentDroplet.position.Coordinates + currentDroplet.direction);
+
+                    HexTile lowestNear = null;
+                    int lowestHeight = goodTileToMove.Height;
+                    var neighboringTiles = currentDroplet.position.Neighbors;
+                    for (int i = 0; i < neighboringTiles.Count; i++)
+                    {
+                        if (neighboringTiles[i].Height < lowestHeight)
+                        {
+                            lowestHeight = neighboringTiles[i].Height;
+                            lowestNear = neighboringTiles[i];
+                        }
+                    }
+
+                    if(lowestNear != null)
+                    {
+                        if (goodTileToMove.Height - currentDroplet.position.Height > currentDroplet.speed)
+                        {
+                            goodTileToMove = lowestNear;
+                        }
+                    }
+
+                    currentDroplet.direction = goodTileToMove.Coordinates - currentDroplet.position.Coordinates;
+
+                    //Update droplet position
+                    int heightDiff = currentDroplet.position.Height - goodTileToMove.Height;
+                    currentDroplet.position = goodTileToMove;
+
+                    if(currentDroplet.speed <= 0 || currentDroplet.water <= 0)
+                    {
+                        break;
+                    }
+
+                    //Update droplet speed
+                    currentDroplet.speed += heightDiff;
+
+                    //Calculate sediment
+                    float sedimentCapacity = heightDiff * currentDroplet.speed * currentDroplet.water;
+                    Debug.Log("Cap " + sedimentCapacity);
+                    
+                    if(currentDroplet.sediment > sedimentCapacity || heightDiff < 0)
+                    {
+                        for (int i = 0; i < neighboringTiles.Count; i++)
+                        {
+                            currentDroplet.sediment -= currentDroplet.sediment - sedimentCapacity * 0.5f;
+                            if(neighboringTiles[i].Height <= currentDroplet.position.Height)
+                            {
+                                tempTileHeights[neighboringTiles[i]]++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < neighboringTiles.Count; i++)
+                        {
+                            //if(neighboringTiles[i].Height < currentDroplet.position.Height)
+                            {
+                                tempTileHeights[neighboringTiles[i]]--;// -= Mathf.Abs(heightDiff) / 10;
+                                currentDroplet.sediment += Mathf.Abs(heightDiff) * 10;
+                            }
+                        }
+                    }
+
+                    currentDroplet.speed = Mathf.Sqrt(currentDroplet.speed * currentDroplet.speed + heightDiff);
+                    currentDroplet.water--;
+                }
+
+                Debug.DrawLine(tileRainHits.Position, tileRainHits.Position + new Vector3(0, 50), Color.blue, 60);
+                
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    Debug.DrawLine(path[i].Position + new Vector3(0, path[i].Height * HexTile.HEIGHT_STEP), path[i + 1].Position + new Vector3(0, path[i + 1].Height * HexTile.HEIGHT_STEP), Color.blue, 60);
+                }
+
+                foreach (var tile in tempTileHeights.Keys)
+                {
+                    tile.SetHeight(tempTileHeights[tile]);
+                }
+                yield return RefreshForTest(0.01f, false);
+
+            }
+            yield return RefreshForTest(0.1f, false);
+        }
+        #endregion
+
+
+        yield break;
+        //return;
+
+        Dictionary<HexTile, ExtraTerrainMod> extraTerrainMods = new Dictionary<HexTile, ExtraTerrainMod>();
+        HashSet<HexTile> claimed = new HashSet<HexTile>();
+
+
+        for (int tectonicIterations = 0; tectonicIterations < primaryDetailIterations; tectonicIterations++)
+        {
+            foreach (var plate in plates.Values)
+            {
+                foreach (var tile in plate.tileBorders)
+                {
+                    HexCoordinates forwardMovedDirection = tile.Coordinates + plate.movementDirection;
+                    HexTile tileInSpaceForward = GetTileFromCoordinate(forwardMovedDirection);
+
+                    if (tileInSpaceForward != null)
+                    {
+                        //The movement direction is running into another plate
+                        if (tileInSpaceForward.Plate != plate)
+                        {
+                            if (HexCoordinates.AreOpposites(plate.movementDirection, tileInSpaceForward.Plate.movementDirection))
+                            {
+                                if(plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Continental)
+                                {
+                                    //ChangeTileHeight(tile, Random.Range(5, 10), true, new Vector2Int(5, 15));
+                                    if(!claimed.Contains(tile))
+                                    {
+                                        claimed.Add(tile);
+                                    }
+                                }
+                                //else if (plate.plateType == TectonicPlateType.Oceanic && tilePlateParent[tileInSpace].plateType == TectonicPlateType.Continental)
+                                //{
+                                //    Debug.Log("Ocean onto continent");
+                                //    Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.red, 60);
+                                //    ChangeTileHeight(tile, Random.Range(2, 5), false);
+                                //}
+                                else if (plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
+                                {
+                                    if (!claimed.Contains(tile))
+                                    {
+                                        claimed.Add(tile);
+                                    }
+                                    if (!claimed.Contains(tileInSpaceForward))
+                                    {
+                                        claimed.Add(tileInSpaceForward);
+                                    }
+                                    //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.red, 60);
+                                    //ChangeTileHeight(tileInSpaceForward, Random.Range(10, 15), false, new Vector2Int(5, 10), TectonicPlateType.Oceanic);
+                                    //ChangeTileHeight(tile, Random.Range(1, 5), true, new Vector2Int(4, 15));
+                                }
+                                else if (plate.plateType == TectonicPlateType.Oceanic && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
+                                {
+                                    if (!claimed.Contains(tile))
+                                    {
+                                        claimed.Add(tile);
+                                    }
+                                    //ChangeTileHeight(tile, Random.Range(1, 3), false, new Vector2Int(1, 5), TectonicPlateType.Oceanic);
+                                    if(Random.Range(0, 100) == 0)
+                                    {
+                                        var nearby = tile.GetTileNeighborsInDistance(50);
+                                        HexTile newVolcano = nearby[Random.Range(0, nearby.Count)];
+                                        if(!extraTerrainMods.ContainsKey(newVolcano) && !claimed.Contains(newVolcano))
+                                        {
+                                            extraTerrainMods.Add(newVolcano, new ExtraTerrainMod()
+                                            {
+                                                tile = newVolcano,
+                                                generalHeightRange = new Vector2Int(1, 5),
+                                                heightFalloutRange = new Vector2Int(2, 12),
+                                                heightIncrease = true
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            //else
+                            //{
+                            //    if (Random.Range(0, 50) == 0)
+                            //    {
+                            //        List<HexTile> nearby = GetTileNeighborsInDistance(tile, 15);
+                            //        HexTile newVolcano = nearby[Random.Range(0, nearby.Count)];
+                            //        for (int i = 0; i < 10; i++)
+                            //        {
+                            //            ChangeTileHeight(newVolcano, Random.Range(1, 5), true, new Vector2Int(2, 5));
+                            //        }
+                            //    }
+                            //}
+                        }
+                    }
+
+                    HexCoordinates backwardMovedDirection = tile.Coordinates - plate.movementDirection;
+                    HexTile tileInSpaceBackward = GetTileFromCoordinate(backwardMovedDirection);
+
+                    if(tileInSpaceBackward != null)
+                    {
+                        //The behind movement direction is running into another plate
+                        if (tileInSpaceBackward.Plate != plate)
+                        {
+                            if(HexCoordinates.AreOpposites(plate.movementDirection, tileInSpaceBackward.Plate.movementDirection))
+                            {
+                                if (Random.Range(0, 3) == 0)
+                                {
+                                    Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.red, 60);
+                                    //ChangeTileHeight(tile, Random.Range(2, 6), false, new Vector2Int(4, 10));
+                                    //if (Random.Range(0, 500) == 0)
+                                    //{
+                                    //    List<HexTile> nearby = GetTileNeighborsInDistance(tile, 10);
+                                    //    HexTile extraLand = nearby[Random.Range(0, nearby.Count)];
+                                    //    if (!extraTerrainMods.ContainsKey(extraLand) && !claimed.Contains(extraLand))
+                                    //    {
+                                    //        extraTerrainMods.Add(extraLand, new ExtraTerrainMod()
+                                    //        {
+                                    //            tile = extraLand,
+                                    //            generalHeightRange = new Vector2Int(1, 5),
+                                    //            heightFalloutRange = new Vector2Int(4, 10),
+                                    //            heightIncrease = false
+                                    //        });
+                                    //    }
+                                    //}
+                                }
+                                //else
+                                //{
+                                //    ChangeTileHeight(tile, Random.Range(1, 2), true, new Vector2Int(3, 8));
+                                //    //if (Random.Range(0, 100) == 0)
+                                //    //{
+                                //    //    List<HexTile> nearby = GetTileNeighborsInDistance(tile, 20);
+                                //    //    HexTile extraLand = nearby[Random.Range(0, nearby.Count)];
+                                //    //    if (!extraTerrainMods.ContainsKey(extraLand) && !claimed.Contains(extraLand))
+                                //    //    {
+                                //    //        extraTerrainMods.Add(extraLand, new ExtraTerrainMod()
+                                //    //        {
+                                //    //            tile = extraLand,
+                                //    //            generalHeightRange = new Vector2Int(1, 2),
+                                //    //            heightFalloutRange = new Vector2Int(2, 5),
+                                //    //            heightIncrease = true
+                                //    //        });
+                                //    //    }
+                                //    //}
+                                //}
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            foreach (var tile in tempTileHeights.Keys)
+            {
+                tile.SetHeight(tempTileHeights[tile]);
+            }
+
+            //for (int i = 0; i < allBoards.GetLength(0); i++)
+            //{
+            //    for (int j = 0; j < allBoards.GetLength(1); j++)
+            //    {
+            //        AddBoardToRender(allBoards[i, j]);
+            //    }
+            //}
+            //yield return new WaitForSeconds(0.1f);
+        }
+
+        for (int tectonicIterations = 0; tectonicIterations < primaryDetailIterations; tectonicIterations++)
+        {
+            foreach(var modData in extraTerrainMods.Values)
+            {
+                //Debug.DrawLine(modData.tile.Position, modData.tile.Position + new Vector3(0, 20), Color.red, 60);
+                Vector2Int heightFallout = modData.heightFalloutRange;
+
+                if(modData.heightIncrease)
+                {
+                    if (modData.tile.Height > 120)
+                    {
+                        heightFallout *= 5;
+                    }
+                }
+
+                //ChangeTileHeight(modData.tile, Random.Range(modData.generalHeightRange.x, modData.generalHeightRange.y), modData.heightIncrease, new Vector2Int(heightFallout.x, heightFallout.y));
+
+
+                foreach (var tile in tempTileHeights.Keys)
+                {
+                    tile.SetHeight(tempTileHeights[tile]);
+                }
+            }
+
+            foreach (var tile in tempTileHeights.Keys)
+            {
+                tile.SetHeight(tempTileHeights[tile]);
+            }
+            //
+            //for (int i = 0; i < allBoards.GetLength(0); i++)
+            //{
+            //    for (int j = 0; j < allBoards.GetLength(1); j++)
+            //    {
+            //        AddBoardToRender(allBoards[i, j]);
+            //    }
+            //}
+            //yield return new WaitForSeconds(0.1f);
+        }
+
+        Debug.Log("Time to do main generaton " + stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
+
+        //int h = 0;
+        //foreach(var plate in plates.Values)
+        //{
+        //    foreach(var tile in plate.tilesInPlate)
+        //    {
+        //        tile.SetHeight(0);
+        //    }
+        //    h++;
+        //}
+
+        Debug.Log("Time to set height " + stopwatch.ElapsedMilliseconds);
+        stopwatch.Restart();
+
+        void ChangeTileHeight(HexTile tileToEdit, int amount, bool positive, Vector2Int randomizedFalloff, int iterationsUntilFalloffIncreases = 100, TectonicPlateType? biasType = null, int currentIterations = 0)
+        {
+            if(amount <= 0 || (biasType != null && tileToEdit.Plate.plateType != biasType.Value))
+            {
+                return;
+            }
+
+            if(currentIterations == iterationsUntilFalloffIncreases)
+            {
+                randomizedFalloff = new Vector2Int(randomizedFalloff.x + 1, randomizedFalloff.y + 1);
+            }
+
+            if(positive)
+            {
+                tempTileHeights[tileToEdit] += amount;
+                var tileNeighbors = tileToEdit.Neighbors;
+                for (int i = 0; i < tileNeighbors.Count; i++)
+                {
+                    if(tempTileHeights[tileNeighbors[i]] < tempTileHeights[tileToEdit])
+                    {
+                        int heightDiff = tempTileHeights[tileToEdit] - tempTileHeights[tileNeighbors[i]];
+                        ChangeTileHeight(tileNeighbors[i], amount - Random.Range(randomizedFalloff.x, randomizedFalloff.y), positive, randomizedFalloff, iterationsUntilFalloffIncreases, biasType, currentIterations + 1);
+                        //ChangeTileHeight(tileNeighbors[i], heightDiff - (amount + Random.Range(heightAdjustments.x, heightAdjustments.y)), positive, heightAdjustments, biasType);
+                    }
+                }
+            }
+            else
+            {
+                tempTileHeights[tileToEdit] -= amount;
+                var tileNeighbors = tileToEdit.Neighbors;
+                for (int i = 0; i < tileNeighbors.Count; i++)
+                {
+                    if (tempTileHeights[tileNeighbors[i]] > tempTileHeights[tileToEdit])
+                    {
+                        //Debug.DrawLine(tileNeighbors[i].Position, tileNeighbors[i].Position + new Vector3(0, 20), Color.blue, 60);
+                        int heightDiff = tempTileHeights[tileNeighbors[i]] - tempTileHeights[tileToEdit];
+                        ChangeTileHeight(tileNeighbors[i], amount - Random.Range(randomizedFalloff.x, randomizedFalloff.y), positive, randomizedFalloff, iterationsUntilFalloffIncreases, biasType, currentIterations + 1);
+                        //ChangeTileHeight(tileNeighbors[i], heightDiff - (amount + Random.Range(heightAdjustments.x, heightAdjustments.y)), positive, heightAdjustments, biasType);
+                    }
+                }
+            }
+        }
+
+        IEnumerator RefreshForTest(float time = 1, bool t = true)
+        {
+            for (int i = 0; i < globalTiles.Length; i++)
+            {
+                if (globalTiles[i] == null)
+                {
+                    continue;
+                }
+
+                if(t)
+                    globalTiles[i].MaterialIndex = -1;
+            }
+            for (int i = 0; i < allBoards.GetLength(0); i++)
+            {
+                for (int j = 0; j < allBoards.GetLength(1); j++)
+                {
+                    AddBoardToRender(allBoards[i, j]);
+                }
+            }
+            yield return new WaitForSeconds(time);
         }
     }
 
@@ -594,7 +1288,8 @@ public class HexBoardChunkHandler : MonoBehaviour
             biomeLayout.Add(new Vector2Int(x, y), biome);
         }
 
-        board.RunTerrainGeneration(cornerRect, biome);
+        board.CreateAllTiles();
+        //board.RunTerrainGeneration(cornerRect, biome);
 
         allBoards[x, y] = board;
 
