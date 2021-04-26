@@ -47,18 +47,16 @@ public class Buny : Animal
     private IEnumerator<float> _WalkSomewhereNearby(System.Action<bool> onComplete)
     {
         HexTile tileOn = Movement.GetTileOn();
-        List<HexTile> tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 5);
-        tileOptions.Shuffle();
+        var tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 5);
 
         HexTile tileToMoveTo = null;
-        for (int i = 0; i < tileOptions.Count; i++)
-        {
-            if(tileOptions[i].CantWalkThrough || tileOptions[i].BuildingOnTile != null || tileOptions[i].ParentBoard != homeBoard)
+        foreach (var option in tileOptions) {
+            if(option.CantWalkThrough || option.BuildingOnTile != null || option.ParentBoard != homeBoard)
             {
                 continue;
             }
 
-            tileToMoveTo = tileOptions[i];
+            tileToMoveTo = option;
             break;
         }
 

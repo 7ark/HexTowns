@@ -1,6 +1,7 @@
 ﻿using MEC;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -13,15 +14,15 @@ public class Workable
 
     public bool CanWork { get; private set; } = false;
     public bool WorkFinished { get; private set; } = false;
-    public List<HexTile> TilesAssociated { private get; set; } = new List<HexTile>(); //Weird scenario where we do need to set this outside sometimes, but we want to use GetTilesAssociated()
-    public List<HexTile> WorkableTiles { private get; set; } = null; //Only set if you want to override what tiles can be worked
+    public HashSet<HexTile> TilesAssociated { private get; set; } = new HashSet<HexTile>(); //Weird scenario where we do need to set this outside sometimes, but we want to use GetTilesAssociated()
+    public HashSet<HexTile> WorkableTiles { private get; set; } = null; //Only set if you want to override what tiles can be worked
     public System.Action<bool> OnWorkFinished;
     public System.Action<Workable> OnDestroyed;
     public System.Func<bool> OnWorkTick;
     public bool Unreachable { get; private set; }
 
     private List<Peeple> currentWorkers = new List<Peeple>();
-    private List<HexTile> currentTilesWorking = new List<HexTile>();
+    private HashSet<HexTile> currentTilesWorking = new HashSet<HexTile>();
     protected int totalWorkSlots = 1;
     public int WorkSlotsAvailable
     {
@@ -106,45 +107,37 @@ public class Workable
     }
     public HexTile GetAssociatedTileNextToTile(HexTile tile)
     {
-        List<HexTile> associated = GetTilesAssociated();
-        for (int i = 0; i < associated.Count; i++)
-        {
-            if (HexCoordinates.HexDistance(associated[i].Coordinates, tile.Coordinates) <= 1)
+        var associated = GetTilesAssociated();
+        foreach (var associatedTile in associated) {
+            if (HexCoordinates.HexDistance(associatedTile.Coordinates, tile.Coordinates) <= 1)
             {
-                return associated[i];
+                return associatedTile;
             }
         }
 
         return null;
     }
 
-    public HexTile[] GetWorkableTiles()
+    public IEnumerable<HexTile> GetWorkableTiles()
     {
         if(WorkableTiles != null)
         {
-            return WorkableTiles.ToArray();
+            return WorkableTiles;
         }
 
-        List<HexTile> associatedTiles = GetTilesAssociated();
-        List<HexTile> goodTiles = new List<HexTile>();
-        for (int i = 0; i < associatedTiles.Count; i++)
+        var associatedTiles = GetTilesAssociated();
+        var goodTiles = new HashSet<HexTile>();
+        foreach (var neighbor in associatedTiles
+            .Select(associatedTile => associatedTile.Neighbors)
+            .SelectMany(neighbors => neighbors
+                .Where(neighbor => 
+                    !associatedTiles.Contains(neighbor) 
+                    && !currentTilesWorking.Contains(neighbor)))) 
         {
-            HexTile[] neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(associatedTiles[i]).ToArray();
-            for (int j = 0; j < neighbors.Length; j++)
-            {
-                if(!associatedTiles.Contains(neighbors[j]))
-                {
-                    goodTiles.Add(neighbors[j]);
-                }
-            }
+            goodTiles.Add(neighbor);
         }
 
-        for (int i = 0; i < currentTilesWorking.Count; i++)
-        {
-            goodTiles.Remove(currentTilesWorking[i]);
-        }
-
-        return goodTiles.ToArray();
+        return goodTiles;
     }
 
     public void SetWorkLeft()
@@ -184,7 +177,7 @@ public class Workable
             LeaveWork(currentWorkers[i]);
         }
     }
-    public virtual List<HexTile> GetTilesAssociated()
+    public virtual HashSet<HexTile> GetTilesAssociated()
     {
         return TilesAssociated;
     }
@@ -210,10 +203,9 @@ public class Workable
     }
     public virtual void DestroySelf()
     {
-        List<HexTile> tiles = GetTilesAssociated();
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            tiles[i].RemoveWorkableFromTile(this);
+        var tiles = GetTilesAssociated();
+        foreach (var t in tiles) {
+            t.RemoveWorkableFromTile(this);
         }
         PeepleJobHandler.Instance.RemoveWorkable(this);
         for (int i = 0; i < currentWorkers.Count; i++)

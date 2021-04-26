@@ -304,7 +304,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     {
         SetAIState(PeepleAIState.Moving);
         HexTile tileToMoveTo = null;
-        List<HexTile> tilesSeen = new List<HexTile>();
+        HashSet<HexTile> tilesSeen = new HashSet<HexTile>();
         Queue<HexTile> currentTiles = new Queue<HexTile>();
         currentTiles.Enqueue(Movement.GetTileOn());
         while (currentTiles.Count > 0)
@@ -318,12 +318,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 break;
             }
 
-            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(current);
-            for (int i = 0; i < neighbors.Count; i++)
-            {
-                if (!tilesSeen.Contains(neighbors[i]))
-                {
-                    currentTiles.Enqueue(neighbors[i]);
+            foreach (var neighbor in current.Neighbors) {
+                if (!tilesSeen.Contains(neighbor)) {
+                    currentTiles.Enqueue(neighbor);
                 }
             }
         }
@@ -598,18 +595,16 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.location = PeepleLocation.Anywhere;
 
         HexTile tileOn = Movement.GetTileOn();
-        List<HexTile> tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 3);
-        tileOptions.Shuffle();
+        var tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 3);
 
         HexTile tileToMoveTo = null;
-        for (int i = 0; i < tileOptions.Count; i++)
-        {
-            if (tileOptions[i].CantWalkThrough || tileOptions[i].BuildingOnTile != null)
+        foreach (var option in tileOptions) {
+            if (option.CantWalkThrough || option.BuildingOnTile != null)
             {
                 continue;
             }
 
-            tileToMoveTo = tileOptions[i];
+            tileToMoveTo = option;
             break;
         }
 

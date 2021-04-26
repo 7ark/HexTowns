@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Animal : HTN_Agent<int>
@@ -14,22 +15,11 @@ public class Animal : HTN_Agent<int>
 
     private static HashSet<Animal> allAnimals = new HashSet<Animal>();
 
-    public static HashSet<Animal> GetAnimalsOnTiles(List<HexTile> tiles)
+    public static IEnumerable<Animal> GetAnimalsOnTiles(IEnumerable<HexTile> tiles)
     {
-        HashSet<Animal> result = new HashSet<Animal>();
-
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            foreach(var animal in allAnimals)
-            {
-                if(!animal.Dead && !animal.Sleeping && animal.Movement.GetTileOn() == tiles[i])
-                {
-                    result.Add(animal);
-                }
-            }
-        }
-
-        return result;
+        return tiles
+            .SelectMany(tile => allAnimals
+                .Where(animal => !animal.Dead && !animal.Sleeping && animal.Movement.GetTileOn() == tile));
     }
 
     public static HashSet<Animal> GetAnimalsWithinRange(HexTile tile, float distance)
@@ -70,7 +60,7 @@ public class Animal : HTN_Agent<int>
         if(!Dead && !Sleeping)
         {
             toKillWorkable = new ResourceWorkable(Movement.GetTileOn(), 2, ResourceType.Food, 15);
-            toKillWorkable.TilesAssociated = new List<HexTile>() { Movement.GetTileOn() };
+            toKillWorkable.TilesAssociated = new HashSet<HexTile>() { Movement.GetTileOn() };
             if(startWork)
             {
                 toKillWorkable.BeginWorking();

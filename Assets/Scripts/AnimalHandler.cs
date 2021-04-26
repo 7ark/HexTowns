@@ -31,14 +31,12 @@ public class AnimalHandler : MonoBehaviour
     public HexTile GiveAnimalNewPosition(Animal animal, HexTile tile)
     {
         HexTile tileToSpawnAt = tile;
-        if (tile.CantWalkThrough)
-        {
-            List<HexTile> others = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tile, 3);
-            for (int i = 0; i < others.Count; i++)
-            {
-                if (!others[i].CantWalkThrough && others[i].ParentBoard == tile.ParentBoard)
+        if (tile.CantWalkThrough) {
+            var others = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tile, 3);
+            foreach (var other in others) {
+                if (!other.CantWalkThrough && other.ParentBoard == tile.ParentBoard)
                 {
-                    tileToSpawnAt = others[i];
+                    tileToSpawnAt = other;
                     break;
                 }
             }

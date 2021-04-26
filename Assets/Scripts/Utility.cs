@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class Utility
 {
-    public static void Shuffle<T>(this List<T> list)
+    public static void Shuffle<T>(this IList<T> list)
     {
         int n = list.Count;
         while (n > 1)

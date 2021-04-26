@@ -85,12 +85,11 @@ public static class HexagonPreviewArea
             if (cell != null)
             {
                 int lowestHeight = height;
-                List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(cell);
-                for (int j = 0; j < neighbors.Count; j++)
-                {
-                    if (neighbors[j].Height < lowestHeight && !areaTiles.Contains(neighbors[j]))
+                var neighbors = cell.Neighbors;
+                foreach (var neighbor in neighbors) {
+                    if (neighbor.Height < lowestHeight && !areaTiles.Contains(neighbor))
                     {
-                        lowestHeight = neighbors[j].Height;
+                        lowestHeight = neighbor.Height;
                     }
                 }
 

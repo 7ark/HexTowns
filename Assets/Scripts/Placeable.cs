@@ -22,7 +22,7 @@ public class Placeable : Workable
 
     private int selectionType = 0;
     private GameObject selectedOption;
-    protected List<HexTile> homeTiles = new List<HexTile>();
+    protected HashSet<HexTile> homeTiles = new HashSet<HexTile>();
     private MeshRenderer[] previewRenderers;
     public System.Action OnPlaced;
     private HexTile lastHovered;
@@ -152,16 +152,15 @@ public class Placeable : Workable
 
         OnPlaced?.Invoke();
 
-        for (int i = 0; i < homeTiles.Count; i++)
-        {
-            homeTiles[i].AddWorkableToTile(this, tilePlacedOn.Height + ModifiedHeight + 1);
+        foreach (var homeTile in homeTiles) {
+            homeTile.AddWorkableToTile(this, tilePlacedOn.Height + ModifiedHeight + 1);
+
         }
 
-        TerrainModificationHandler.Instance.RequestTerrainModification(homeTiles.ToArray(), tilePlacedOn.Height + ModifiedHeight, onComplete: () =>
+        TerrainModificationHandler.Instance.RequestTerrainModification(homeTiles, tilePlacedOn.Height + ModifiedHeight, onComplete: () =>
         {
-            for (int i = 0; i < homeTiles.Count; i++)
-            {
-                homeTiles[i].HeightLocked = true;
+            foreach (var homeTile in homeTiles) {
+                homeTile.HeightLocked = true;
             }
 
             BeginWorking();
@@ -263,7 +262,7 @@ public class Placeable : Workable
         }
     }
 
-    public override List<HexTile> GetTilesAssociated()
+    public override HashSet<HexTile> GetTilesAssociated()
     {
         return homeTiles;
     }
