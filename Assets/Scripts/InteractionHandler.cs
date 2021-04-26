@@ -398,6 +398,7 @@ public class InteractionHandler : MonoBehaviour
     {
         if(tile != null)
         {
+            Debug.LogError(tile.Coordinates);
             if (selectedPeep == null)
             {
                 Peeple[] allPeeps = PeepleHandler.Instance.GetPeepleOnTiles(new HexTile[] { tile });

@@ -8,6 +8,10 @@ using System.Linq;
 using Random = UnityEngine.Random;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Mathematics;
+using System.Threading;
 
 public class HexBoardChunkHandler : MonoBehaviour
 {
@@ -211,7 +215,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         cachedLengths = new Vector2Int(worldSize.x * tileSize.x, worldSize.y * tileSize.y);
         globalTiles = new HexTile[cachedLengths.x * cachedLengths.y * 4];
 
-        FillBoards(0, 0);
+        StartCoroutine(FillBoards());
     }
 
     public bool FlattenArea(HexTile[] areaTiles, int height, bool step = false)
@@ -433,7 +437,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         //}
     }
 
-    private void FillBoards(int offsetX, int offsetY, int increasedDistance = 1)
+    private IEnumerator FillBoards(int increasedDistance = 1)
     {
         allBoards = new HexBoard[boardSize.x, boardSize.y];
         List<HexBoard> boardsToUpdate = new List<HexBoard>();
@@ -451,7 +455,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         GenerateBiomesData();
 
         //GenerateTerrain();
-        StartCoroutine(GenerateTerrain());
+        yield return (GenerateTerrain());
 
         //Debug.Log("Boards to update step 1: " + boardsToUpdate.Count);
 
@@ -475,7 +479,7 @@ public class HexBoardChunkHandler : MonoBehaviour
 
         //Debug.Log("Boards to update step 2: " + boardsToUpdate.Count);
 
-        Vector2Int cameraRefPos = new Vector2Int(offsetX + boardSize.x/2, offsetY + boardSize.y/2);
+        Vector2Int cameraRefPos = new Vector2Int(boardSize.x/2, boardSize.y/2);
         boardsToUpdate.Sort((x, y) => { return (cameraRefPos - x.GridPosition).magnitude.CompareTo((cameraRefPos - y.GridPosition).magnitude); });
         cameraController.SetTargetedPosition(new Vector3(boardSize.x / 2 * boardsToUpdate[0].Size.x * HexTile.OUTER_RADIUS * 1.5f, 0, boardSize.y / 2 * boardsToUpdate[0].Size.y * HexTile.INNER_RADIUS * 1.5f));
 
@@ -490,6 +494,15 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         public HashSet<HexTile> tilesInPlate = new HashSet<HexTile>();
         public HashSet<HexTile> tileBorders = new HashSet<HexTile>();
+        public HexCoordinates movementDirection;
+
+        public int density = 0;
+        public TectonicPlateType plateType;
+    }
+    public class TectonicPlateThreaded
+    {
+        public HashSet<HexCoordinates> tilesInPlate = new HashSet<HexCoordinates>();
+        public HashSet<HexCoordinates> tileBorders = new HashSet<HexCoordinates>();
         public HexCoordinates movementDirection;
 
         public int density = 0;
@@ -513,8 +526,205 @@ public class HexBoardChunkHandler : MonoBehaviour
         public HexCoordinates direction;
     }
 
+    public class ThreadedGenerate
+    {
+        public int seed;
+        public HashSet<Vector2Int> voronoiPoints = new HashSet<Vector2Int>();
+
+        public Dictionary<HexCoordinates, int> hexTileHeights = new Dictionary<HexCoordinates, int>();
+
+        private HexCoordinates[] directions;
+
+        public ThreadedGenerate()
+        {
+            directions = new HexCoordinates[]
+            {
+                new HexCoordinates(1, 0),
+                new HexCoordinates(0, 1),
+                new HexCoordinates(-1, 0),
+                new HexCoordinates(0, -1),
+                new HexCoordinates(1, -1),
+                new HexCoordinates(-1, 1),
+            };
+        }
+        public void Generate()
+        {
+            System.Random random = new System.Random(seed);
+            Dictionary<Vector2Int, TectonicPlateThreaded> plates = new Dictionary<Vector2Int, TectonicPlateThreaded>();
+            Dictionary<HexCoordinates, TectonicPlateThreaded> hexCoordsToPlate = new Dictionary<HexCoordinates, TectonicPlateThreaded>();
+            HashSet<HexCoordinates> allCoordinates = new HashSet<HexCoordinates>();
+
+            foreach (var point in voronoiPoints)
+            {
+                plates.Add(point, new TectonicPlateThreaded()
+                {
+                    movementDirection = directions[random.Next(0, directions.Length)],
+                    density = random.Next(0, 3),
+                    plateType = random.Next(0, 3) == 0 ? TectonicPlateType.Oceanic : TectonicPlateType.Continental
+                });
+            }
+
+            foreach (var coords in hexTileHeights.Keys)
+            {
+                float closestDist = float.MaxValue;
+                Vector2Int closestVoronoi = new Vector2Int(-1, -1);
+
+                foreach (var point in voronoiPoints)
+                {
+                    float dist = math.distance(new float2(coords.ToPosition().x, coords.ToPosition().z), new float2(point.x, point.y));
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        closestVoronoi = point;
+                    }
+                }
+
+                allCoordinates.Add(coords);
+                plates[closestVoronoi].tilesInPlate.Add(coords);
+                hexCoordsToPlate.Add(coords, plates[closestVoronoi]);
+            }
+
+            foreach (var plate in plates.Values)
+            {
+                foreach (var coords in plate.tilesInPlate)
+                {
+                    HashSet<HexCoordinates> tileNeighbors = GetNeighbors(coords);
+                    bool isNeighbor = true;
+                    foreach(var neighborCoords in tileNeighbors)
+                    {
+                        if (hexCoordsToPlate[neighborCoords] != plate)
+                        {
+                            isNeighbor = false;
+                            break;
+                        }
+                    }
+                    if (!isNeighbor)
+                    {
+                        plate.tileBorders.Add(coords);
+                    }
+                }
+            }
+
+            foreach (var plate in plates.Values)
+            {
+                foreach (var tileCoords in plate.tilesInPlate)
+                {
+                    if (plate.plateType == TectonicPlateType.Oceanic)
+                    {
+                        //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.blue, 60);
+
+                        hexTileHeights[tileCoords] = -75;
+                    }
+                    else
+                    {
+
+                        hexTileHeights[tileCoords] = 10;
+                        //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.green, 60);
+                    }
+                }
+            }
+
+
+            for (int smoothness = 0; smoothness < 1; smoothness++)
+            {
+                foreach (var coords in allCoordinates)
+                {
+                    HashSet<HexCoordinates> tileNeighbors = GetNeighbors(coords);
+
+                    int avgHeight = 0;
+                    foreach (var neighborCoords in tileNeighbors)
+                    {
+                        avgHeight += hexTileHeights[neighborCoords];
+                    }
+                    avgHeight /= tileNeighbors.Count;
+                    if (avgHeight != hexTileHeights[coords])
+                    {
+                        int newHeight = avgHeight + random.Next(-2, 3);
+                        if (hexTileHeights[coords] >= 0 && newHeight < 0)
+                        {
+                            newHeight = 0;
+                        }
+                        hexTileHeights[coords] = newHeight;
+                    }
+                }
+            }
+        }
+
+        private HashSet<HexCoordinates> GetNeighbors(HexCoordinates coords)
+        {
+            HashSet<HexCoordinates> tileNeighbors = new HashSet<HexCoordinates>();
+            for (int i = 0; i < directions.Length; i++)
+            {
+                HexCoordinates neighborCoords = coords + directions[i];
+                if (hexTileHeights.ContainsKey(neighborCoords))
+                {
+                    tileNeighbors.Add(neighborCoords);
+                }
+            }
+
+            return tileNeighbors;
+        }
+    }
+
     private IEnumerator GenerateTerrain()
     {
+        Dictionary<HexCoordinates, int> heightData = new Dictionary<HexCoordinates, int>();
+        for (int i = 0; i < globalTiles.Length; i++)
+        {
+            if(globalTiles[i] != null)
+            {
+                heightData.Add(globalTiles[i].Coordinates, 0);
+            }
+        }
+        ThreadedGenerate gen = new ThreadedGenerate()
+        {
+            hexTileHeights = heightData,
+            voronoiPoints = voronoiPoints,
+            seed = this.seed
+        };
+        Thread testThread = new Thread(new ThreadStart(gen.Generate));
+        testThread.Start();
+
+        while (testThread.IsAlive)
+        {
+            yield return null;
+        }
+
+        foreach(var coord in gen.hexTileHeights.Keys)
+        {
+            HexTile tile = GetTileFromCoordinate(coord);
+            if(tile != null)
+            {
+                tile.SetHeight(gen.hexTileHeights[coord]);
+            }
+        }
+
+        yield break;
+
+        //NativeHashSet<Vector2Int> voronoi = new NativeHashSet<Vector2Int>(voronoiPoints.Count, Allocator.TempJob);
+        NativeArray<Vector2Int> voronoi = new NativeArray<Vector2Int>(voronoiPoints.Count, Allocator.TempJob);
+        int voronoiI = 0;
+        foreach(var point in voronoiPoints)
+        {
+            voronoi[voronoiI++] = (point);
+        }
+        //generateTerrianJob = new GenerateTerrainJob()
+        //{
+        //    hexTileHeights = new NativeHashMap<HexCoordinates, int>(globalTiles.Length, Allocator.TempJob),
+        //    voronoiPoints = voronoi,
+        //    sizeX = boardSize.x * tileSize.x,
+        //    sizeY = boardSize.y * tileSize.y,
+        //    seed = (uint)seed
+        //};
+        //generateTerrianHandle = generateTerrianJob.Schedule();
+        //generatingTerrain = true;
+        //
+        //while(generatingTerrain)
+        //{
+        //    yield return null;
+        //}
+
+        yield break;
         System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         stopwatch.Start();
         //Dictionary<HexTile, TectonicPlate> tilePlateParent = new Dictionary<HexTile, TectonicPlate>();
@@ -771,6 +981,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         yield return RefreshForTest(5f);
 
         #region Erosion
+#if false
         //Erosion
         int erosionIterations = 10;
         for (int erosion = 0; erosion < erosionIterations; erosion++)
@@ -782,7 +993,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                 HexTile tileRainHits = null;// GetTileFromCoordinate(new HexCoordinates(139, 204));//null;
                 while(tileRainHits == null)
                 {
-                    tileRainHits = options[Random.Range(0, options.Count)];
+                    tileRainHits = globalTiles[Random.Range(0, globalTiles.Length)];
                 }
 
                 Droplet currentDroplet = new Droplet()
@@ -819,7 +1030,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                     HexTile goodTileToMove = GetTileFromCoordinate(currentDroplet.position.Coordinates + currentDroplet.direction);
 
                     HexTile lowestNear = null;
-                    int lowestHeight = goodTileToMove.Height;
+                    int lowestHeight = goodTileToMove == null ? int.MaxValue : goodTileToMove.Height;
                     List<HexTile> neighboringTiles = GetTileNeighbors(currentDroplet.position);
                     for (int i = 0; i < neighboringTiles.Count; i++)
                     {
@@ -830,7 +1041,11 @@ public class HexBoardChunkHandler : MonoBehaviour
                         }
                     }
 
-                    if(lowestNear != null)
+                    if(goodTileToMove == null)
+                    {
+                        goodTileToMove = lowestNear;
+                    }
+                    else if(lowestNear != null)
                     {
                         if (goodTileToMove.Height - currentDroplet.position.Height > currentDroplet.speed)
                         {
@@ -898,7 +1113,8 @@ public class HexBoardChunkHandler : MonoBehaviour
             }
             yield return RefreshForTest(0.1f, false);
         }
-        #endregion
+#endif
+#endregion
 
 
         yield break;
