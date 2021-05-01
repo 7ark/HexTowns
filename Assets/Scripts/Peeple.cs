@@ -598,7 +598,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         var tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 3);
 
         HexTile tileToMoveTo = null;
-        foreach (var option in tileOptions) {
+        foreach (var option in tileOptions.Shuffle()) {
             if (option.CantWalkThrough || option.BuildingOnTile != null)
             {
                 continue;
