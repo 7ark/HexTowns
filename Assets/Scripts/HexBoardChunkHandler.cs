@@ -5,6 +5,7 @@ using MeshCombineStudio;
 using TMPro;
 using System.IO;
 using System.Linq;
+using TerrainMods;
 using Random = UnityEngine.Random;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
@@ -13,6 +14,12 @@ public class HexBoardChunkHandler : MonoBehaviour
 {
     [SerializeField]
     private Vector2Int boardSize;
+    public static Vector2Int BoardSize => Instance.boardSize;
+
+    [SerializeField] 
+    private IBoardMod[] BoardGenerationMods = {
+        new VoronoiBoardMod()
+    };
     
     [SerializeField]
     private Vector2Int tileSize = new Vector2Int(17, 17);
@@ -68,8 +75,10 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Dictionary<Vector2Int, HexBoard> queuedBoards = new Dictionary<Vector2Int, HexBoard>();
     private Dictionary<Vector2Int, Biome> biomeLayout = new Dictionary<Vector2Int, Biome>();
     private HexBoard[,] allBoards;
+    public IEnumerable<HexBoard> Boards => allBoards.Cast<HexBoard>();
     bool waitOne = false;
     private int seed;
+    public static int Seed => Instance.seed;
     private Vector2Int[] voronoiPoints;
     private HashSet<HexBoard> lastRendered = new HashSet<HexBoard>();
 
@@ -211,8 +220,6 @@ public class HexBoardChunkHandler : MonoBehaviour
         cachedLengths = new Vector2Int(worldSize.x * tileSize.x, worldSize.y * tileSize.y);
         globalTiles = new HexTile[cachedLengths.x * cachedLengths.y];
         FillTiles();
-
-        GenerateBiomesData();
         FillBoards(0, 0);
     }
 
@@ -380,53 +387,6 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
     }
 
-    private void GenerateBiomesData()
-    {
-        Dictionary<Vector2Int, List<Vector2Int>> voronoiChunks = new Dictionary<Vector2Int, List<Vector2Int>>();
-        Dictionary<Vector2Int, Vector2Int> chunkToVoronoiPoint = new Dictionary<Vector2Int, Vector2Int>();
-        Dictionary<Vector2Int, Biome> voronoiToBiome = new Dictionary<Vector2Int, Biome>();
-
-        voronoiPoints = new Vector2Int[boardSize.x * boardSize.y];
-        for (int i = 0; i < voronoiPoints.Length; i++)
-        {
-            voronoiPoints[i] = new Vector2Int(Random.Range(0, boardSize.x), Random.Range(0, boardSize.y));
-            if(!voronoiChunks.ContainsKey(voronoiPoints[i]))
-            {
-                voronoiChunks.Add(voronoiPoints[i], new List<Vector2Int>());
-                voronoiToBiome.Add(voronoiPoints[i], GetRandomBiome());
-            }
-        }
-
-
-        for (int x = 0; x < boardSize.x; x++)
-        for (int y = 0; y < boardSize.y; y++)
-        {
-            Vector2Int pos = new Vector2Int(x, y);
-            Vector2Int voronoiPointClosestTo = new Vector2Int(0, 0);
-            float voronoiDistance = float.MaxValue;
-            for (int i = 0; i < voronoiPoints.Length; i++)
-            {
-                float dist = (voronoiPoints[i] - pos).magnitude;
-
-                if(dist < voronoiDistance)
-                {
-                    voronoiDistance = dist;
-                    voronoiPointClosestTo = voronoiPoints[i];
-                }
-            }
-
-            voronoiChunks[voronoiPointClosestTo].Add(pos);
-            chunkToVoronoiPoint.Add(pos, voronoiPointClosestTo);
-        }
-
-        for (int x = 0; x < boardSize.x; x++)
-        for (int y = 0; y < boardSize.y; y++)
-        {
-            Vector2Int voronoiPoint = chunkToVoronoiPoint[new Vector2Int(x, y)];
-            biomeLayout.Add(new Vector2Int(x, y), voronoiToBiome[voronoiPoint]);
-        }
-    }
-
     private void CheckForFillMap()
     {
         int xCameraReference = Mathf.RoundToInt(cameraController.transform.position.x / 100f);
@@ -465,14 +425,15 @@ public class HexBoardChunkHandler : MonoBehaviour
         {
             for (int y = 0; y < boardSize.y; y++)
             {
-                if (!globalBoards.ContainsKey(new Vector2Int(x, y)) && !queuedBoards.ContainsKey(new Vector2Int(x, y)))
-                {
-                    boardsToUpdate.Add(CreateNewBoard(x, y));
+                if (!globalBoards.ContainsKey(new Vector2Int(x, y)) && !queuedBoards.ContainsKey(new Vector2Int(x, y))) {
+                    var board = CreateNewBoard(x, y);
+                    boardsToUpdate.Add(board);
+                    foreach (var boardMod in BoardGenerationMods) {
+                        boardMod.ApplyModification(board);
+                    }
                 }
             }
         }
-
-        //Debug.Log("Boards to update step 1: " + boardsToUpdate.Count);
 
         List<HexBoard> boardsToAdd = new List<HexBoard>();
         for (int i = 0; i < boardsToUpdate.Count; i++)
@@ -517,149 +478,17 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         const int minHeight = -50;
         const int maxHeight = 181;
-
-        Random.State s = Random.state;
-
-        Biome biome = Biome.None;
-
+        
         HexBoard board = new HexBoard();// Instantiate(hexBoardPrefab, transform);
         //board.name = "HexBoard [" + x + ", " + y + "]";
         board.GridPosition = new Vector2Int(x, y);
         board.tileSize = tileSize;
         board.Init();
         //board.transform.localPosition = Vector3.zero;
-
-        //Setup corners
-        int sX = x;
-        int sY = y;
-        BoardCorners cornerRect = new BoardCorners();
-        string seedStringed = seed.ToString().Substring(0, 2) + (sX < 0 ? sX + 1000 : sX).ToString() + (sY < 0 ? sY + 1000 : sY).ToString();
-        //Debug.Log(seedStringed);
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-
-        if (!biomeLayout.TryGetValue(new Vector2Int(sX, sY), out biome))
-        {
-            biome = GetRandomBiome();
-            biomeLayout.Add(new Vector2Int(sX, sY), biome);
-        }
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        cornerRect.lowerLeft = GetCornerHeight(biome);
-
-        sX = x + 1;
-        sY = y;
-        seedStringed = seed.ToString().Substring(0, 2) + (sX < 0 ? sX + 1000 : sX).ToString() + (sY < 0 ? sY + 1000 : sY).ToString();
-        //Debug.Log(seedStringed);
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        if (!biomeLayout.TryGetValue(new Vector2Int(sX, sY), out biome))
-        {
-            biome = GetRandomBiome();
-            biomeLayout.Add(new Vector2Int(sX, sY), biome);
-        }
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        cornerRect.lowerRight = GetCornerHeight(biome);
-
-        sX = x;
-        sY = y + 1;
-        seedStringed = seed.ToString().Substring(0, 2) + (sX < 0 ? sX + 1000 : sX).ToString() + (sY < 0 ? sY + 1000 : sY).ToString();
-        //Debug.Log(seedStringed);
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        if (!biomeLayout.TryGetValue(new Vector2Int(sX, sY), out biome))
-        {
-            biome = GetRandomBiome();
-            biomeLayout.Add(new Vector2Int(sX, sY), biome);
-        }
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        cornerRect.upperLeft = GetCornerHeight(biome);
-
-        sX = x + 1;
-        sY = y + 1;
-        seedStringed = seed.ToString().Substring(0, 2) + (sX < 0 ? sX + 1000 : sX).ToString() + (sY < 0 ? sY + 1000 : sY).ToString();
-        //Debug.Log(seedStringed);
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        if (!biomeLayout.TryGetValue(new Vector2Int(sX, sY), out biome))
-        {
-            biome = GetRandomBiome();
-            biomeLayout.Add(new Vector2Int(sX, sY), biome);
-        }
-        Random.InitState(System.Convert.ToInt32(seedStringed));
-        cornerRect.upperRight = GetCornerHeight(biome);
-
-        Random.state = s;
-
-        board.CornerHeights = cornerRect;
-
-        if (!biomeLayout.TryGetValue(new Vector2Int(x, y), out biome))
-        {
-            biome = GetRandomBiome();
-            biomeLayout.Add(new Vector2Int(x, y), biome);
-        }
-
-        board.RunTerrainGeneration(cornerRect, biome);
-
         allBoards[x, y] = board;
 
         return board;
     }
-
-    private int GetCornerHeight(Biome biome)
-    {
-        switch (biome)
-        {
-            case Biome.Hills:
-                const int minHeightHills = 25;
-                const int maxHeightHills = 161;
-
-                return Random.Range(minHeightHills, maxHeightHills);
-            case Biome.Plains:
-                const int minHeightPlains = -2;
-                const int maxHeightPlains = 51;
-
-                return Random.Range(minHeightPlains, maxHeightPlains);
-            case Biome.Ocean:
-                const int minHeightOcean = -150;
-                const int maxHeightOcean = 21;
-
-                return Random.Range(minHeightOcean, maxHeightOcean);
-            case Biome.Mountains:
-                const int minHeightMountains = 50;
-                const int maxHeightMountains = 301;
-
-                if(Random.Range(0, 4) == 0)
-                {
-                    return Random.Range(minHeightMountains, maxHeightMountains);
-                }
-                else
-                {
-                    return Random.Range(minHeightMountains, maxHeightMountains + 200);
-                }
-
-            case Biome.Desert:
-                const int minHeightDesert = 20;
-                const int maxHeightDesert = 61;
-
-                return Random.Range(minHeightDesert, maxHeightDesert);
-            case Biome.Forest:
-                const int minHeightForest = -5;
-                const int maxHeightForest = 101;
-
-                return Random.Range(minHeightForest, maxHeightForest);
-        }
-
-        return 0;
-    }
-
-    private Biome GetRandomBiome()
-    {
-        List<Biome> grabBag = new List<Biome>();
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 6));
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Hills, 3));
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Ocean, 5));
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Mountains, 1));
-        grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 6));
-
-        return grabBag[Random.Range(0, grabBag.Count)];
-    }
-
 
     public List<HexBoard> GetNearbyBoards(HexBoard board)
     {
