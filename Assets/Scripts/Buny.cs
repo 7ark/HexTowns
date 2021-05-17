@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using MEC;
 using UnityEngine;
 
@@ -50,7 +51,7 @@ public class Buny : Animal
         var tileOptions = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 5);
 
         HexTile tileToMoveTo = null;
-        foreach (var option in tileOptions) {
+        foreach (var option in tileOptions.Shuffle()) {
             if(option.CantWalkThrough || option.BuildingOnTile != null || option.ParentBoard != homeBoard)
             {
                 continue;
@@ -59,6 +60,8 @@ public class Buny : Animal
             tileToMoveTo = option;
             break;
         }
+        
+        HTN_LOG.Add($"Moving to tile {tileToMoveTo?.Coordinates}");
 
         bool waitingToFinish = true;
         Movement.SetGoal(tileToMoveTo, arrivedComplete: (success) =>
