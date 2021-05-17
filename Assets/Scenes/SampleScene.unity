@@ -7228,16 +7228,26 @@ MonoBehaviour:
   generationDisplay: {fileID: 300517835}
   textureReference: {fileID: 1371050005}
   cameraViewRange: {x: 1, y: 10}
-  treePrefabs:
-  - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
-  rockPrefabs:
-  - {fileID: 8766014541193715956, guid: 23058347256c2c34bb43f4c315157b04, type: 3}
+  prefabData:
+  - type: 0
+    prefabOptions:
+    - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
+  - type: 1
+    prefabOptions:
+    - {fileID: 8766014541193715956, guid: 23058347256c2c34bb43f4c315157b04, type: 3}
+  - type: 2
+    prefabOptions:
+    - {fileID: 4308655646224270813, guid: c1154de6fa6afff4ca08c6dd0be82be1, type: 3}
+  - type: 3
+    prefabOptions:
+    - {fileID: 7451745836197966098, guid: 33f8580f4659c86449728008fd715032, type: 3}
   baseMaterial: {fileID: 2100000, guid: 43f2bd7bcd4b198458b969d83497966f, type: 2}
   baseMaterialSelection: {fileID: 2100000, guid: 95f1f57c8b51bef459fab80856994eed, type: 2}
   drawingCamera: {fileID: 1023898293}
   selectionCamera: {fileID: 435334066}
   hexagonPreviewMaterial: {fileID: 2100000, guid: 1e9d3c058453f7948b4a84c9f7ec39ee, type: 2}
   mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
+  textureArray: {fileID: 0}
 --- !u!4 &1407722124
 Transform:
   m_ObjectHideFlags: 0

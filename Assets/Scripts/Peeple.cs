@@ -40,6 +40,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     }
     private enum PeepleAIState { DoingNothing, Idling, Resting, Moving, DoingJob, EatingFood, Sleeping }
 
+    public static int PeepleCarryingCapacity = 10;
+
     public PathfindMovement Movement { get; private set; }
     private Workable currentJob;
     public Workable Job { get { return currentJob; } }

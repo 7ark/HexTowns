@@ -28,9 +28,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     [SerializeField]
     private Vector2Int cameraViewRange = new Vector2Int(1, 10);
     [SerializeField]
-    private GameObject[] treePrefabs;
-    [SerializeField]
-    private GameObject[] rockPrefabs;
+    private PrefabDataInfo[] prefabData;
 
     [SerializeField]
     private Material baseMaterial;
@@ -44,6 +42,12 @@ public class HexBoardChunkHandler : MonoBehaviour
     [SerializeField]
     private Material hexagonPreviewMaterial;
 
+    [System.Serializable]
+    private struct PrefabDataInfo
+    {
+        public InstancedType type;
+        public GameObject[] prefabOptions;
+    }
 
     [System.Serializable]
     public struct HexBufferData
@@ -331,25 +335,30 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
         else if(boardsQueuedToRender.Count > 0)
         {
-            if (!generateOverTime)
-            {
-                for (int i = 0; i < boardsQueuedToRender.Count; i++)
-                {
-                    boardsQueuedToRender[i].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, treePrefabs, rockPrefabs);
-                    if (!globalBoards.ContainsKey(boardsQueuedToRender[i].GridPosition))
-                    {
-                        globalBoards.Add(boardsQueuedToRender[i].GridPosition, boardsQueuedToRender[0]);
-                    }
-                    queuedBoards.Remove(boardsQueuedToRender[i].GridPosition);
-                }
-                boardsQueuedToRender.Clear();
-            }
-            else
+            //if (!generateOverTime)
+            //{
+            //    for (int i = 0; i < boardsQueuedToRender.Count; i++)
+            //    {
+            //        boardsQueuedToRender[i].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, treePrefabs, rockPrefabs);
+            //        if (!globalBoards.ContainsKey(boardsQueuedToRender[i].GridPosition))
+            //        {
+            //            globalBoards.Add(boardsQueuedToRender[i].GridPosition, boardsQueuedToRender[0]);
+            //        }
+            //        queuedBoards.Remove(boardsQueuedToRender[i].GridPosition);
+            //    }
+            //    boardsQueuedToRender.Clear();
+            //}
+            //else
             {
                 const int chunksToRenderPerFrame = 10;
                 for (int i = 0; i < Mathf.Min(boardsQueuedToRender.Count, chunksToRenderPerFrame); i++)
                 {
-                    boardsQueuedToRender[0].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, treePrefabs, rockPrefabs);
+                    Dictionary<InstancedType, GameObject[]> prefabs = new Dictionary<InstancedType, GameObject[]>();
+                    for (int j = 0; j < prefabData.Length; j++)
+                    {
+                        prefabs.Add(prefabData[j].type, prefabData[j].prefabOptions);
+                    }
+                    boardsQueuedToRender[0].GenerateMesh(gameObject, mesh, materialInst, baseMaterialSelection, drawingCamera, selectionCamera, textureReference, prefabs);
 
                     if (!globalBoards.ContainsKey(boardsQueuedToRender[0].GridPosition))
                     {

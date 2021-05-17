@@ -1,0 +1,16 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Main
+
+struct HexCoords
+{
+	int x;
+	int y;
+};
+
+RStructuredBuffer<int> resultData;
+
+[numthreads(16,1,1)]
+void Main (uint3 id : SV_DispatchThreadID)
+{
+
+}

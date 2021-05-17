@@ -43,5 +43,21 @@ public class FlagPlaceable : Placeable
 
             tileOptions.RemoveAt(index);
         }
+
+        //Spawn resources
+        int resourceIndex = Random.Range(0, tileOptions.Count);
+        StorageTracker.AddStorageLocation(tileOptions[resourceIndex], InstancedType.Resource_Log);
+        ResourceHandler.Instance.GainResource(ResourceType.Wood, 50, tileOptions[resourceIndex]);
+        tileOptions.RemoveAt(resourceIndex);
+
+        resourceIndex = Random.Range(0, tileOptions.Count);
+        StorageTracker.AddStorageLocation(tileOptions[resourceIndex], InstancedType.Resource_Stone);
+        ResourceHandler.Instance.GainResource(ResourceType.Stone, 25, tileOptions[resourceIndex]);
+        tileOptions.RemoveAt(resourceIndex);
+
+        resourceIndex = Random.Range(0, tileOptions.Count);
+        StorageTracker.AddStorageLocation(tileOptions[resourceIndex], InstancedType.Resource_Food);
+        ResourceHandler.Instance.GainResource(ResourceType.Food, 200, tileOptions[resourceIndex]);
+        tileOptions.RemoveAt(resourceIndex);
     }
 }

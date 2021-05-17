@@ -21,14 +21,30 @@ public class Workable
     public System.Func<bool> OnWorkTick;
     public bool Unreachable { get; private set; }
 
-    private List<Peeple> currentWorkers = new List<Peeple>();
+    protected Dictionary<ResourceType, int> resourcesNeededToStart = new Dictionary<ResourceType, int>();
+    protected List<Peeple> currentWorkers = new List<Peeple>();
     private HashSet<HexTile> currentTilesWorking = new HashSet<HexTile>();
     protected int totalWorkSlots = 1;
+    protected bool waitingOnResources = false;
+    public bool RequiresResources
+    {
+        get
+        {
+            return waitingOnResources;
+        }
+    }
+    public Dictionary<ResourceType, int> ResourcesNeeded
+    {
+        get
+        {
+            return resourcesNeededToStart;
+        }
+    }
     public int WorkSlotsAvailable
     {
         get
         {
-            return totalWorkSlots - currentWorkers.Count;
+            return waitingOnResources ? 0 : totalWorkSlots - currentWorkers.Count;
         }
     }
 
@@ -45,6 +61,16 @@ public class Workable
     public Workable(int workStepsRequired)
     {
         this.workStepsRequired = workStepsRequired;
+    }
+
+    public void SetResourceRequirement(params ResourceCount[] resources)
+    {
+        for (int i = 0; i < resources.Length; i++)
+        {
+            resourcesNeededToStart.Add(resources[i].ResourceType, resources[i].Amount);
+        }
+
+        waitingOnResources = true;
     }
 
     public void SetWorkSteps(int worksteps)

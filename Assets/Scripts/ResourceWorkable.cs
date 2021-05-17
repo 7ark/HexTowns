@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using MEC;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,10 +42,14 @@ public class ResourceWorkable : Workable
 
         if(completedSuccessfully)
         {
-            ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount);
+            ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount, tileOn);
+            HexTile storageArea = StorageTracker.GetClosestStorageLocationOfType(ResourceHandler.Instance.ResourceToInstanced(resourceToReceiveOnCompletion), tileOn);
+            TaskWorkable moveResourceWork = TaskWorkable.CreateMoveResourcesTask(tileOn, storageArea, resourceToReceiveOnCompletion, resourceAmount);
+
             DestroySelf();
         }
         GameObject.Destroy(symbol);
+
     }
 
     public override HashSet<HexTile> GetTilesAssociated()

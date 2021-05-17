@@ -7,69 +7,6 @@ using UnityEngine;
 public enum JobAction { ChopDownNearestTree, PlantTree, HuntBuny }
 public enum SpecialItemAction { Bed }
 
-public struct BedInfo
-{
-    public HexTile TileOn;
-    public int Quality;
-}
-
-public static class BedTracker
-{
-    private static HashSet<BedInfo> allBeds = new HashSet<BedInfo>();
-    private static Dictionary<BedInfo, Peeple> takenBeds = new Dictionary<BedInfo, Peeple>();
-    private static Dictionary<Peeple, BedInfo> peepleInBeds = new Dictionary<Peeple, BedInfo>();
-
-    public static BedInfo AddBed(HexTile tileBedIsOn, int bedQuality)
-    {
-        BedInfo bed = new BedInfo()
-        {
-            TileOn = tileBedIsOn,
-            Quality = bedQuality
-        };
-        allBeds.Add(bed);
-        takenBeds.Add(bed, null);
-
-        return bed;
-    }
-
-    public static bool AnyBetterBedsAvailable(int qualityThreshold)
-    {
-        foreach (var bed in allBeds)
-        {
-            if (takenBeds[bed] == null && bed.Quality > qualityThreshold)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public static bool TryGetBetterBed(int qualityThreshold, Peeple peepleLookingForBed)
-    {
-        foreach(var bed in allBeds)
-        {
-            if(takenBeds[bed] == null && bed.Quality > qualityThreshold)
-            {
-                if(peepleInBeds.ContainsKey(peepleLookingForBed))
-                {
-                    takenBeds[peepleInBeds[peepleLookingForBed]] = null;
-                }
-                else
-                {
-                    peepleInBeds.Add(peepleLookingForBed, bed);
-                }
-
-                takenBeds[bed] = peepleLookingForBed;
-                peepleLookingForBed.SetHome(bed.TileOn, bed.Quality);
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
 
 public class JobWorkableGO : MonoBehaviour
 {
@@ -228,7 +165,7 @@ public class JobWorkableGO : MonoBehaviour
         }
 
         //TODO: Plant tree happen over time
-        tileToPlant.ParentBoard.AddTree(tileToPlant);
+        tileToPlant.ParentBoard.AddInstancedType(InstancedType.Tree, tileToPlant);
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);
@@ -268,5 +205,154 @@ public class JobWorkableGO : MonoBehaviour
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);
+    }
+}
+
+public struct BedInfo
+{
+    public HexTile TileOn;
+    public int Quality;
+}
+
+public static class BedTracker
+{
+    private static HashSet<BedInfo> allBeds = new HashSet<BedInfo>();
+    private static Dictionary<BedInfo, Peeple> takenBeds = new Dictionary<BedInfo, Peeple>();
+    private static Dictionary<Peeple, BedInfo> peepleInBeds = new Dictionary<Peeple, BedInfo>();
+
+    public static BedInfo AddBed(HexTile tileBedIsOn, int bedQuality)
+    {
+        BedInfo bed = new BedInfo()
+        {
+            TileOn = tileBedIsOn,
+            Quality = bedQuality
+        };
+        allBeds.Add(bed);
+        takenBeds.Add(bed, null);
+
+        return bed;
+    }
+
+    public static bool AnyBetterBedsAvailable(int qualityThreshold)
+    {
+        foreach (var bed in allBeds)
+        {
+            if (takenBeds[bed] == null && bed.Quality > qualityThreshold)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static bool TryGetBetterBed(int qualityThreshold, Peeple peepleLookingForBed)
+    {
+        foreach (var bed in allBeds)
+        {
+            if (takenBeds[bed] == null && bed.Quality > qualityThreshold)
+            {
+                if (peepleInBeds.ContainsKey(peepleLookingForBed))
+                {
+                    takenBeds[peepleInBeds[peepleLookingForBed]] = null;
+                }
+                else
+                {
+                    peepleInBeds.Add(peepleLookingForBed, bed);
+                }
+
+                takenBeds[bed] = peepleLookingForBed;
+                peepleLookingForBed.SetHome(bed.TileOn, bed.Quality);
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+public struct StorageInfo
+{
+    public InstancedType instancedType;
+    public int maxStorageCapacity;
+}
+
+public static class StorageTracker
+{
+    private static Dictionary<HexTile, StorageInfo> allStorageLocations = new Dictionary<HexTile, StorageInfo>();
+
+    public static void AddStorageLocation(HexTile location, InstancedType type, int storageCapacity = 50)
+    {
+        allStorageLocations.Add(location, new StorageInfo()
+        {
+            instancedType = type,
+            maxStorageCapacity = storageCapacity
+        });
+    }
+
+    public static void RemoveStorageLocation(HexTile location)
+    {
+        allStorageLocations.Remove(location);
+    }
+
+    public static HexTile GetClosestStorageLocationOfTypeWithAmount(InstancedType type, HexTile tileFrom, int amount) //TODO: Add type of func so it doesnt get if storage is full
+    {
+        float closestDist = float.MaxValue;
+        HexTile closest = null;
+        foreach (var tile in allStorageLocations.Keys)
+        {
+            if (allStorageLocations[tile].instancedType == type && ResourceHandler.Instance.IsThereEnoughResource(type, amount, tile))
+            {
+                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = tile;
+                }
+            }
+        }
+
+        return closest;
+    }
+    public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom) //TODO: Add type of func so it doesnt get if storage is full
+    {
+        float closestDist = float.MaxValue;
+        HexTile closest = null;
+        foreach(var tile in allStorageLocations.Keys)
+        {
+            if(allStorageLocations[tile].instancedType == type)
+            {
+                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = tile;
+                }
+            }
+        }
+
+        return closest;
+    }
+    public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom, out int maxStorageCapacity)
+    {
+        float closestDist = float.MaxValue;
+        HexTile closest = null;
+        foreach (var tile in allStorageLocations.Keys)
+        {
+            if (allStorageLocations[tile].instancedType == type)
+            {
+                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closest = tile;
+                }
+            }
+        }
+
+        maxStorageCapacity = allStorageLocations[closest].maxStorageCapacity;
+
+        return closest;
     }
 }
