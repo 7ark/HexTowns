@@ -7,7 +7,7 @@ using UnityEngine;
 public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 {
     [SerializeField]
-    private List<string> HTN_LOG = new List<string>();
+    protected List<string> HTN_LOG = new List<string>();
 
     protected Task lifeHTN;
     protected Queue<Task> currentTaskList = null;

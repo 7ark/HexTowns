@@ -164,7 +164,6 @@ public class HexBoard
     public Vector2Int tileSize;
 
     private HexTile[,] board2D;
-    private Dictionary<HexCoordinates, HexTile> board = new System.Collections.Generic.Dictionary<HexCoordinates, HexTile>();
     private List<HexTile> allTiles = new List<HexTile>();
     private HexMesh hexMesh;
     private bool environmentalObjectsGenerated = false;
@@ -569,17 +568,13 @@ public class HexBoard
             WorldPosition = position;
         }
 
+        var coords = HexCoordinates.FromOffsetCoordinates(positionX, positionY);
 
-        HexTile tile = new HexTile {
-            Position = position,
-            ParentBoard = this,
-            Coordinates = HexCoordinates.FromOffsetCoordinates(positionX, positionY)
-        };
-
-        board.Add(tile.Coordinates, tile);
+        HexTile tile = HexBoardChunkHandler.Instance.FetchTile(coords);
+        tile.ParentBoard = this;
+        
         board2D[x, y] = tile;
         allTiles.Add(tile);
-        tile.GlobalIndex = HexBoardChunkHandler.Instance.RegisterTile(tile);
     }
 
     public Material OnDisable()

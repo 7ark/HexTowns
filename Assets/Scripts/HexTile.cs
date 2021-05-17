@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using UnityEngine;
 using TMPro;
 
@@ -30,6 +31,11 @@ public class HexTile
 	public HexCoordinates Coordinates;
 	
 	public int GlobalIndex { get; set; }
+
+	private List<HexTile> _neighbors;
+	public IReadOnlyList<HexTile> Neighbors => _neighbors ??= HexBoardChunkHandler.Instance.GetTileNeighbors_Uncached(this);
+
+	private Dictionary<int, IReadOnlyList<HexTile>> _neighborCache = new Dictionary<int, IReadOnlyList<HexTile>>();
 	
 	public int Height { get; private set; }
 	public HexBoard ParentBoard { get; set; }
@@ -39,6 +45,28 @@ public class HexTile
 	public bool HasWorkables { get { return buildingReferences.Count > 0; } }
 	public Building BuildingOnTile { get; set; }
 	public HexBoardChunkHandler.TectonicPlate Plate;
+
+	public HexTile(int x, int y, int index) {
+		Position = new Vector3(
+			(x + y * 0.5f - y / 2) * (INNER_RADIUS * 2f),
+			0,
+			y * (OUTER_RADIUS * 1.5f));
+
+		Coordinates = HexCoordinates.FromOffsetCoordinates(x, y);
+		GlobalIndex = index;
+	}
+
+	public IReadOnlyList<HexTile> GetTileNeighborsInDistance(int distance) {
+		if (distance <= 0) {
+			return Neighbors;
+		}
+
+		if (!_neighborCache.TryGetValue(distance, out var neighbors)) {
+			neighbors = _neighborCache[distance] = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance_Uncached(this, distance);
+		}
+
+		return neighbors;
+	}
 
 	public bool CantWalkThrough
     {
@@ -112,7 +140,7 @@ public class HexTile
     {
 		Workable envWorkable = obj;
 		envWorkable.OnWorkFinished += (success) => { if(success) environmentalObjectsOnTile.Remove(obj); };
-		envWorkable.TilesAssociated = new List<HexTile>() { this };
+		envWorkable.TilesAssociated = new HashSet<HexTile>() { this };
 		environmentalObjectsOnTile.Add(obj);
     }
 

@@ -160,8 +160,8 @@ public class PlacementPrefabHandler : MonoBehaviour
     {
         interactionHandler.StartMultiSelection(100, true, (tiles, height) => 
         {
-            List<HexTile> resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
-            TerrainModificationHandler.Instance.RequestTerrainModification(resultTiles.ToArray(), height);
+            var resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
+            TerrainModificationHandler.Instance.RequestTerrainModification(resultTiles, height);
         });
     }
 
@@ -169,22 +169,21 @@ public class PlacementPrefabHandler : MonoBehaviour
     {
         interactionHandler.StartMultiSelection(100, false, (tiles, height) =>
         {
-            List<HexTile> resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
+            var resultTiles = HexagonSelectionHandler.Instance.GetFilledAreaBetweenTiles(tiles);//HexagonSelectionHandler.Instance.GetAllTilesBetweenTwoTiles(tiles[0], tiles[1]);
 
-            for (int i = 0; i < resultTiles.Count; i++)
-            {
-                if(resultTiles[i].HasEnvironmentalItems)
+            foreach (var resultTile in resultTiles) {
+                if(resultTile.HasEnvironmentalItems)
                 {
-                    Workable[] workableObjects = resultTiles[i].GetEnvironmentalItemsAsWorkable();
+                    Workable[] workableObjects = resultTile.GetEnvironmentalItemsAsWorkable();
                     for (int j = 0; j < workableObjects.Length; j++)
                     {
                         workableObjects[j].BeginWorking();
-                        resultTiles[i].AddWorkableToTile(workableObjects[j], resultTiles[i].Height);
+                        resultTile.AddWorkableToTile(workableObjects[j], resultTile.Height);
                     }
                 }
             }
 
-            HashSet<Animal> animalsOnTiles = Animal.GetAnimalsOnTiles(resultTiles);
+            IEnumerable<Animal> animalsOnTiles = Animal.GetAnimalsOnTiles(resultTiles);
             foreach(var animal in animalsOnTiles)
             {
                 animal.MarkToKill();

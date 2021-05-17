@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -137,18 +138,11 @@ public class Building
         {
             if (hex.HasWorkStation && hex.WorkStation.RequiresWork)
             {
-                List<HexTile> valid = new List<HexTile>();
-                List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(pieceToTile[hex]);
-                for (int i = 0; i < neighbors.Count; i++)
-                {
-                    if(tiles.Contains(neighbors[i]) && !tileToPiece[neighbors[i]].HasWorkStation)
-                    {
-                        valid.Add(neighbors[i]);
-                    }
-                }
+                var neighbors = pieceToTile[hex].Neighbors;
+                var valid = neighbors.Where(t => tiles.Contains(t) && !tileToPiece[t].HasWorkStation);
 
-                hex.WorkStation.Get().TilesAssociated = new List<HexTile>() { pieceToTile[hex] };
-                hex.WorkStation.Get().WorkableTiles = valid;
+                hex.WorkStation.Get().TilesAssociated = new HashSet<HexTile>() { pieceToTile[hex] };
+                hex.WorkStation.Get().WorkableTiles = new HashSet<HexTile>(valid);
             }
         }
     }

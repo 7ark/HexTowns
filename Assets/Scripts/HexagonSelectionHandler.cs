@@ -108,36 +108,35 @@ public class HexagonSelectionHandler : MonoBehaviour
         return false;
     }
 
-    public List<HexTile> GetFilledAreaBetweenTiles(HexTile[] tiles)
+    public HashSet<HexTile> GetFilledAreaBetweenTiles(HexTile[] tiles)
     {
-        List<HexTile> borders = new List<HexTile>(GetBorderBetweenTiles(tiles));
+        var borders = new HashSet<HexTile>(GetBorderBetweenTiles(tiles));
         if(tiles.Length >= 3)
         {
             int left = int.MaxValue;
             int right = int.MinValue;
             int top = int.MinValue;
             int bottom = int.MaxValue;
-            for (int i = 0; i < borders.Count; i++)
-            {
-                if (borders[i].Coordinates.X < left)
+            foreach (var border in borders) {
+                if (border.Coordinates.X < left)
                 {
-                    left = borders[i].Coordinates.X;
+                    left = border.Coordinates.X;
                 }
-                if (borders[i].Coordinates.X > right)
+                if (border.Coordinates.X > right)
                 {
-                    right = borders[i].Coordinates.X;
+                    right = border.Coordinates.X;
                 }
-                if (borders[i].Coordinates.Y < bottom)
+                if (border.Coordinates.Y < bottom)
                 {
-                    bottom = borders[i].Coordinates.Y;
+                    bottom = border.Coordinates.Y;
                 }
-                if (borders[i].Coordinates.Y > top)
+                if (border.Coordinates.Y > top)
                 {
-                    top = borders[i].Coordinates.Y;
+                    top = border.Coordinates.Y;
                 }
             }
 
-            List<HexTile> filledTiles = new List<HexTile>(borders);
+            var filledTiles = new HashSet<HexTile>(borders);
             List<HexCoordinates> allPoints = new List<HexCoordinates>();
             for (int x = left; x <= right; x++)
             {
@@ -167,10 +166,7 @@ public class HexagonSelectionHandler : MonoBehaviour
                 if(c)
                 {
                     HexTile tile = chunkHandler.GetTileFromCoordinate(point);
-                    if (!filledTiles.Contains(tile))
-                    {
-                        filledTiles.Add(tile);
-                    }
+                    filledTiles.Add(tile);
                 }
             }
 
@@ -307,10 +303,9 @@ public class HexagonSelectionHandler : MonoBehaviour
 
         filledArea.Add(tile);
 
-        HexTile[] neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(tile).ToArray();
-        for (int i = 0; i < neighbors.Length; i++)
-        {
-            Fill(neighbors[i], ref filledArea);
+        var neighbors = tile.Neighbors;
+        foreach (var neighbor in neighbors) {
+            Fill(neighbor, ref filledArea);
         }
     }
 }

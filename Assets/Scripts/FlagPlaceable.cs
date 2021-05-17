@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [System.Serializable]
@@ -21,14 +22,13 @@ public class FlagPlaceable : Placeable
             return;
         }
 
-        List<HexTile> tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(homeTiles[0], 4);
+        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(homeTiles.First(), 4);
 
         List<HexTile> tileOptions = new List<HexTile>();
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            if (tiles[i] != homeTiles[0] && !tiles[i].CantWalkThrough)
+        foreach (var tile in tiles) {
+            if (tile != homeTiles.First() && !tile.CantWalkThrough)
             {
-                tileOptions.Add(tiles[i]);
+                tileOptions.Add(tile);
             }
         }
 

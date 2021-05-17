@@ -24,7 +24,7 @@ public class TerrainModificationHandler : MonoBehaviour
         Instance = this;
     }
 
-    public void RequestTerrainModification(HexTile[] areaTiles, int height, HexagonPreviewArea.PreviewRenderData existingModification = null, System.Action onComplete = null)
+    public void RequestTerrainModification(HashSet<HexTile> areaTiles, int height, HexagonPreviewArea.PreviewRenderData existingModification = null, System.Action onComplete = null)
     {
         List<HexTile> areaTilesList = new List<HexTile>(areaTiles);
 
@@ -71,7 +71,7 @@ public class TerrainModificationHandler : MonoBehaviour
 
 
             Workable workable = new Workable();// newObj.AddComponent<Workable>();
-            workable.TilesAssociated = new List<HexTile>(areaTilesList);
+            workable.TilesAssociated = new HashSet<HexTile>(areaTilesList);
             workable.OnWorkTick += () => { return DoWorkOnTerrain(newObj); };
             workable.OnWorkFinished += (success) =>
             {
@@ -238,15 +238,15 @@ public class TerrainModificationHandler : MonoBehaviour
         {
             return false;
         }
-        HexTile[] areaTiles = objToAssociatedTiles[obj];
+        var areaTiles = objToAssociatedTiles[obj];
 
-        for (int i = 0; i < areaTiles.Length; i++)
-        {
-            areaTiles[i].HeightLocked = false;
+        foreach (var areaTile in areaTiles) {
+            areaTile.HeightLocked = false;
         }
+        
         if(!HexBoardChunkHandler.Instance.FlattenArea(areaTiles, objToAssociatedHeight[obj], true))
         {
-            RequestTerrainModification(areaTiles, objToAssociatedHeight[obj], obj);
+            RequestTerrainModification(new HashSet<HexTile>(areaTiles), objToAssociatedHeight[obj], obj);
             for (int i = 0; i < areaTiles.Length; i++)
             {
                 areaTiles[i].HeightLocked = true;
@@ -256,9 +256,8 @@ public class TerrainModificationHandler : MonoBehaviour
         }
         else
         {
-            for (int i = 0; i < areaTiles.Length; i++)
-            {
-                areaTiles[i].WorkArea = false;
+            foreach (var areaTile in areaTiles) {
+                areaTile.WorkArea = false;
             }
             objToAssociatedCompleteAction[obj]?.Invoke();
 

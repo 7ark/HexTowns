@@ -72,19 +72,16 @@ public class Pathfinder : MonoBehaviour
             return new HexTile[] { to };
         }
 
-        if(to.CantWalkThrough)
-        {
-            List<HexTile> nearby = chunkHandler.GetTileNeighbors(to);
-            nearby.Sort((x, y) => { return Vector3.Distance(x.Position, to.Position).CompareTo(Vector3.Distance(y.Position, to.Position)); });
+        if(to.CantWalkThrough) {
+            var nearby = to.Neighbors;
             bool none = true;
-            for (int i = 0; i < nearby.Count; i++)
+            foreach (var nearbyTile in nearby
+                .OrderBy(tile => Vector3.Distance(tile.Position, to.Position))
+                .Where(nearbyTile => !nearbyTile.CantWalkThrough)) 
             {
-                if(!nearby[i].CantWalkThrough)
-                {
-                    to = nearby[i];
-                    none = false;
-                    break;
-                }
+                to = nearbyTile;
+                none = false;
+                break;
             }
 
             if(none)
@@ -145,7 +142,7 @@ public class Pathfinder : MonoBehaviour
                 break;
             }
 
-            List<HexTileAStarData> neighbors = chunkHandler.GetTileNeighbors(current.Tile)
+            List<HexTileAStarData> neighbors = current.Tile.Neighbors
                 .Select(tile => new HexTileAStarData { Tile = tile }).ToList();
 
             for (int i = 0; i < neighbors.Count; i++)

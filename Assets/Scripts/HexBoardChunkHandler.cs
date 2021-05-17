@@ -8,10 +8,6 @@ using System.Linq;
 using Random = UnityEngine.Random;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
-using Unity.Jobs;
-using Unity.Burst;
-using Unity.Mathematics;
-using System.Threading;
 
 public class HexBoardChunkHandler : MonoBehaviour
 {
@@ -63,7 +59,10 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Mesh mesh;
     private Texture2D[] textures;
 
+    [SerializeField]
     private Texture2DArray textureArray;
+    
+    //Master container
     private HexTile[] globalTiles;
     private Vector2Int cachedLengths;
     private List<HexBoard> boardsQueuedToRender = new List<HexBoard>();
@@ -213,9 +212,18 @@ public class HexBoardChunkHandler : MonoBehaviour
         boardSize = worldSize;
 
         cachedLengths = new Vector2Int(worldSize.x * tileSize.x, worldSize.y * tileSize.y);
-        globalTiles = new HexTile[cachedLengths.x * cachedLengths.y * 4];
+        globalTiles = new HexTile[cachedLengths.x * cachedLengths.y];
+        FillTiles();
 
-        StartCoroutine(FillBoards());
+        FillBoards(0, 0);
+    }
+
+    private void FillTiles() {
+        for (var i = 0; i < cachedLengths.x; i++)
+        for (var j = 0; j < cachedLengths.y; j++) {
+            var index = cachedLengths.x * j + i;
+            globalTiles[index] = new HexTile(i, j, index);
+        }
     }
 
     public bool FlattenArea(HexTile[] areaTiles, int height, bool step = false)
@@ -384,6 +392,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         int length = boardSize.x * boardSize.y / 4;
         for (int i = 0; i < length; i++)
         {
+
             HexTile tile = null;
             while(tile == null)
             {
@@ -403,7 +412,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             //}
         }
 
-
+        
         //for (int x = -boardSize.x; x <= boardSize.x; x++)
         //{
         //    for (int y = -boardSize.y; y <= boardSize.y; y++)
@@ -437,7 +446,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         //}
     }
 
-    private IEnumerator FillBoards(int increasedDistance = 1)
+    private void FillBoards(int offsetX, int offsetY, int increasedDistance = 1)
     {
         allBoards = new HexBoard[boardSize.x, boardSize.y];
         List<HexBoard> boardsToUpdate = new List<HexBoard>();
@@ -452,10 +461,11 @@ public class HexBoardChunkHandler : MonoBehaviour
             }
         }
 
+
         GenerateBiomesData();
 
-        //GenerateTerrain();
-        yield return (GenerateTerrain());
+        GenerateTerrain();
+        //StartCoroutine(GenerateTerrain());
 
         //Debug.Log("Boards to update step 1: " + boardsToUpdate.Count);
 
@@ -479,7 +489,7 @@ public class HexBoardChunkHandler : MonoBehaviour
 
         //Debug.Log("Boards to update step 2: " + boardsToUpdate.Count);
 
-        Vector2Int cameraRefPos = new Vector2Int(boardSize.x/2, boardSize.y/2);
+        Vector2Int cameraRefPos = new Vector2Int(offsetX + boardSize.x/2, offsetY + boardSize.y/2);
         boardsToUpdate.Sort((x, y) => { return (cameraRefPos - x.GridPosition).magnitude.CompareTo((cameraRefPos - y.GridPosition).magnitude); });
         cameraController.SetTargetedPosition(new Vector3(boardSize.x / 2 * boardsToUpdate[0].Size.x * HexTile.OUTER_RADIUS * 1.5f, 0, boardSize.y / 2 * boardsToUpdate[0].Size.y * HexTile.INNER_RADIUS * 1.5f));
 
@@ -494,15 +504,6 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         public HashSet<HexTile> tilesInPlate = new HashSet<HexTile>();
         public HashSet<HexTile> tileBorders = new HashSet<HexTile>();
-        public HexCoordinates movementDirection;
-
-        public int density = 0;
-        public TectonicPlateType plateType;
-    }
-    public class TectonicPlateThreaded
-    {
-        public HashSet<HexCoordinates> tilesInPlate = new HashSet<HexCoordinates>();
-        public HashSet<HexCoordinates> tileBorders = new HashSet<HexCoordinates>();
         public HexCoordinates movementDirection;
 
         public int density = 0;
@@ -526,205 +527,8 @@ public class HexBoardChunkHandler : MonoBehaviour
         public HexCoordinates direction;
     }
 
-    public class ThreadedGenerate
+    private void GenerateTerrain()
     {
-        public int seed;
-        public HashSet<Vector2Int> voronoiPoints = new HashSet<Vector2Int>();
-
-        public Dictionary<HexCoordinates, int> hexTileHeights = new Dictionary<HexCoordinates, int>();
-
-        private HexCoordinates[] directions;
-
-        public ThreadedGenerate()
-        {
-            directions = new HexCoordinates[]
-            {
-                new HexCoordinates(1, 0),
-                new HexCoordinates(0, 1),
-                new HexCoordinates(-1, 0),
-                new HexCoordinates(0, -1),
-                new HexCoordinates(1, -1),
-                new HexCoordinates(-1, 1),
-            };
-        }
-        public void Generate()
-        {
-            System.Random random = new System.Random(seed);
-            Dictionary<Vector2Int, TectonicPlateThreaded> plates = new Dictionary<Vector2Int, TectonicPlateThreaded>();
-            Dictionary<HexCoordinates, TectonicPlateThreaded> hexCoordsToPlate = new Dictionary<HexCoordinates, TectonicPlateThreaded>();
-            HashSet<HexCoordinates> allCoordinates = new HashSet<HexCoordinates>();
-
-            foreach (var point in voronoiPoints)
-            {
-                plates.Add(point, new TectonicPlateThreaded()
-                {
-                    movementDirection = directions[random.Next(0, directions.Length)],
-                    density = random.Next(0, 3),
-                    plateType = random.Next(0, 3) == 0 ? TectonicPlateType.Oceanic : TectonicPlateType.Continental
-                });
-            }
-
-            foreach (var coords in hexTileHeights.Keys)
-            {
-                float closestDist = float.MaxValue;
-                Vector2Int closestVoronoi = new Vector2Int(-1, -1);
-
-                foreach (var point in voronoiPoints)
-                {
-                    float dist = math.distance(new float2(coords.ToPosition().x, coords.ToPosition().z), new float2(point.x, point.y));
-                    if (dist < closestDist)
-                    {
-                        closestDist = dist;
-                        closestVoronoi = point;
-                    }
-                }
-
-                allCoordinates.Add(coords);
-                plates[closestVoronoi].tilesInPlate.Add(coords);
-                hexCoordsToPlate.Add(coords, plates[closestVoronoi]);
-            }
-
-            foreach (var plate in plates.Values)
-            {
-                foreach (var coords in plate.tilesInPlate)
-                {
-                    HashSet<HexCoordinates> tileNeighbors = GetNeighbors(coords);
-                    bool isNeighbor = true;
-                    foreach(var neighborCoords in tileNeighbors)
-                    {
-                        if (hexCoordsToPlate[neighborCoords] != plate)
-                        {
-                            isNeighbor = false;
-                            break;
-                        }
-                    }
-                    if (!isNeighbor)
-                    {
-                        plate.tileBorders.Add(coords);
-                    }
-                }
-            }
-
-            foreach (var plate in plates.Values)
-            {
-                foreach (var tileCoords in plate.tilesInPlate)
-                {
-                    if (plate.plateType == TectonicPlateType.Oceanic)
-                    {
-                        //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.blue, 60);
-
-                        hexTileHeights[tileCoords] = -75;
-                    }
-                    else
-                    {
-
-                        hexTileHeights[tileCoords] = 10;
-                        //Debug.DrawLine(tile.Position, tile.Position + new Vector3(0, 20), Color.green, 60);
-                    }
-                }
-            }
-
-
-            for (int smoothness = 0; smoothness < 1; smoothness++)
-            {
-                foreach (var coords in allCoordinates)
-                {
-                    HashSet<HexCoordinates> tileNeighbors = GetNeighbors(coords);
-
-                    int avgHeight = 0;
-                    foreach (var neighborCoords in tileNeighbors)
-                    {
-                        avgHeight += hexTileHeights[neighborCoords];
-                    }
-                    avgHeight /= tileNeighbors.Count;
-                    if (avgHeight != hexTileHeights[coords])
-                    {
-                        int newHeight = avgHeight + random.Next(-2, 3);
-                        if (hexTileHeights[coords] >= 0 && newHeight < 0)
-                        {
-                            newHeight = 0;
-                        }
-                        hexTileHeights[coords] = newHeight;
-                    }
-                }
-            }
-        }
-
-        private HashSet<HexCoordinates> GetNeighbors(HexCoordinates coords)
-        {
-            HashSet<HexCoordinates> tileNeighbors = new HashSet<HexCoordinates>();
-            for (int i = 0; i < directions.Length; i++)
-            {
-                HexCoordinates neighborCoords = coords + directions[i];
-                if (hexTileHeights.ContainsKey(neighborCoords))
-                {
-                    tileNeighbors.Add(neighborCoords);
-                }
-            }
-
-            return tileNeighbors;
-        }
-    }
-
-    private IEnumerator GenerateTerrain()
-    {
-        Dictionary<HexCoordinates, int> heightData = new Dictionary<HexCoordinates, int>();
-        for (int i = 0; i < globalTiles.Length; i++)
-        {
-            if(globalTiles[i] != null)
-            {
-                heightData.Add(globalTiles[i].Coordinates, 0);
-            }
-        }
-        ThreadedGenerate gen = new ThreadedGenerate()
-        {
-            hexTileHeights = heightData,
-            voronoiPoints = voronoiPoints,
-            seed = this.seed
-        };
-        Thread testThread = new Thread(new ThreadStart(gen.Generate));
-        testThread.Start();
-
-        while (testThread.IsAlive)
-        {
-            yield return null;
-        }
-
-        foreach(var coord in gen.hexTileHeights.Keys)
-        {
-            HexTile tile = GetTileFromCoordinate(coord);
-            if(tile != null)
-            {
-                tile.SetHeight(gen.hexTileHeights[coord]);
-            }
-        }
-
-        yield break;
-
-        //NativeHashSet<Vector2Int> voronoi = new NativeHashSet<Vector2Int>(voronoiPoints.Count, Allocator.TempJob);
-        NativeArray<Vector2Int> voronoi = new NativeArray<Vector2Int>(voronoiPoints.Count, Allocator.TempJob);
-        int voronoiI = 0;
-        foreach(var point in voronoiPoints)
-        {
-            voronoi[voronoiI++] = (point);
-        }
-        //generateTerrianJob = new GenerateTerrainJob()
-        //{
-        //    hexTileHeights = new NativeHashMap<HexCoordinates, int>(globalTiles.Length, Allocator.TempJob),
-        //    voronoiPoints = voronoi,
-        //    sizeX = boardSize.x * tileSize.x,
-        //    sizeY = boardSize.y * tileSize.y,
-        //    seed = (uint)seed
-        //};
-        //generateTerrianHandle = generateTerrianJob.Schedule();
-        //generatingTerrain = true;
-        //
-        //while(generatingTerrain)
-        //{
-        //    yield return null;
-        //}
-
-        yield break;
         System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         stopwatch.Start();
         //Dictionary<HexTile, TectonicPlate> tilePlateParent = new Dictionary<HexTile, TectonicPlate>();
@@ -781,7 +585,7 @@ public class HexBoardChunkHandler : MonoBehaviour
         {
             foreach (var tile in plate.tilesInPlate)
             {
-                List<HexTile> tileNeighbors = GetTileNeighbors(tile);
+                var tileNeighbors = tile.Neighbors;
                 bool isNeighbor = true;
                 for (int i = 0; i < tileNeighbors.Count; i++)
                 {
@@ -825,7 +629,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                     continue;
                 }
 
-                List<HexTile> neighbors = GetTileNeighbors(globalTiles[i]);
+                var neighbors = globalTiles[i].Neighbors;
                 int avgHeight = 0;
                 for (int j = 0; j < neighbors.Count; j++)
                 {
@@ -883,7 +687,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                                 {
                                     for (int i = 0; i < mountainIterations; i++)
                                     {
-                                        List<HexTile> nearby = GetTileNeighborsInDistance(tile, tileDistanceEffect + 20);
+                                        var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect + 20);
                                         HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
                                         bool extra = false;// tectonicIterations > primaryDetailIterations - 2;
                                         ChangeTileHeight(heightTile, extra ? 1 : Random.Range(1, 6), true, extra ? new Vector2Int(0, 2) : new Vector2Int(1, 2), extra ? 5 : 100);
@@ -891,7 +695,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                                 }
                                 else if (plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
                                 {
-                                    List<HexTile> nearby = GetTileNeighborsInDistance(tile, tileDistanceEffect);
+                                    var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect);
                                     HexTile heightTileOcean = nearby[Random.Range(0, nearby.Count)];
                                     HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
                                     ChangeTileHeight(heightTileOcean, Random.Range(1, 5), false, new Vector2Int(5, 10), 100, TectonicPlateType.Oceanic);
@@ -899,11 +703,11 @@ public class HexBoardChunkHandler : MonoBehaviour
                                 }
                                 else if (plate.plateType == TectonicPlateType.Oceanic && tileInSpaceForward.Plate.plateType == TectonicPlateType.Oceanic)
                                 {
-                                    List<HexTile> nearby = GetTileNeighborsInDistance(tile, tileLargeDistanceEffect);
+                                    var nearby = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
                                     HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
                                     ChangeTileHeight(heightTile, Random.Range(1, 5), false, new Vector2Int(1, 2), 100, TectonicPlateType.Oceanic);
 
-                                    List<HexTile> nearbyVolcano = GetTileNeighborsInDistance(tile, tileLargeDistanceEffect);
+                                    var nearbyVolcano = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
                                     HexTile heightVolcanoTile = nearbyVolcano[Random.Range(0, nearbyVolcano.Count)];
                                     int volcanoIterations = Random.Range(volcanoIterationRange.x, volcanoIterationRange.y);
                                     for (int i = 0; i < volcanoIterations; i++)
@@ -931,7 +735,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                             {
                                 //if(plate.plateType == TectonicPlateType.Continental && tileInSpaceForward.Plate.plateType == TectonicPlateType.Continental) //if (Random.Range(0, 50) == 0)
                                 {
-                                    List<HexTile> nearby = GetTileNeighborsInDistance(tile, tileLargeDistanceEffect);
+                                    var nearby = tile.GetTileNeighborsInDistance(tileLargeDistanceEffect);
                                     HexTile newVolcano = nearby[Random.Range(0, nearby.Count)];
                                     for (int i = 0; i < 1; i++)
                                     {
@@ -952,7 +756,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                         {
                             if (HexCoordinates.AreOpposites(plate.movementDirection, tileInSpaceBackward.Plate.movementDirection))
                             {
-                                List<HexTile> nearby = GetTileNeighborsInDistance(tile, tileDistanceEffect);
+                                var nearby = tile.GetTileNeighborsInDistance(tileDistanceEffect);
                                 HexTile heightTile = nearby[Random.Range(0, nearby.Count)];
                                 ChangeTileHeight(heightTile, Random.Range(1, 5), false, new Vector2Int(1, 2));
                             }
@@ -973,151 +777,145 @@ public class HexBoardChunkHandler : MonoBehaviour
             {
                 tile.SetHeight(tempTileHeights[tile]);
             }
-            yield return RefreshForTest(0.01f);
+            //yield return RefreshForTest(0.01f);
         }
 
 
 
-        yield return RefreshForTest(5f);
+        //yield return RefreshForTest(5f);
 
         #region Erosion
-#if false
         //Erosion
-        int erosionIterations = 10;
-        for (int erosion = 0; erosion < erosionIterations; erosion++)
-        {
-            int rainDroplets = Random.Range(globalTiles.Length / 5000, globalTiles.Length / 1000);
-            for (int rain = 0; rain < rainDroplets; rain++)
-            {
-                List<HexTile> options = GetTileNeighborsInDistance(GetTileFromCoordinate(new HexCoordinates(139, 204)), 20);
-                HexTile tileRainHits = null;// GetTileFromCoordinate(new HexCoordinates(139, 204));//null;
-                while(tileRainHits == null)
-                {
-                    tileRainHits = globalTiles[Random.Range(0, globalTiles.Length)];
-                }
-
-                Droplet currentDroplet = new Droplet()
-                {
-                    position = tileRainHits,
-                    speed = 100f,
-                    sediment = 0,
-                    water = 50f,
-                    direction = new HexCoordinates(0, 0)
-                };
-
-                HexTile startingTileDirection = null;
-                {
-                    int lowestHeight = int.MaxValue;
-                    List<HexTile> neighboringTiles = GetTileNeighbors(currentDroplet.position);
-                    for (int i = 0; i < neighboringTiles.Count; i++)
-                    {
-                        if (neighboringTiles[i].Height < lowestHeight)
-                        {
-                            lowestHeight = neighboringTiles[i].Height;
-                            startingTileDirection = neighboringTiles[i];
-                        }
-                    }
-                }
-                currentDroplet.direction = startingTileDirection.Coordinates - tileRainHits.Coordinates;
-
-                List<HexTile> path = new List<HexTile>();
-
-                for (int dropletLifetime = 0; dropletLifetime < 30; dropletLifetime++)
-                {
-                    path.Add(currentDroplet.position);
-
-                    //Calculate where droplet is moving
-                    HexTile goodTileToMove = GetTileFromCoordinate(currentDroplet.position.Coordinates + currentDroplet.direction);
-
-                    HexTile lowestNear = null;
-                    int lowestHeight = goodTileToMove == null ? int.MaxValue : goodTileToMove.Height;
-                    List<HexTile> neighboringTiles = GetTileNeighbors(currentDroplet.position);
-                    for (int i = 0; i < neighboringTiles.Count; i++)
-                    {
-                        if (neighboringTiles[i].Height < lowestHeight)
-                        {
-                            lowestHeight = neighboringTiles[i].Height;
-                            lowestNear = neighboringTiles[i];
-                        }
-                    }
-
-                    if(goodTileToMove == null)
-                    {
-                        goodTileToMove = lowestNear;
-                    }
-                    else if(lowestNear != null)
-                    {
-                        if (goodTileToMove.Height - currentDroplet.position.Height > currentDroplet.speed)
-                        {
-                            goodTileToMove = lowestNear;
-                        }
-                    }
-
-                    currentDroplet.direction = goodTileToMove.Coordinates - currentDroplet.position.Coordinates;
-
-                    //Update droplet position
-                    int heightDiff = currentDroplet.position.Height - goodTileToMove.Height;
-                    currentDroplet.position = goodTileToMove;
-
-                    if(currentDroplet.speed <= 0 || currentDroplet.water <= 0)
-                    {
-                        break;
-                    }
-
-                    //Update droplet speed
-                    currentDroplet.speed += heightDiff;
-
-                    //Calculate sediment
-                    float sedimentCapacity = heightDiff * currentDroplet.speed * currentDroplet.water;
-                    
-                    if(currentDroplet.sediment > sedimentCapacity || heightDiff < 0)
-                    {
-                        for (int i = 0; i < neighboringTiles.Count; i++)
-                        {
-                            currentDroplet.sediment -= currentDroplet.sediment - sedimentCapacity * 0.5f;
-                            if(neighboringTiles[i].Height <= currentDroplet.position.Height)
-                            {
-                                tempTileHeights[neighboringTiles[i]]++;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < neighboringTiles.Count; i++)
-                        {
-                            //if(neighboringTiles[i].Height < currentDroplet.position.Height)
-                            {
-                                tempTileHeights[neighboringTiles[i]]--;// -= Mathf.Abs(heightDiff) / 10;
-                                currentDroplet.sediment += Mathf.Abs(heightDiff) * 10;
-                            }
-                        }
-                    }
-
-                    currentDroplet.speed = Mathf.Sqrt(currentDroplet.speed * currentDroplet.speed + heightDiff);
-                    currentDroplet.water--;
-                }
-
-                Debug.DrawLine(tileRainHits.Position, tileRainHits.Position + new Vector3(0, 50), Color.blue, 60);
-                
-                for (int i = 0; i < path.Count - 1; i++)
-                {
-                    Debug.DrawLine(path[i].Position + new Vector3(0, path[i].Height * HexTile.HEIGHT_STEP), path[i + 1].Position + new Vector3(0, path[i + 1].Height * HexTile.HEIGHT_STEP), Color.blue, 60);
-                }
-
-                foreach (var tile in tempTileHeights.Keys)
-                {
-                    tile.SetHeight(tempTileHeights[tile]);
-                }
-                yield return RefreshForTest(0.01f, false);
-
-            }
-            yield return RefreshForTest(0.1f, false);
-        }
-#endif
-#endregion
+        //int erosionIterations = 10;
+        //for (int erosion = 0; erosion < erosionIterations; erosion++)
+        //{
+        //    int rainDroplets = Random.Range(globalTiles.Length / 5000, globalTiles.Length / 1000);
+        //    for (int rain = 0; rain < rainDroplets; rain++)
+        //    {
+        //        var options = GetTileFromCoordinate(new HexCoordinates(139, 204)).GetTileNeighborsInDistance(20);
+        //        HexTile tileRainHits = null;// GetTileFromCoordinate(new HexCoordinates(139, 204));//null;
+        //        while(tileRainHits == null)
+        //        {
+        //            tileRainHits = options[Random.Range(0, options.Count)];
+        //        }
+        //
+        //        Droplet currentDroplet = new Droplet()
+        //        {
+        //            position = tileRainHits,
+        //            speed = 100f,
+        //            sediment = 0,
+        //            water = 50f,
+        //            direction = new HexCoordinates(0, 0)
+        //        };
+        //
+        //        HexTile startingTileDirection = null;
+        //        {
+        //            int lowestHeight = int.MaxValue;
+        //            var neighboringTiles = currentDroplet.position.Neighbors;
+        //            for (int i = 0; i < neighboringTiles.Count; i++)
+        //            {
+        //                if (neighboringTiles[i].Height < lowestHeight)
+        //                {
+        //                    lowestHeight = neighboringTiles[i].Height;
+        //                    startingTileDirection = neighboringTiles[i];
+        //                }
+        //            }
+        //        }
+        //        currentDroplet.direction = startingTileDirection.Coordinates - tileRainHits.Coordinates;
+        //
+        //        List<HexTile> path = new List<HexTile>();
+        //
+        //        for (int dropletLifetime = 0; dropletLifetime < 30; dropletLifetime++)
+        //        {
+        //            path.Add(currentDroplet.position);
+        //
+        //            //Calculate where droplet is moving
+        //            HexTile goodTileToMove = GetTileFromCoordinate(currentDroplet.position.Coordinates + currentDroplet.direction);
+        //
+        //            HexTile lowestNear = null;
+        //            int lowestHeight = goodTileToMove.Height;
+        //            var neighboringTiles = currentDroplet.position.Neighbors;
+        //            for (int i = 0; i < neighboringTiles.Count; i++)
+        //            {
+        //                if (neighboringTiles[i].Height < lowestHeight)
+        //                {
+        //                    lowestHeight = neighboringTiles[i].Height;
+        //                    lowestNear = neighboringTiles[i];
+        //                }
+        //            }
+        //
+        //            if(lowestNear != null)
+        //            {
+        //                if (goodTileToMove.Height - currentDroplet.position.Height > currentDroplet.speed)
+        //                {
+        //                    goodTileToMove = lowestNear;
+        //                }
+        //            }
+        //
+        //            currentDroplet.direction = goodTileToMove.Coordinates - currentDroplet.position.Coordinates;
+        //
+        //            //Update droplet position
+        //            int heightDiff = currentDroplet.position.Height - goodTileToMove.Height;
+        //            currentDroplet.position = goodTileToMove;
+        //
+        //            if(currentDroplet.speed <= 0 || currentDroplet.water <= 0)
+        //            {
+        //                break;
+        //            }
+        //
+        //            //Update droplet speed
+        //            currentDroplet.speed += heightDiff;
+        //
+        //            //Calculate sediment
+        //            float sedimentCapacity = heightDiff * currentDroplet.speed * currentDroplet.water;
+        //            
+        //            if(currentDroplet.sediment > sedimentCapacity || heightDiff < 0)
+        //            {
+        //                for (int i = 0; i < neighboringTiles.Count; i++)
+        //                {
+        //                    currentDroplet.sediment -= currentDroplet.sediment - sedimentCapacity * 0.5f;
+        //                    if(neighboringTiles[i].Height <= currentDroplet.position.Height)
+        //                    {
+        //                        tempTileHeights[neighboringTiles[i]]++;
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                for (int i = 0; i < neighboringTiles.Count; i++)
+        //                {
+        //                    //if(neighboringTiles[i].Height < currentDroplet.position.Height)
+        //                    {
+        //                        tempTileHeights[neighboringTiles[i]]--;// -= Mathf.Abs(heightDiff) / 10;
+        //                        currentDroplet.sediment += Mathf.Abs(heightDiff) * 10;
+        //                    }
+        //                }
+        //            }
+        //
+        //            currentDroplet.speed = Mathf.Sqrt(currentDroplet.speed * currentDroplet.speed + heightDiff);
+        //            currentDroplet.water--;
+        //        }
+        //
+        //        Debug.DrawLine(tileRainHits.Position, tileRainHits.Position + new Vector3(0, 50), Color.blue, 60);
+        //        
+        //        for (int i = 0; i < path.Count - 1; i++)
+        //        {
+        //            Debug.DrawLine(path[i].Position + new Vector3(0, path[i].Height * HexTile.HEIGHT_STEP), path[i + 1].Position + new Vector3(0, path[i + 1].Height * HexTile.HEIGHT_STEP), Color.blue, 60);
+        //        }
+        //
+        //        foreach (var tile in tempTileHeights.Keys)
+        //        {
+        //            tile.SetHeight(tempTileHeights[tile]);
+        //        }
+        //        //yield return RefreshForTest(0.01f, false);
+        //
+        //    }
+        //    //yield return RefreshForTest(0.1f, false);
+        //}
+        #endregion
 
 
-        yield break;
+        //yield break;
 
         void ChangeTileHeight(HexTile tileToEdit, int amount, bool positive, Vector2Int randomizedFalloff, int iterationsUntilFalloffIncreases = 100, TectonicPlateType? biasType = null, int currentIterations = 0)
         {
@@ -1134,7 +932,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             if(positive)
             {
                 tempTileHeights[tileToEdit] += amount;
-                List<HexTile> tileNeighbors = GetTileNeighbors(tileToEdit);
+                var tileNeighbors = tileToEdit.Neighbors;
                 for (int i = 0; i < tileNeighbors.Count; i++)
                 {
                     if(tempTileHeights[tileNeighbors[i]] < tempTileHeights[tileToEdit])
@@ -1148,7 +946,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             else
             {
                 tempTileHeights[tileToEdit] -= amount;
-                List<HexTile> tileNeighbors = GetTileNeighbors(tileToEdit);
+                var tileNeighbors = tileToEdit.Neighbors;
                 for (int i = 0; i < tileNeighbors.Count; i++)
                 {
                     if (tempTileHeights[tileNeighbors[i]] > tempTileHeights[tileToEdit])
@@ -1172,7 +970,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                 }
 
                 if(t)
-                globalTiles[i].MaterialIndex = -1;
+                    globalTiles[i].MaterialIndex = -1;
             }
             for (int i = 0; i < allBoards.GetLength(0); i++)
             {
@@ -1375,13 +1173,13 @@ public class HexBoardChunkHandler : MonoBehaviour
         return otherBoards;
     }
 
-    public int RegisterTile(HexTile tile) {
-        int idx = HexCoordToGlobalIndex(tile.Coordinates);
-        if (globalTiles[idx] != null) {
-            Debug.LogError($"Duplicate IDX {idx}");
+    public HexTile FetchTile(HexCoordinates coords) {
+        int idx = HexCoordToGlobalIndex(coords);
+        var tile = globalTiles[idx];
+        if (tile == null) {
+            Debug.LogError($"Null tile found for coords {coords}, index {idx}");
         }
-        globalTiles[idx] = tile;
-        return idx;
+        return tile;
     }
 
     public int HexCoordToGlobalIndex(HexCoordinates coords) {
@@ -1405,12 +1203,13 @@ public class HexBoardChunkHandler : MonoBehaviour
         return globalTiles[index];
     }
 
-    public List<HexTile> GetTileNeighbors(HexTile tile) 
+    public List<HexTile> GetTileNeighbors_Uncached(HexTile tile) 
     {
         var index = tile.GlobalIndex;
         var offset = tile.Coordinates.Y % 2 == 0 ? -1 : 1;
         var neighbors = new List<HexTile>(6);
 
+        //TODO wrap arounds?
         CheckAndAdd(index - 1);
         CheckAndAdd(index + 1);
         CheckAndAdd(index + cachedLengths.x);
@@ -1423,10 +1222,6 @@ public class HexBoardChunkHandler : MonoBehaviour
         void CheckAndAdd(int lookup) {
             if (lookup >= 0 && lookup < globalTiles.Length) {
                 HexTile lookupTile = globalTiles[lookup];
-                //if(lookupTile == null)
-                //{
-                //    Debug.LogError("TILE IS NULL IDIOT " + lookup + " (0 - " + globalTiles.Length + ")");
-                //}
                 if(lookupTile != null)
                 {
                     neighbors.Add(lookupTile);
@@ -1435,9 +1230,13 @@ public class HexBoardChunkHandler : MonoBehaviour
         }
     }
 
-    public List<HexTile> GetTileNeighborsInDistance(HexTile tile, int distance)
+    public IReadOnlyList<HexTile> GetTileNeighborsInDistance(HexTile tile, int distance) {
+        return tile.GetTileNeighborsInDistance(distance);
+    }
+
+    public List<HexTile> GetTileNeighborsInDistance_Uncached(HexTile tile, int distance)
     {
-        var allTiles = new HashSet<HexTile> { tile };
+        var allTiles = new List<HexTile> { tile };
         for (int i = -distance; i <= distance; i++) {
             for (int j = Mathf.Max(-distance, -i - distance); j <= Mathf.Min(distance, -i + distance); j++) {
                 if (i == 0 && j == 0) {
@@ -1450,7 +1249,7 @@ public class HexBoardChunkHandler : MonoBehaviour
             }
         }
         
-        return allTiles.ToList();
+        return allTiles;
     }
 
     public HexTile GetTileInDirection(HexTile tile, int directionX, int directionY)
@@ -1458,10 +1257,11 @@ public class HexBoardChunkHandler : MonoBehaviour
         HexCoordinates changedCoords = new HexCoordinates(tile.Coordinates.X + directionX, tile.Coordinates.Y + directionY);
         return GetTileFromCoordinate(changedCoords);
     }
+    
     public IEnumerable<HexBoard> GetTileNeighborBoards(HexTile tile)
     {
         List<HexBoard> neighborBoards = new List<HexBoard>();
-        var otherTiles = GetTileNeighbors(tile);
+        var otherTiles = tile.Neighbors;
 
         List<HexBoard> otherBoards = GetNearbyBoards(tile.ParentBoard);
         for (int i = 0; i < otherBoards.Count; i++)

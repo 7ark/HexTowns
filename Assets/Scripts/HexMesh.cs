@@ -79,12 +79,11 @@ public class HexMesh
             if (cell != null) 
             {
                 int lowestHeight = int.MaxValue;
-                List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(cell);
-                for (int j = 0; j < neighbors.Count; j++)
-                {
-                    if(neighbors[j].Height < lowestHeight)
+                var neighbors = cell.Neighbors;
+                foreach (var neighbor in neighbors) {
+                    if(neighbor.Height < lowestHeight)
                     {
-                        lowestHeight = neighbors[j].Height;
+                        lowestHeight = neighbor.Height;
                     }
                 }
 

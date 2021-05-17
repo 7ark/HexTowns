@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using MEC;
 using UnityEngine;
 
@@ -137,20 +138,19 @@ public class JobWorkableGO : MonoBehaviour
     {
         activePeeple = workableObj.GetWorker();
 
-        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated()[0], 25);
+        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated().First(), 25);
         ResourceWorkable tree = null;
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            if(tiles[i].HasEnvironmentalItems)
+        foreach (var tile in tiles) {
+            if(tile.HasEnvironmentalItems)
             {
-                Workable[] workables = tiles[i].GetEnvironmentalItemsAsWorkable();
+                Workable[] workables = tile.GetEnvironmentalItemsAsWorkable();
                 for (int j = 0; j < workables.Length; j++)
                 {
                     ResourceWorkable resource = (ResourceWorkable)workables[j];
                     if(resource.ResourceReturn == ResourceType.Wood && resource.AbleToBeHarvested) //TODO: God improve this
                     {
                         tree = resource;
-                        tiles[i].RemoveEnvironmentalItem(tree);
+                        tile.RemoveEnvironmentalItem(tree);
                         break;
                     }
                 }
@@ -183,27 +183,26 @@ public class JobWorkableGO : MonoBehaviour
 
         HexTile tileToPlant = null;
         HexTile tileToMoveTo = null;
-        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated()[0], 10);
-        tiles.Shuffle();
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            if(tiles[i].HeightLocked || tiles[i].HasWorkables || tiles[i].BuildingOnTile != null || tiles[i].WorkArea || tiles[i].CantWalkThrough)
+        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated().First(), 10);
+        foreach (var tile in tiles) {
+            if(tile.HeightLocked || tile.HasWorkables || tile.BuildingOnTile != null || tile.WorkArea || tile.CantWalkThrough)
             {
                 continue;
             }
 
             bool neighborsClear = true;
-            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors(tiles[i]);
-            for (int j = 0; j < neighbors.Count; j++)
-            {
-                if(neighbors[j].BuildingOnTile != null && neighbors[j].BuildingOnTile.GetWallBetweenTiles(tiles[i], neighbors[j]) == WallStructureType.Door)
+            var neighbors = new List<HexTile>(tile.Neighbors);
+            neighbors.Shuffle();
+            
+            foreach (var neighbor in neighbors) {
+                if(neighbor.BuildingOnTile != null && neighbor.BuildingOnTile.GetWallBetweenTiles(tile, neighbor) == WallStructureType.Door)
                 {
                     neighborsClear = false;
                     break;
                 }
-                if (!neighbors[j].HeightLocked && !neighbors[j].HasWorkables && neighbors[j].BuildingOnTile == null && !neighbors[j].WorkArea && !neighbors[j].CantWalkThrough)
+                if (!neighbor.HeightLocked && !neighbor.HasWorkables && neighbor.BuildingOnTile == null && !neighbor.WorkArea && !neighbor.CantWalkThrough)
                 {
-                    tileToMoveTo = neighbors[j];
+                    tileToMoveTo = neighbor;
                 }
             }
 
@@ -212,7 +211,7 @@ public class JobWorkableGO : MonoBehaviour
                 continue;
             }
 
-            tileToPlant = tiles[i];
+            tileToPlant = tile;
             tileToPlant.WorkArea = true;
             break;
         }
@@ -241,7 +240,7 @@ public class JobWorkableGO : MonoBehaviour
 
         activePeeple = workableObj.GetWorker();
 
-        HashSet<Animal> animals = Animal.GetAnimalsWithinRange(workableObj.GetTilesAssociated()[0], 30);
+        HashSet<Animal> animals = Animal.GetAnimalsWithinRange(workableObj.GetTilesAssociated().First(), 30);
         Animal animalToHunt = null;
         foreach(var animal in animals)
         {

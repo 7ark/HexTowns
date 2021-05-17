@@ -47,7 +47,7 @@ public class ResourceWorkable : Workable
         GameObject.Destroy(symbol);
     }
 
-    public override List<HexTile> GetTilesAssociated()
+    public override HashSet<HexTile> GetTilesAssociated()
     {
         return base.GetTilesAssociated();
     }
