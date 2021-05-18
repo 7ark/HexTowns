@@ -12,6 +12,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public PeepleLocation location;
         public bool hasJob;
         public bool anyJobsAvailable;
+        public bool enoughResourcesForAnyJobs;
+        public bool anyJobsNeedResources;
         public bool anyBetterBedsAvailable;
         public int energy;
         public bool resting;
@@ -27,6 +29,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             location = PeepleLocation.Anywhere;
             energy = 100;
             hasJob = false;
+            enoughResourcesForAnyJobs = false;
+            anyJobsNeedResources = false;
             anyJobsAvailable = false;
             resting = false;
             hasHome = false;
@@ -75,6 +79,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         peepleWorldState.isWorkingHours = GameTime.Instance.CurrentTime - 1 > GameTime.Instance.Sunrise && GameTime.Instance.CurrentTime + 1 < GameTime.Instance.Sunset;
         peepleWorldState.isNight = !GameTime.Instance.IsItLightOutside();
         peepleWorldState.anyJobsAvailable = PeepleJobHandler.Instance.AnyOpenJobs();
+        peepleWorldState.enoughResourcesForAnyJobs = PeepleJobHandler.Instance.AnyJobsWaitingOnResourcesHaveResources();
+        peepleWorldState.anyJobsNeedResources = PeepleJobHandler.Instance.AnyJobsNeedResources();
         peepleWorldState.hasJob = Job != null;
         if (!peepleWorldState.hasJob && peepleWorldState.location == PeepleLocation.Job)
         {
@@ -171,6 +177,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             (worldState) => { return worldState.hasJob && worldState.location == PeepleLocation.Job; },
             (worldState) => { worldState.hunger += 2; worldState.energy -= 1; if (worldState.energy < 0) worldState.energy = 0; },
             DoJob);
+        PrimitiveTask<PeepleWS> getResourcesForJobTask = new PrimitiveTask<PeepleWS>("GetResourcesForJob",
+            (worldState) => { return worldState.anyJobsNeedResources && worldState.enoughResourcesForAnyJobs; },
+            (worldState) => { worldState.hunger += 1; worldState.energy -= 1; if (worldState.energy < 0) worldState.energy = 0; },
+            CollectResourcesForJob, false);
+
         PrimitiveTask<PeepleWS> checkForBetterBedTask = new PrimitiveTask<PeepleWS>("CheckForBetterBed",
             (worldState) => { return true; },
             (worldState) => { },
@@ -200,6 +211,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             ),
             new Method<PeepleWS>((ws) => { return ws.isWorkingHours; }).AddSubTasks(
                 doJobTask
+            ),
+            new Method<PeepleWS>().AddSubTasks(
+                getResourcesForJobTask
             ),
             new Method<PeepleWS>().AddSubTasks(
                 relaxTask,
@@ -245,8 +259,25 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> Eat(System.Action<bool> onComplete)
     {
+        SetAIState(PeepleAIState.Moving);
+        bool done = false;
+        bool succeeded = false;
+        HexTile storageLocation = StorageTracker.GetClosestStorageLocationOfTypeWithAmount(InstancedType.Resource_Food, Movement.GetTileOn(), 5);
+        Movement.SetGoal(storageLocation, arrivedComplete: (success) =>
+        {
+            succeeded = success;
+            done = true;
+        });
+
+        yield return Timing.WaitUntilTrue(() => { return done; });
+        if(!succeeded)
+        {
+            onComplete(false);
+            yield break;
+        }
+
         SetAIState(PeepleAIState.EatingFood);
-        if (!ResourceHandler.Instance.UseResources(ResourceType.Food, 5))
+        if (!ResourceHandler.Instance.UseResources(ResourceType.Food, 5, storageLocation))
         {
             peepleWorldState.eating = false;
             onComplete(false);
@@ -417,7 +448,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         Debug.Log("Arrived at site. Doing work");
         while (true)
         {
-            if (workable == null || workable.DoWork() || workable.WorkFinished)
+            if (workable == null || workable.DoWork(this) || workable.WorkFinished)
             {
                 break;
             }
@@ -554,7 +585,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             SetAIState(PeepleAIState.DoingJob);
 
-            Job.DoWork();
+            Job.DoWork(this);
             peepleWorldState.hunger += 2;
             peepleWorldState.energy -= 1;
             if (peepleWorldState.energy < 0)
@@ -563,6 +594,63 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             }
 
             yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+            onComplete(true);
+        }
+    }
+
+    private IEnumerator<float> CollectResourcesForJob(System.Action<bool> onComplete)
+    {
+        SetAIState(PeepleAIState.DoingNothing);
+        peepleWorldState.location = PeepleLocation.Anywhere;
+        Workable jobThatNeedsResources = PeepleJobHandler.Instance.GetJobThatNeedsResources();
+
+        if(jobThatNeedsResources == null || !PeepleJobHandler.Instance.AnyJobsNeedResources())
+        {
+            onComplete(false);
+            yield break;
+        }
+        else
+        {
+            var resourcesNeeded = jobThatNeedsResources.ResourcesNeeded;
+            ResourceType neededResource = ResourceType.Flags;
+            int amountNeeded = 0;
+            foreach(var key in jobThatNeedsResources.ResourcesNeeded.Keys)
+            {
+                amountNeeded = jobThatNeedsResources.ResourcesNeeded[key];
+                if (amountNeeded > 0)
+                {
+                    neededResource = key;
+                    break;
+                }
+            }
+
+            amountNeeded = Mathf.Min(amountNeeded, PeepleCarryingCapacity);
+
+            var storageTile = StorageTracker.GetClosestStorageLocationOfTypeWithAmount(ResourceHandler.Instance.ResourceToInstanced(neededResource), jobThatNeedsResources.ResourcePiles[neededResource], amountNeeded);
+
+            if(storageTile == null)
+            {
+                onComplete(false);
+                yield break;
+            }
+
+            jobThatNeedsResources.AddResource(neededResource, amountNeeded);
+
+            SetAIState(PeepleAIState.Moving);
+            Movement.SetGoal(storageTile.Neighbors[Random.Range(0, storageTile.Neighbors.Count)]);
+
+            yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
+
+            ResourceHandler.Instance.PickupResources(neededResource, amountNeeded, storageTile);
+
+            Movement.SetGoal(jobThatNeedsResources.ResourcePiles[neededResource].Neighbors[Random.Range(0, jobThatNeedsResources.ResourcePiles[neededResource].Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
+
+            yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
+
+            ResourceHandler.Instance.GainResource(neededResource, amountNeeded, jobThatNeedsResources.ResourcePiles[neededResource], false);
+            jobThatNeedsResources.EndTransitResources(neededResource, amountNeeded);
+            jobThatNeedsResources.UpdateResourceStatus();
+            SetAIState(PeepleAIState.DoingNothing);
             onComplete(true);
         }
     }

@@ -21,7 +21,9 @@ public class Workable
     public System.Func<bool> OnWorkTick;
     public bool Unreachable { get; private set; }
 
+    protected Dictionary<ResourceType, int> resourcesInTransit = new Dictionary<ResourceType, int>();
     protected Dictionary<ResourceType, int> resourcesNeededToStart = new Dictionary<ResourceType, int>();
+    protected Dictionary<ResourceType, HexTile> resourcePiles = new Dictionary<ResourceType, HexTile>();
     protected List<Peeple> currentWorkers = new List<Peeple>();
     private HashSet<HexTile> currentTilesWorking = new HashSet<HexTile>();
     protected int totalWorkSlots = 1;
@@ -30,6 +32,15 @@ public class Workable
     {
         get
         {
+            foreach(var key in resourcesNeededToStart.Keys)
+            {
+                if(resourcesNeededToStart[key] > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
             return waitingOnResources;
         }
     }
@@ -38,6 +49,13 @@ public class Workable
         get
         {
             return resourcesNeededToStart;
+        }
+    }
+    public Dictionary<ResourceType, HexTile> ResourcePiles
+    {
+        get
+        {
+            return resourcePiles;
         }
     }
     public int WorkSlotsAvailable
@@ -63,11 +81,41 @@ public class Workable
         this.workStepsRequired = workStepsRequired;
     }
 
+    public void AddResource(ResourceType type, int amount)
+    {
+        resourcesInTransit[type] += amount;
+        resourcesNeededToStart[type] -= amount;
+    }
+
+    public void EndTransitResources(ResourceType type, int amount)
+    {
+        resourcesInTransit[type] -= amount;
+    }
+
+    public void UpdateResourceStatus()
+    {
+        foreach (var key in resourcesNeededToStart.Keys)
+        {
+            if (resourcesNeededToStart[key] > 0 || resourcesInTransit[key] > 0)
+            {
+                return;
+            }
+        }
+
+        waitingOnResources = false;
+    }
+
     public void SetResourceRequirement(params ResourceCount[] resources)
     {
+        var workableTiles = GetWorkableTiles().ToArray();
         for (int i = 0; i < resources.Length; i++)
         {
-            resourcesNeededToStart.Add(resources[i].ResourceType, resources[i].Amount);
+            if(resources[i].Amount > 0)
+            {
+                resourcesNeededToStart.Add(resources[i].ResourceType, resources[i].Amount);
+                resourcesInTransit.Add(resources[i].ResourceType, 0);
+                resourcePiles.Add(resources[i].ResourceType, workableTiles[i]);
+            }
         }
 
         waitingOnResources = true;
@@ -93,7 +141,7 @@ public class Workable
         Unreachable = false;
     }
 
-    public virtual bool DoWork()
+    public virtual bool DoWork(Peeple specificPeepleWorking = null)
     {
         if(OnWorkTick == null)
         {
@@ -201,6 +249,14 @@ public class Workable
         for (int i = 0; i < currentWorkers.Count; i++)
         {
             LeaveWork(currentWorkers[i]);
+        }
+
+        if(completedSuccessfully)
+        {
+            foreach(var key in resourcePiles.Keys)
+            {
+                ResourceHandler.Instance.UseResources(key, ResourceHandler.Instance.ResourcesAtLocation(resourcePiles[key]), resourcePiles[key]);
+            }
         }
     }
     public virtual HashSet<HexTile> GetTilesAssociated()

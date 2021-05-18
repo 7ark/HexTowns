@@ -132,7 +132,7 @@ public class InteractionHandler : MonoBehaviour
         multiSelectPreview = HexagonPreviewArea.CreateUniqueReference();// Instantiate(terrainModPreviewPrefab);
     }
 
-    public void DisplayPlaceablePreview(PlaceableGO placeablePrefab, string prefabName, System.Action onPlaced = null)
+    public void DisplayPlaceablePreview(PlaceableGO placeablePrefab, string prefabName, System.Action<Placeable> onPlaced = null)
     {
         if(placeablePreview != null)
         {
@@ -144,7 +144,8 @@ public class InteractionHandler : MonoBehaviour
         placeablePreview.transform.localPosition = Vector3.zero;
         if(onPlaced != null)
         {
-            placeablePreview.Get().OnPlaced += onPlaced;
+            Placeable placeable = placeablePreview.Get();
+            placeablePreview.Get().OnPlaced += () => { onPlaced(placeable); };
         }
         forceHoverUpdate = true;
         //hoverDisplay.transform.localScale = new Vector3(placeablePreview.Size, placeablePreview.Size, placeablePreview.Size);

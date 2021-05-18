@@ -7241,6 +7241,9 @@ MonoBehaviour:
   - type: 3
     prefabOptions:
     - {fileID: 7451745836197966098, guid: 33f8580f4659c86449728008fd715032, type: 3}
+  - type: 4
+    prefabOptions:
+    - {fileID: 3613611304215677816, guid: 0ca41a8de9e417c48be4990d4086c62f, type: 3}
   baseMaterial: {fileID: 2100000, guid: 43f2bd7bcd4b198458b969d83497966f, type: 2}
   baseMaterialSelection: {fileID: 2100000, guid: 95f1f57c8b51bef459fab80856994eed, type: 2}
   drawingCamera: {fileID: 1023898293}

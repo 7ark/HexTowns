@@ -23,7 +23,7 @@ public class TaskWorkable : Workable
 
         yield return MEC.Timing.WaitForOneFrame;
     }
-    public override bool DoWork()
+    public override bool DoWork(Peeple specificPeepleWorking = null)
     {
         if(doingWork)
         {
@@ -31,7 +31,18 @@ public class TaskWorkable : Workable
         }
         for (int i = 0; i < tasksToDo.Count; i++)
         {
-            currentWorkers[0].AddToTasks(tasksToDo[i]);
+            if(specificPeepleWorking != null)
+            {
+                if(!currentWorkers.Contains(specificPeepleWorking))
+                {
+                    currentWorkers.Add(specificPeepleWorking);
+                }
+                specificPeepleWorking.AddToTasks(tasksToDo[i]);
+            }
+            else
+            {
+                currentWorkers[0].AddToTasks(tasksToDo[i]);
+            }
         }
 
         doingWork = true;

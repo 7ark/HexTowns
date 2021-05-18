@@ -211,19 +211,6 @@ public class ResourceHandler : MonoBehaviour
         }
     }
 
-    public bool UseResources(ResourceType type, int amount)
-    {
-        if(IsThereEnoughResource(type, amount))
-        {
-            resources[type] -= amount;
-
-            UpdateDisplayImages(false);
-            placementPrefabHandler.UpdateButtons();
-            return true;
-        }
-
-        return false;
-    }
 
     public int GetResourceRepresentationValue(ResourceType type)
     {
@@ -255,12 +242,46 @@ public class ResourceHandler : MonoBehaviour
         return lockedTilesFromTakingResources.Contains(tile);
     }
 
-    public void PickupResources(ResourceType type, int amount, HexTile locationToRetrieve) //TODO: Add restrictions or something on making sure amount is a factor of the resource type divisor
+    public bool UseFlag()
+    {
+        if(IsThereEnoughResource(ResourceType.Flags, 1))
+        {
+            resources[ResourceType.Flags]--;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool UseResources(ResourceType type, int amount, HexTile locationToRetrieve)
+    {
+        if(PickupResources(type, amount, locationToRetrieve))
+        {
+            resources[type] -= amount;
+
+            UpdateDisplayImages(false);
+            placementPrefabHandler.UpdateButtons();
+            return true;
+        }
+
+        return false;
+    }
+
+    public int ResourcesAtLocation(HexTile locationToRetrieve)
+    {
+        if(!tileResourceData.ContainsKey(locationToRetrieve))
+        {
+            return 0;
+        }
+        return tileResourceData[locationToRetrieve].amount;
+    }
+
+    public bool PickupResources(ResourceType type, int amount, HexTile locationToRetrieve) //TODO: Add restrictions or something on making sure amount is a factor of the resource type divisor
     {
         if(AreResourcesLocked(locationToRetrieve))
         {
             Debug.LogError("Tried to take from locked resources");
-            return;
+            return false;
         }
         if (resourceTypeToInstancedType.ContainsKey(type))
         {
@@ -277,9 +298,9 @@ public class ResourceHandler : MonoBehaviour
                 }
             }
 
-            if(tileResourceData[locationToRetrieve].amount <= 0)
+            if(tileResourceData[locationToRetrieve].amount <= 0) //TODO: Make sure theres enough in this stack to take
             {
-                return;
+                return false;
             }
 
             int resourceValue = GetResourceRepresentationValue(type);
@@ -344,6 +365,8 @@ public class ResourceHandler : MonoBehaviour
             //    }
             //}
         }
+
+        return true;
     }
 
     private void OrganizeResources(HexTile associatedTile, ResourceType type, List<System.Guid> existingResources)

@@ -401,6 +401,10 @@ public class HexBoard
     {
         Vector3 pos = tile.Position + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + (posAdjustment == null ? Vector3.zero : posAdjustment.Value);
         Quaternion rotate = rotation == null ? Quaternion.Euler(new Vector3(0, Random.Range(0, 361))) : rotation.Value;
+        if(!allPrefabs.ContainsKey(instancedType))
+        {
+            Debug.LogError("Fuck");
+        }
         Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[instancedType][subType].transform.localScale);
         Guid referenceGuid = boardInstancedObjects[instancedType][subType].AddDataPoint(matrix);
 
@@ -457,14 +461,17 @@ public class HexBoard
         this.spawningObject = spawningObject;
         this.allPrefabs = allPrefabs;
 
-        foreach(var type in allPrefabs.Keys)
+        if(boardInstancedObjects.Count <= 0)
         {
-            InstancedGenericObject[] objs = new InstancedGenericObject[allPrefabs[type].Length];
-            for (int i = 0; i < objs.Length; i++)
+            foreach (var type in allPrefabs.Keys)
             {
-                objs[i] = new InstancedGenericObject(allPrefabs[type][i]);
+                InstancedGenericObject[] objs = new InstancedGenericObject[allPrefabs[type].Length];
+                for (int i = 0; i < objs.Length; i++)
+                {
+                    objs[i] = new InstancedGenericObject(allPrefabs[type][i]);
+                }
+                boardInstancedObjects.Add(type, objs);
             }
-            boardInstancedObjects.Add(type, objs);
         }
 
         //boardInstancedObjects.Add(InstancedType.Tree, new InstancedGenericObject[]
