@@ -226,7 +226,7 @@ public class Placeable : Workable
                 }
 
                 ResourceHandler.Instance.ConsumeResource(resource);
-                specificPeepleWorking.ResourceHolding = null;
+                specificPeepleWorking.ResourceHeldPlacing();
 
                 yield break;
             }

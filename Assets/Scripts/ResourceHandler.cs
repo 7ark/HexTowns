@@ -182,6 +182,10 @@ public class ResourceHandler : MonoBehaviour
         {
             if (tileResourceData[gainedLocation].ResourceType != type)
             {
+                foreach(var tile in tileResourceData[gainedLocation].Resources)
+                {
+                    DropResourceNearby(tile, gainedLocation, true);
+                }
                 Debug.LogError("Adding resource to a tile that doesnt have that resource");
             }
         }
@@ -199,8 +203,35 @@ public class ResourceHandler : MonoBehaviour
         OrganizeResources(gainedLocation, type);
     }
 
+    public void DropResourceNearby(ResourceIndividual resource, HexTile location, bool forceDifferentTile = false)
+    {
+        if(!forceDifferentTile && (!tileResourceData.ContainsKey(location) || tileResourceData[location].Resources.Count <= 0 || tileResourceData[location].ResourceType == resource.Type))
+        {
+            PlaceResourceOnTile(resource, location);
+        }
+        else
+        {
+            List<HexTile> neighbors = HexBoardChunkHandler.Instance.GetTileNeighbors_Uncached(location);
+
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                if (!tileResourceData.ContainsKey(neighbors[i]) || tileResourceData[neighbors[i]].Resources.Count <= 0 || tileResourceData[neighbors[i]].ResourceType == resource.Type)
+                {
+                    PlaceResourceOnTile(resource, neighbors[i]);
+                    return;
+                }
+            }
+
+            Debug.LogError("Theres nowhere to drop this resource!");
+        }
+    }
+
     public void PlaceResourceOnTile(ResourceIndividual resource, HexTile location)
     {
+        if(resource == null)
+        {
+            return;
+        }
         if (!tileResourceData.ContainsKey(location))
         {
             tileResourceData.Add(location, new ResourcePhysicalData());
@@ -210,7 +241,8 @@ public class ResourceHandler : MonoBehaviour
         {
             if (tileResourceData[location].ResourceType != resource.Type)
             {
-                Debug.LogError("Adding resource to a tile that doesnt have that resource");
+                Debug.LogError("Adding resource to a tile that doesnt have that resource. Dropping it elsewhere");
+                DropResourceNearby(resource, location, true); 
             }
         }
 
