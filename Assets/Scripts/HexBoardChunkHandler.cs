@@ -52,7 +52,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     [System.Serializable]
     private struct PrefabDataInfo
     {
-        public InstancedType type;
+        public BoardInstancedType type;
         public GameObject[] prefabOptions;
     }
 
@@ -360,7 +360,7 @@ public class HexBoardChunkHandler : MonoBehaviour
                 const int chunksToRenderPerFrame = 10;
                 for (int i = 0; i < Mathf.Min(boardsQueuedToRender.Count, chunksToRenderPerFrame); i++)
                 {
-                    Dictionary<InstancedType, GameObject[]> prefabs = new Dictionary<InstancedType, GameObject[]>();
+                    Dictionary<BoardInstancedType, GameObject[]> prefabs = new Dictionary<BoardInstancedType, GameObject[]>();
                     for (int j = 0; j < prefabData.Length; j++)
                     {
                         prefabs.Add(prefabData[j].type, prefabData[j].prefabOptions);

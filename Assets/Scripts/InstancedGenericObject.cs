@@ -22,12 +22,18 @@ public class InstancedGenericObject
     private List<Material> matInstances = new List<Material>();
     private Dictionary<Guid, Matrix4x4> pointInformation = new Dictionary<Guid, Matrix4x4>();
     private Vector3 center = new Vector3(0, 0, 0);
+    private Vector3 boundsSize = new Vector3(80, 100, 80);
     private int submeshCount = 0;
 
-    public InstancedGenericObject(GameObject originalObject)
+    public InstancedGenericObject(GameObject originalObject, bool biggerBounds = false)
     {
         meshBasis = originalObject.GetComponent<MeshFilter>().sharedMesh;
         submeshCount = meshBasis.subMeshCount;
+
+        if(biggerBounds)
+        {
+            boundsSize = new Vector3(100000, 100000, 100000);
+        }
 
         if (matInstances.Count <= 0)
         {
@@ -127,7 +133,7 @@ public class InstancedGenericObject
         {
             for (int i = 0; i < submeshCount; i++)
             {
-                Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
+                Bounds bound = new Bounds(center, boundsSize);
                 Graphics.DrawMeshInstancedProcedural(meshBasis, i, matInstances[i], bound, pointInformation.Count, null,
                     ShadowCastingMode.On, true, 0);
             }

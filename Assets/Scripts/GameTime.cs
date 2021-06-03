@@ -50,6 +50,11 @@ public class GameTime : MonoBehaviour
         Instance = this;
     }
 
+    public float GetTimeSnapshot()
+    {
+        return daysPassed + (currentTime / 100f); //TODO: See if this even makes sense
+    }
+
     public bool IsItDay()
     {
         return !(currentTime < dawnTime || currentTime > duskTime);

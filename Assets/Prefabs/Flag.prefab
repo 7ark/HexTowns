@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   placeableInstance:
     workStepsRequired: 1
+    totalWorkSlots: 1
     previewDisplay: {fileID: 0}
     visualOptions: []
     visualsParent: {fileID: 0}
@@ -58,6 +59,7 @@ MonoBehaviour:
     hexagonObjectData: []
   flagPlaceableInstance:
     workStepsRequired: 0
+    totalWorkSlots: 1
     previewDisplay: {fileID: 3805468926157672171}
     visualOptions:
     - {fileID: 737257090047163711}

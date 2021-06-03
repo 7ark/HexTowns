@@ -148,7 +148,7 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
 
     }
 
-    private void Update()
+    protected virtual void Update()
     {
         replanTimer -= Time.deltaTime;
 

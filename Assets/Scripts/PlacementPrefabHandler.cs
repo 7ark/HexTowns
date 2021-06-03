@@ -143,7 +143,7 @@ public class PlacementPrefabHandler : MonoBehaviour
             bool allGood = true;
             for (int j = 0; j < prefabData[i].ResourcesUsed.Length; j++)
             {
-                if(prefabData[i].ResourcesUsed[j].ResourceType == ResourceType.Flags && !ResourceHandler.Instance.IsThereEnoughResource(prefabData[i].ResourcesUsed[j].ResourceType, prefabData[i].ResourcesUsed[j].Amount))
+                if(prefabData[i].ResourcesUsed[j].ResourceType == ResourceType.Flags && prefabData[i].ResourcesUsed[j].Amount > 0 && !ResourceHandler.Instance.AnyFlags())
                 {
                     allGood = false;
                     break;

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class PeepleHandler : MonoBehaviour
@@ -24,14 +25,13 @@ public class PeepleHandler : MonoBehaviour
         return allPeeple.Count;
     }
 
-    public Peeple[] GetPeepleOnTiles(HexTile[] tiles)
+    public Peeple[] GetPeepleOnTiles(IEnumerable<HexTile> tiles)
     {
         List<Peeple> result = new List<Peeple>();
 
-        List<HexTile> tileList = new List<HexTile>(tiles);
         for (int i = 0; i < allPeeple.Count; i++)
         {
-            if(tileList.Contains(allPeeple[i].Movement.GetTileOn()))
+            if(tiles.Contains(allPeeple[i].Movement.GetTileOn()))
             {
                 result.Add(allPeeple[i]);
             }

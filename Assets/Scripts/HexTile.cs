@@ -44,6 +44,7 @@ public class HexTile
 	public bool WorkArea { get; set; }
 	public bool HasWorkables { get { return buildingReferences.Count > 0; } }
 	public Building BuildingOnTile { get; set; }
+	public bool IsStorageTile { get; set; } = false;
 
 	public HexTile(int x, int y, int index) {
 		Position = new Vector3(

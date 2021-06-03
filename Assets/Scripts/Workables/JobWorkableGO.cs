@@ -165,7 +165,7 @@ public class JobWorkableGO : MonoBehaviour
         }
 
         //TODO: Plant tree happen over time
-        tileToPlant.ParentBoard.AddInstancedType(InstancedType.Tree, tileToPlant);
+        tileToPlant.ParentBoard.AddInstancedType(BoardInstancedType.Tree, tileToPlant);
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);
@@ -274,7 +274,7 @@ public static class BedTracker
 
 public struct StorageInfo
 {
-    public InstancedType instancedType;
+    public ResourceType resourceType;
     public int maxStorageCapacity;
 }
 
@@ -282,77 +282,90 @@ public static class StorageTracker
 {
     private static Dictionary<HexTile, StorageInfo> allStorageLocations = new Dictionary<HexTile, StorageInfo>();
 
-    public static void AddStorageLocation(HexTile location, InstancedType type, int storageCapacity = 50)
+    public static void AddStorageLocation(HexTile location, ResourceType type, int storageCapacity = 50)
     {
         allStorageLocations.Add(location, new StorageInfo()
         {
-            instancedType = type,
+            resourceType = type,
             maxStorageCapacity = storageCapacity
         });
+        location.IsStorageTile = true;
     }
 
     public static void RemoveStorageLocation(HexTile location)
     {
         allStorageLocations.Remove(location);
+
+        location.IsStorageTile = false;
     }
 
-    public static HexTile GetClosestStorageLocationOfTypeWithAmount(InstancedType type, HexTile tileFrom, int amount) //TODO: Add type of func so it doesnt get if storage is full
+    public static StorageInfo GetStorageAt(HexTile location)
     {
-        float closestDist = float.MaxValue;
-        HexTile closest = null;
-        foreach (var tile in allStorageLocations.Keys)
+        if(allStorageLocations.ContainsKey(location))
         {
-            if (allStorageLocations[tile].instancedType == type && ResourceHandler.Instance.IsThereEnoughResource(type, amount, tile))
-            {
-                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = tile;
-                }
-            }
+            return allStorageLocations[location];
         }
 
-        return closest;
+        return default(StorageInfo);
     }
-    public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom) //TODO: Add type of func so it doesnt get if storage is full
-    {
-        float closestDist = float.MaxValue;
-        HexTile closest = null;
-        foreach(var tile in allStorageLocations.Keys)
-        {
-            if(allStorageLocations[tile].instancedType == type)
-            {
-                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = tile;
-                }
-            }
-        }
 
-        return closest;
-    }
-    public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom, out int maxStorageCapacity)
-    {
-        float closestDist = float.MaxValue;
-        HexTile closest = null;
-        foreach (var tile in allStorageLocations.Keys)
-        {
-            if (allStorageLocations[tile].instancedType == type)
-            {
-                float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = tile;
-                }
-            }
-        }
+    //public static HexTile GetClosestStorageLocationOfTypeWithAmount(InstancedType type, HexTile tileFrom, int amount) //TODO: Add type of func so it doesnt get if storage is full
+    //{
+    //    float closestDist = float.MaxValue;
+    //    HexTile closest = null;
+    //    foreach (var tile in allStorageLocations.Keys)
+    //    {
+    //        if (allStorageLocations[tile].instancedType == type && ResourceHandler.Instance.IsThereEnoughResource(type, amount, tile))
+    //        {
+    //            float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+    //            if (dist < closestDist)
+    //            {
+    //                closestDist = dist;
+    //                closest = tile;
+    //            }
+    //        }
+    //    }
 
-        maxStorageCapacity = allStorageLocations[closest].maxStorageCapacity;
+    //    return closest;
+    //}
+    //public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom) //TODO: Add type of func so it doesnt get if storage is full
+    //{
+    //    float closestDist = float.MaxValue;
+    //    HexTile closest = null;
+    //    foreach(var tile in allStorageLocations.Keys)
+    //    {
+    //        if(allStorageLocations[tile].instancedType == type)
+    //        {
+    //            float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+    //            if (dist < closestDist)
+    //            {
+    //                closestDist = dist;
+    //                closest = tile;
+    //            }
+    //        }
+    //    }
 
-        return closest;
-    }
+    //    return closest;
+    //}
+    //public static HexTile GetClosestStorageLocationOfType(InstancedType type, HexTile tileFrom, out int maxStorageCapacity)
+    //{
+    //    float closestDist = float.MaxValue;
+    //    HexTile closest = null;
+    //    foreach (var tile in allStorageLocations.Keys)
+    //    {
+    //        if (allStorageLocations[tile].instancedType == type)
+    //        {
+    //            float dist = HexCoordinates.HexDistance(tileFrom.Coordinates, tile.Coordinates);
+    //            if (dist < closestDist)
+    //            {
+    //                closestDist = dist;
+    //                closest = tile;
+    //            }
+    //        }
+    //    }
+
+    //    maxStorageCapacity = allStorageLocations[closest].maxStorageCapacity;
+
+    //    return closest;
+    //}
 }

@@ -143,7 +143,7 @@ public struct BoardCorners
     }
 }
 
-public enum InstancedType { Tree, Rock, Resource_Log, Resource_Stone, Resource_Food }
+public enum BoardInstancedType { Tree, Rock }
 public enum TreeType { Oak }
 
 public class HexBoard
@@ -156,7 +156,7 @@ public class HexBoard
     private bool environmentalObjectsGenerated = false;
     private HashSet<Animal> allAnimalsOnBoard = new HashSet<Animal>();
 
-    private Dictionary<InstancedType, InstancedGenericObject[]> boardInstancedObjects = new Dictionary<InstancedType, InstancedGenericObject[]>();
+    private Dictionary<BoardInstancedType, InstancedGenericObject[]> boardInstancedObjects = new Dictionary<BoardInstancedType, InstancedGenericObject[]>();
 
     public bool GeneratingTiles { get; private set; }
     public Vector2Int GridPosition { get; set; }
@@ -172,7 +172,7 @@ public class HexBoard
     public static Vector2 FullSize { get; private set; } = Vector2.zero;
 
     private GameObject spawningObject;
-    private Dictionary<InstancedType, GameObject[]> allPrefabs;
+    private Dictionary<BoardInstancedType, GameObject[]> allPrefabs;
 
     public HexBoard()
     {
@@ -341,14 +341,14 @@ public class HexBoard
                 {
                     Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
                     Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
-                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[InstancedType.Tree][(int)TreeType.Oak].transform.localScale);
+                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[BoardInstancedType.Tree][(int)TreeType.Oak].transform.localScale);
 
-                    Guid id = boardInstancedObjects[InstancedType.Tree][(int)TreeType.Oak].AddDataPoint(matrix);
+                    Guid id = boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].AddDataPoint(matrix);
 
                     ResourceWorkable treeWorkable = new ResourceWorkable(allTiles[i], 3, ResourceType.Wood, 2); //FIX
                     treeWorkable.OnDestroyed += (w) =>
                     {
-                        boardInstancedObjects[InstancedType.Tree][(int)TreeType.Oak].RemoveDataPoint(id);
+                        boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].RemoveDataPoint(id);
                     };
                     
                     allTiles[i].AddEnvironmentItem(treeWorkable);
@@ -357,14 +357,14 @@ public class HexBoard
                 {
                     Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
                     Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
-                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[InstancedType.Rock][0].transform.localScale);
+                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[BoardInstancedType.Rock][0].transform.localScale);
 
-                    Guid id = boardInstancedObjects[InstancedType.Rock][0].AddDataPoint(matrix); 
+                    Guid id = boardInstancedObjects[BoardInstancedType.Rock][0].AddDataPoint(matrix); 
 
                     ResourceWorkable rockWorkable = new ResourceWorkable(allTiles[i], 1, ResourceType.Stone, 1);
                     rockWorkable.OnDestroyed += (w) =>
                     {
-                        boardInstancedObjects[InstancedType.Rock][0].RemoveDataPoint(id);
+                        boardInstancedObjects[BoardInstancedType.Rock][0].RemoveDataPoint(id);
                     };
 
                     allTiles[i].AddEnvironmentItem(rockWorkable);
@@ -397,7 +397,7 @@ public class HexBoard
         }
     }
 
-    public Guid AddInstancedType(InstancedType instancedType, HexTile tile, int subType = 0, bool instant = true, Quaternion? rotation = null, Vector3? posAdjustment = null)
+    public Guid AddInstancedType(BoardInstancedType instancedType, HexTile tile, int subType = 0, bool instant = true, Quaternion? rotation = null, Vector3? posAdjustment = null)
     {
         Vector3 pos = tile.Position + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + (posAdjustment == null ? Vector3.zero : posAdjustment.Value);
         Quaternion rotate = rotation == null ? Quaternion.Euler(new Vector3(0, Random.Range(0, 361))) : rotation.Value;
@@ -408,14 +408,14 @@ public class HexBoard
         Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[instancedType][subType].transform.localScale);
         Guid referenceGuid = boardInstancedObjects[instancedType][subType].AddDataPoint(matrix);
 
-        if(instancedType == InstancedType.Tree)
+        if(instancedType == BoardInstancedType.Tree)
         {
             if(!instant)
             {
                 ResourceWorkable treeWorkable = new ResourceWorkable(tile, 3, ResourceType.Wood, 2, !instant);
                 treeWorkable.OnDestroyed += (w) =>
                 {
-                    boardInstancedObjects[InstancedType.Tree][(int)subType].RemoveDataPoint(referenceGuid);
+                    boardInstancedObjects[BoardInstancedType.Tree][(int)subType].RemoveDataPoint(referenceGuid);
                 };
 
                 tile.AddEnvironmentItem(treeWorkable);
@@ -423,19 +423,19 @@ public class HexBoard
                 int minMinuteGrowthTime = 3;
                 int maxMinuteGrowthTime = 6;
 
-                HexBoardChunkHandler.Instance.StartCoroutine(GrowTree(referenceGuid, subType, pos, rotate, allPrefabs[InstancedType.Tree][(int)subType].transform.localScale, Random.Range(minMinuteGrowthTime * 60, maxMinuteGrowthTime * 60), treeWorkable));
+                HexBoardChunkHandler.Instance.StartCoroutine(GrowTree(referenceGuid, subType, pos, rotate, allPrefabs[BoardInstancedType.Tree][(int)subType].transform.localScale, Random.Range(minMinuteGrowthTime * 60, maxMinuteGrowthTime * 60), treeWorkable));
             }
         }
 
         return referenceGuid;
     }
 
-    public void RemoveType(InstancedType instancedType, Guid referenceType, int subType = 0)
+    public void RemoveType(BoardInstancedType instancedType, Guid referenceType, int subType = 0)
     {
         boardInstancedObjects[instancedType][subType].RemoveDataPoint(referenceType);
     }
 
-    public void ModifyType(InstancedType instancedType, HexTile tileAssociated, Guid referenceType, Vector3 position, Quaternion rotation, int subType = 0)
+    public void ModifyType(BoardInstancedType instancedType, HexTile tileAssociated, Guid referenceType, Vector3 position, Quaternion rotation, int subType = 0)
     {
         boardInstancedObjects[instancedType][subType].UpdateDataPoint(referenceType, Matrix4x4.TRS(tileAssociated.Position + new Vector3(0, tileAssociated.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + position, rotation, allPrefabs[instancedType][subType].transform.localScale));
     }
@@ -446,7 +446,7 @@ public class HexBoard
         while(timePassed < timeToGrowFinal)
         {
             timePassed += Time.deltaTime;
-            boardInstancedObjects[InstancedType.Tree][subType].UpdateDataPoint(id, Matrix4x4.TRS(position, rotation, Vector3.Lerp(new Vector3(0.05f, 0.05f, 0.05f), finalScale, timePassed / timeToGrowFinal)));
+            boardInstancedObjects[BoardInstancedType.Tree][subType].UpdateDataPoint(id, Matrix4x4.TRS(position, rotation, Vector3.Lerp(new Vector3(0.05f, 0.05f, 0.05f), finalScale, timePassed / timeToGrowFinal)));
 
             yield return null;
         }
@@ -454,7 +454,7 @@ public class HexBoard
         treeWorkable.AbleToBeHarvested = true;
     }
 
-    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst,  Material materialSelectionInst, Camera drawCamera, Camera selectionCamera, HexagonTextureReference textureReference, Dictionary<InstancedType, GameObject[]> allPrefabs)
+    public void GenerateMesh(GameObject spawningObject, Mesh meshBasis, Material materialInst,  Material materialSelectionInst, Camera drawCamera, Camera selectionCamera, HexagonTextureReference textureReference, Dictionary<BoardInstancedType, GameObject[]> allPrefabs)
     {
         hexMesh.SetupMeshGenerationData(meshBasis, allTiles, materialInst, materialSelectionInst, drawCamera, selectionCamera, textureReference);
 

@@ -42,9 +42,7 @@ public class ResourceWorkable : Workable
 
         if(completedSuccessfully)
         {
-            ResourceHandler.Instance.GainResource(resourceToReceiveOnCompletion, resourceAmount, tileOn);
-            HexTile storageArea = StorageTracker.GetClosestStorageLocationOfType(ResourceHandler.Instance.ResourceToInstanced(resourceToReceiveOnCompletion), tileOn);
-            TaskWorkable moveResourceWork = TaskWorkable.CreateMoveResourcesTask(tileOn, storageArea, resourceToReceiveOnCompletion, resourceAmount);
+            ResourceHandler.Instance.SpawnNewResource(resourceToReceiveOnCompletion, resourceAmount, tileOn);
 
             DestroySelf();
         }
@@ -54,6 +52,6 @@ public class ResourceWorkable : Workable
 
     public override HashSet<HexTile> GetTilesAssociated()
     {
-        return base.GetTilesAssociated();
+        return new HashSet<HexTile>() { tileOn };// base.GetTilesAssociated();
     }
 }

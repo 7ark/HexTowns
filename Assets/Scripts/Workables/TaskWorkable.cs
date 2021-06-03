@@ -23,11 +23,11 @@ public class TaskWorkable : Workable
 
         yield return MEC.Timing.WaitForOneFrame;
     }
-    public override bool DoWork(Peeple specificPeepleWorking = null)
+    public override IEnumerator<float> DoWork(Peeple specificPeepleWorking = null)
     {
         if(doingWork)
         {
-            return false;
+            yield break;
         }
         for (int i = 0; i < tasksToDo.Count; i++)
         {
@@ -46,35 +46,34 @@ public class TaskWorkable : Workable
         }
 
         doingWork = true;
-        return false;
     }
 
-    public static TaskWorkable CreateMoveResourcesTask(HexTile from, HexTile to, ResourceType resource, int resourceAmount, bool startWorking = true)
-    {
-        TaskWorkable moveResourceWork = null;
-        moveResourceWork = new TaskWorkable(MoveToNewLocation)
-        {
-            TilesAssociated = new HashSet<HexTile>() { from }
-        };
-
-        if(startWorking)
-        {
-            moveResourceWork.BeginWorking();
-        }
-
-        return moveResourceWork;
-
-        IEnumerator<float> MoveToNewLocation(System.Action<bool> onComplete)
-        {
-            ResourceHandler.Instance.PickupResources(resource, resourceAmount, from);
-
-            moveResourceWork.GetWorker().Movement.SetGoal(to.Neighbors[Random.Range(0, to.Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
-
-            yield return Timing.WaitUntilFalse(() => { return moveResourceWork.GetWorker().Movement.IsMoving; });
-
-            ResourceHandler.Instance.GainResource(resource, resourceAmount, to, false);
-
-            onComplete(true);
-        }
-    }
+    //public static TaskWorkable CreateMoveResourcesTask(HexTile from, HexTile to, ResourceType resource, int resourceAmount, bool startWorking = true)
+    //{
+    //    TaskWorkable moveResourceWork = null;
+    //    moveResourceWork = new TaskWorkable(MoveToNewLocation)
+    //    {
+    //        TilesAssociated = new HashSet<HexTile>() { from }
+    //    };
+    //
+    //    if(startWorking)
+    //    {
+    //        moveResourceWork.BeginWorking();
+    //    }
+    //
+    //    return moveResourceWork;
+    //
+    //    IEnumerator<float> MoveToNewLocation(System.Action<bool> onComplete)
+    //    {
+    //        ResourceHandler.Instance.PickupResources(resource, resourceAmount, from);
+    //
+    //        moveResourceWork.GetWorker().Movement.SetGoal(to.Neighbors[Random.Range(0, to.Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
+    //
+    //        yield return Timing.WaitUntilFalse(() => { return moveResourceWork.GetWorker().Movement.IsMoving; });
+    //
+    //        ResourceHandler.Instance.GainResource(resource, resourceAmount, to, false);
+    //
+    //        onComplete(true);
+    //    }
+    //}
 }

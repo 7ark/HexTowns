@@ -218,7 +218,7 @@ public class BuildingModeHandler : MonoBehaviour
         combined.transform.localPosition = Vector3.zero;
         building.Get().SetupFromScript(new GameObject[] { combined });
         combined.transform.localPosition = Vector3.zero;
-        building.Get().SetTotalWorkableSlots(Mathf.Max(1, allBuildingBlocks.Count / 5));
+        building.Get().SetTotalWorkableSlots(Mathf.Max(1, allBuildingBlocks.Count));
         building.Get().SetWorkSteps(allBuildingBlocks.Count);
         building.transform.position = new Vector3(0, 500) + YOffset;
         allBuildingBlocks.Clear();

@@ -1042,7 +1042,7 @@ MonoBehaviour:
     m_ClickJoystickButton: CRO_ClickJoystickButton
     m_PanHorizontalBorderSize: 25
     m_PanVerticalBorderSize: 25
-    m_PanKeyboardMoveSpeed: 50
+    m_PanKeyboardMoveSpeed: 5000
     m_PanJoystickMoveSpeed: 10
     m_PanBorderMoveSpeed: 10
     m_DragDetectThreshold: 10
@@ -1097,7 +1097,7 @@ MonoBehaviour:
   m_EditorMapLimitCollisionMasks:
     serializedVersion: 2
     m_Bits: 55
-  m_EditorCurrentIndex: 1
+  m_EditorCurrentIndex: 2
   m_EditorShowDebug: 0
   m_EditorFollowTarget: 0
 --- !u!4 &178955329
@@ -6905,6 +6905,13 @@ MonoBehaviour:
   - {fileID: 327427755}
   - {fileID: 1801325429}
   - {fileID: 399066807}
+  prefabs:
+  - type: 1
+    prefab: {fileID: 7451745836197966098, guid: 33f8580f4659c86449728008fd715032, type: 3}
+  - type: 2
+    prefab: {fileID: 4308655646224270813, guid: c1154de6fa6afff4ca08c6dd0be82be1, type: 3}
+  - type: 3
+    prefab: {fileID: 3613611304215677816, guid: 0ca41a8de9e417c48be4990d4086c62f, type: 3}
 --- !u!1 &1371050003
 GameObject:
   m_ObjectHideFlags: 0
@@ -7235,15 +7242,6 @@ MonoBehaviour:
   - type: 1
     prefabOptions:
     - {fileID: 8766014541193715956, guid: 23058347256c2c34bb43f4c315157b04, type: 3}
-  - type: 2
-    prefabOptions:
-    - {fileID: 4308655646224270813, guid: c1154de6fa6afff4ca08c6dd0be82be1, type: 3}
-  - type: 3
-    prefabOptions:
-    - {fileID: 7451745836197966098, guid: 33f8580f4659c86449728008fd715032, type: 3}
-  - type: 4
-    prefabOptions:
-    - {fileID: 3613611304215677816, guid: 0ca41a8de9e417c48be4990d4086c62f, type: 3}
   baseMaterial: {fileID: 2100000, guid: 43f2bd7bcd4b198458b969d83497966f, type: 2}
   baseMaterialSelection: {fileID: 2100000, guid: 95f1f57c8b51bef459fab80856994eed, type: 2}
   drawingCamera: {fileID: 1023898293}
@@ -10032,7 +10030,7 @@ MonoBehaviour:
     m_ClickJoystickButton: CRO_ClickJoystickButton
     m_PanHorizontalBorderSize: 25
     m_PanVerticalBorderSize: 25
-    m_PanKeyboardMoveSpeed: 50
+    m_PanKeyboardMoveSpeed: 5000
     m_PanJoystickMoveSpeed: 10
     m_PanBorderMoveSpeed: 10
     m_DragDetectThreshold: 10

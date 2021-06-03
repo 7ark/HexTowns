@@ -4,6 +4,26 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public class ResourcePhysicalData
+{
+    public ResourceType ResourceType;
+    public HashSet<ResourceIndividual> Resources = new HashSet<ResourceIndividual>();
+}
+
+public class ResourceIndividual
+{
+    public ResourceType Type;
+    public System.Guid physicalGuidReference;
+    public GameObject Parent; //TODO: Make this not reliant on a GO? maybe a delegate
+    public Vector3 FollowOffset;
+
+    public ResourceIndividual(ResourceType type, System.Guid phyRef)
+    {
+        Type = type;
+        physicalGuidReference = phyRef;
+    }
+}
+
 public class ResourceHandler : MonoBehaviour
 {
     [System.Serializable]
@@ -12,10 +32,11 @@ public class ResourceHandler : MonoBehaviour
         public ResourceType Type;
         public Sprite DisplayImage;
     }
-    private class PhysicalResourceData
+    [System.Serializable]
+    private struct ResourcePrefabData
     {
-        public InstancedType instanceType;
-        public int amount;
+        public ResourceType type;
+        public GameObject prefab;
     }
     public static ResourceHandler Instance;
 
@@ -25,13 +46,19 @@ public class ResourceHandler : MonoBehaviour
     private ResourceDisplayInfo[] displayInfo;
     [SerializeField]
     private Image[] displayImages;
+    [SerializeField]
+    private ResourcePrefabData[] prefabs;
 
     private Dictionary<ResourceType, int> resources = new Dictionary<ResourceType, int>();
     private Dictionary<Image, TextMeshProUGUI> imageToText = new Dictionary<Image, TextMeshProUGUI>();
-    private Dictionary<ResourceType, InstancedType> resourceTypeToInstancedType = new Dictionary<ResourceType, InstancedType>();
-    private Dictionary<HexTile, PhysicalResourceData> tileResourceData = new Dictionary<HexTile, PhysicalResourceData>();
+    private Dictionary<HexTile, ResourcePhysicalData> tileResourceData = new Dictionary<HexTile, ResourcePhysicalData>();
     private Dictionary<HexTile, HashSet<System.Guid>> tileGuids = new Dictionary<HexTile, HashSet<System.Guid>>();
     private HashSet<HexTile> lockedTilesFromTakingResources = new HashSet<HexTile>();
+
+    private HashSet<ResourceIndividual> allTrackedResources = new HashSet<ResourceIndividual>();
+    private Dictionary<ResourceType, GameObject> resourcePrefabs = new Dictionary<ResourceType, GameObject>();
+    private Dictionary<ResourceType, InstancedGenericObject> instancedResources = new Dictionary<ResourceType, InstancedGenericObject>();
+
     public Dictionary<ResourceType, Sprite> ResourceVisuals { get; private set; } = new Dictionary<ResourceType, Sprite>();
     private bool displayingOther = false;
     private int flagDayIncrement = 3;
@@ -58,18 +85,15 @@ public class ResourceHandler : MonoBehaviour
         {
             imageToText.Add(displayImages[i], displayImages[i].GetComponentInChildren<TextMeshProUGUI>());
         }
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            resourcePrefabs.Add(prefabs[i].type, prefabs[i].prefab);
+            instancedResources.Add(prefabs[i].type, new InstancedGenericObject(prefabs[i].prefab, true));
+        }
 
-        resourceTypeToInstancedType.Add(ResourceType.Wood, InstancedType.Resource_Log);
-        resourceTypeToInstancedType.Add(ResourceType.Stone, InstancedType.Resource_Stone);
-        resourceTypeToInstancedType.Add(ResourceType.Food, InstancedType.Resource_Food);
 
         SetDefaultValues();
         UpdateDisplayImages();
-    }
-
-    public InstancedType ResourceToInstanced(ResourceType type)
-    {
-        return resourceTypeToInstancedType[type];
     }
 
     private void Start()
@@ -80,9 +104,25 @@ public class ResourceHandler : MonoBehaviour
             {
                 flagDayIncrement++;
                 flagDay += flagDayIncrement;
-                GainResource(ResourceType.Flags, 1, null);
+                resources[ResourceType.Flags]++;
             }
         };
+    }
+
+    private void Update()
+    {
+        foreach(var resource in allTrackedResources)
+        {
+            if(resource.Parent != null)
+            {
+                Matrix4x4 matrix = Matrix4x4.TRS(resource.Parent.transform.position + resource.FollowOffset, resource.Parent.transform.rotation, resourcePrefabs[resource.Type].transform.localScale);
+                instancedResources[resource.Type].UpdateDataPoint(resource.physicalGuidReference, matrix);
+            }
+        }
+        foreach(var key in instancedResources.Keys)
+        {
+            instancedResources[key].Update();
+        }
     }
 
     private void SetDefaultValues()
@@ -109,20 +149,10 @@ public class ResourceHandler : MonoBehaviour
         }
     }
 
-    public bool IsThereEnoughResource(ResourceType type, int amount)
-    {
-        return resources[type] >= amount;
-    }
-
-    public bool IsThereEnoughResource(ResourceType type, int amount, HexTile tile)
-    {
-        return tileResourceData[tile].instanceType == resourceTypeToInstancedType[type] && tileResourceData[tile].amount >= amount;
-    }
-
-    public bool IsThereEnoughResource(InstancedType type, int amount, HexTile tile)
-    {
-        return tileResourceData[tile].instanceType == type && tileResourceData[tile].amount >= amount;
-    }
+    //public bool IsThereEnoughResource2(ResourceType type, int amount)
+    //{
+    //    return resources[type] >= amount;
+    //}
 
     public void OverrideResourceDisplay(Dictionary<ResourceType, int> resourceOverride, Color textColor)
     {
@@ -135,116 +165,69 @@ public class ResourceHandler : MonoBehaviour
         }
     }
 
-    public void GainResource(ResourceType type, int amount, HexTile gainedLocation, bool addToData = true)
+
+    public void SpawnNewResource(ResourceType type, int amount, HexTile gainedLocation)
     {
-        if(addToData)
-        {
-            resources[type] += amount;
+        resources[type] += amount;
 
-            UpdateDisplayImages(false);
-            placementPrefabHandler.UpdateButtons();
+        UpdateDisplayImages(false);
+        placementPrefabHandler.UpdateButtons();
+
+        if (!tileResourceData.ContainsKey(gainedLocation))
+        {
+            tileResourceData.Add(gainedLocation, new ResourcePhysicalData());
+            tileGuids.Add(gainedLocation, new HashSet<System.Guid>());
         }
-
-        if(resourceTypeToInstancedType.ContainsKey(type))
+        else if (tileResourceData[gainedLocation].Resources.Count > 0)
         {
-            if (!tileResourceData.ContainsKey(gainedLocation))
+            if (tileResourceData[gainedLocation].ResourceType != type)
             {
-                tileResourceData.Add(gainedLocation, new PhysicalResourceData());
-                tileGuids.Add(gainedLocation, new HashSet<System.Guid>());
+                Debug.LogError("Adding resource to a tile that doesnt have that resource");
             }
-            else if(tileResourceData[gainedLocation].amount > 0)
-            {
-                if(tileResourceData[gainedLocation].instanceType != resourceTypeToInstancedType[type])
-                {
-                    Debug.LogError("Adding resource to a tile that doesnt have that resource");
-                }
-            }
-
-            List<System.Guid> existingResources = new List<System.Guid>(tileGuids[gainedLocation]);
-            //foreach(var guid in tileGuids[gainedLocation])
-            //{
-            //    gainedLocation.ParentBoard.RemoveType(resourceTypeToInstancedType[type], guid);
-            //}
-
-            tileResourceData[gainedLocation].instanceType = resourceTypeToInstancedType[type];
-            tileResourceData[gainedLocation].amount += amount;
-
-            OrganizeResources(gainedLocation, type, existingResources);
-
-            //int amountToDisplay = Mathf.CeilToInt(tileResourceData[gainedLocation].amount); //TODO: Change 5 to something dependent on resource
-            //float yChange = 0;
-            //bool directionX = true;
-            //Quaternion rotation = Quaternion.identity;
-            //for (int i = 0; i < amountToDisplay; i++)
-            //{
-            //    int modValue = 5;
-            //    if(amountToDisplay < 5)
-            //    {
-            //        modValue = amountToDisplay;
-            //    }
-            //    float offset = Mathf.Lerp(-0.5f, 0.5f, (float)(i % modValue) / (modValue - 1)) + Random.Range(-0.04f, 0.04f);
-            //    Vector3 pos = new Vector3(directionX ? offset : 0, yChange, directionX ? 0 : offset);
-            //    Quaternion rot = Quaternion.Euler(0, rotation.eulerAngles.y, 0/*Random.Range(0, 360)*/);
-            //    if (i < existingResources.Count)
-            //    {
-            //        gainedLocation.ParentBoard.ModifyType(resourceTypeToInstancedType[type], gainedLocation, existingResources[i], pos, rot);
-            //    }
-            //    else
-            //    {
-            //        tileGuids[gainedLocation].Add(gainedLocation.ParentBoard.AddInstancedType(resourceTypeToInstancedType[type], gainedLocation, rotation: rot, posAdjustment: pos));
-            //    }
-            //    if(i % 5 == 0 && i != 0)
-            //    {
-            //        yChange += 0.18f;
-            //        directionX = !directionX;
-            //        if(rotation == Quaternion.identity)
-            //        {
-            //            rotation = Quaternion.Euler(0, 90, 0);
-            //        }
-            //        else
-            //        {
-            //            rotation = Quaternion.identity;
-            //        }
-            //    }
-            //}
-
         }
-    }
 
-
-    public int GetResourceRepresentationValue(ResourceType type)
-    {
-        switch (type)
+        tileResourceData[gainedLocation].ResourceType = type;
+        for (int i = 0; i < amount; i++)
         {
-            case ResourceType.Stone:
-                return 1;
-            case ResourceType.Wood:
-                return 1;
-            case ResourceType.Food:
-                return 5;
+            Matrix4x4 matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one);
+            System.Guid refGuid = instancedResources[type].AddDataPoint(matrix);
+            ResourceIndividual resource = new ResourceIndividual(type, refGuid);
+            allTrackedResources.Add(resource);
+            tileResourceData[gainedLocation].Resources.Add(resource);
         }
 
-        return 1;
+        OrganizeResources(gainedLocation, type);
     }
 
-    public void LockResources(HexTile tile)
+    public void PlaceResourceOnTile(ResourceIndividual resource, HexTile location)
     {
-        lockedTilesFromTakingResources.Add(tile);
+        if (!tileResourceData.ContainsKey(location))
+        {
+            tileResourceData.Add(location, new ResourcePhysicalData());
+            tileGuids.Add(location, new HashSet<System.Guid>());
+        }
+        else if (tileResourceData[location].Resources.Count > 0)
+        {
+            if (tileResourceData[location].ResourceType != resource.Type)
+            {
+                Debug.LogError("Adding resource to a tile that doesnt have that resource");
+            }
+        }
+
+        tileResourceData[location].ResourceType = resource.Type;
+        tileResourceData[location].Resources.Add(resource);
+
+        OrganizeResources(location, resource.Type);
     }
 
-    public void UnlockTile(HexTile tile)
+    public bool AnyFlags()
     {
-        lockedTilesFromTakingResources.Remove(tile);
-    }
-
-    public bool AreResourcesLocked(HexTile tile)
-    {
-        return lockedTilesFromTakingResources.Contains(tile);
+        return resources[ResourceType.Flags] > 0;
     }
 
     public bool UseFlag()
     {
-        if(IsThereEnoughResource(ResourceType.Flags, 1))
+        if(AnyFlags())
         {
             resources[ResourceType.Flags]--;
             return true;
@@ -253,130 +236,71 @@ public class ResourceHandler : MonoBehaviour
         return false;
     }
 
-    public bool UseResources(ResourceType type, int amount, HexTile locationToRetrieve)
+    public void ConsumeResource(ResourceIndividual resource)
     {
-        if(PickupResources(type, amount, locationToRetrieve))
-        {
-            resources[type] -= amount;
+        instancedResources[resource.Type].RemoveDataPoint(resource.physicalGuidReference);
+        allTrackedResources.Remove(resource);
 
-            UpdateDisplayImages(false);
-            placementPrefabHandler.UpdateButtons();
-            return true;
-        }
+        resources[resource.Type]--;
 
-        return false;
+        UpdateDisplayImages(false);
+        placementPrefabHandler.UpdateButtons();
     }
 
-    public int ResourcesAtLocation(HexTile locationToRetrieve)
+    public ResourcePhysicalData PeekResourcesAtLocation(HexTile locationToRetrieve)
     {
         if(!tileResourceData.ContainsKey(locationToRetrieve))
         {
-            return 0;
+            return new ResourcePhysicalData();
         }
-        return tileResourceData[locationToRetrieve].amount;
+        return tileResourceData[locationToRetrieve];
     }
 
-    public bool PickupResources(ResourceType type, int amount, HexTile locationToRetrieve) //TODO: Add restrictions or something on making sure amount is a factor of the resource type divisor
+    public bool RetrieveResourceFromTile(ResourceType type, HexTile locationToRetrieve, out ResourceIndividual resourceRetrieved)
     {
-        if(AreResourcesLocked(locationToRetrieve))
+        if (!tileResourceData.ContainsKey(locationToRetrieve))
         {
-            Debug.LogError("Tried to take from locked resources");
+            tileResourceData.Add(locationToRetrieve, new ResourcePhysicalData());
+            tileGuids.Add(locationToRetrieve, new HashSet<System.Guid>());
+        }
+        else if (tileResourceData[locationToRetrieve].Resources.Count > 0)
+        {
+            if (tileResourceData[locationToRetrieve].ResourceType != type)
+            {
+                Debug.LogError("Adding resource to a tile that doesnt have that resource");
+            }
+        }
+
+        if(tileResourceData[locationToRetrieve].Resources.Count <= 0)
+        {
+            resourceRetrieved = null;
             return false;
         }
-        if (resourceTypeToInstancedType.ContainsKey(type))
+
+        ResourceIndividual firstResource = null;
+        foreach(var resource in tileResourceData[locationToRetrieve].Resources)
         {
-            if (!tileResourceData.ContainsKey(locationToRetrieve))
-            {
-                tileResourceData.Add(locationToRetrieve, new PhysicalResourceData());
-                tileGuids.Add(locationToRetrieve, new HashSet<System.Guid>());
-            }
-            else if (tileResourceData[locationToRetrieve].amount > 0)
-            {
-                if (tileResourceData[locationToRetrieve].instanceType != resourceTypeToInstancedType[type])
-                {
-                    Debug.LogError("Picking up resource to a tile that doesnt have that resource");
-                }
-            }
-
-            if(tileResourceData[locationToRetrieve].amount <= 0) //TODO: Make sure theres enough in this stack to take
-            {
-                return false;
-            }
-
-            int resourceValue = GetResourceRepresentationValue(type);
-
-            amount /= resourceValue;
-
-            int amountCount = 0;
-            HashSet<System.Guid> resourcesToRemove = new HashSet<System.Guid>();
-            foreach (var guid in tileGuids[locationToRetrieve])
-            {
-                resourcesToRemove.Add(guid);
-
-                amountCount++;
-                if(amountCount >= amount)
-                {
-                    break;
-                }
-            }
-
-            amountCount *= resourceValue;
-
-            foreach (var guid in resourcesToRemove)
-            {
-                tileGuids[locationToRetrieve].Remove(guid);
-                locationToRetrieve.ParentBoard.RemoveType(resourceTypeToInstancedType[type], guid);
-            }
-
-            List<System.Guid> existingResources = new List<System.Guid>(tileGuids[locationToRetrieve]);
-
-            tileResourceData[locationToRetrieve].instanceType = resourceTypeToInstancedType[type];
-            tileResourceData[locationToRetrieve].amount -= amount;
-
-            OrganizeResources(locationToRetrieve, type, existingResources);
-
-            //int amountToDisplay = Mathf.CeilToInt(tileResourceData[locationToRetrieve].amount); //TODO: Change 5 to something dependent on resource
-            //float yChange = 0;
-            //bool directionX = true;
-            //Quaternion rotation = Quaternion.identity;
-            //for (int i = 0; i < amountToDisplay; i++)
-            //{
-            //    int modValue = 5;
-            //    if (amountToDisplay < 5)
-            //    {
-            //        modValue = amountToDisplay;
-            //    }
-            //    float offset = Mathf.Lerp(-0.5f, 0.5f, modValue <= 1 ? 0.5f : (float)(i % modValue) / (modValue - 1)) + Random.Range(-0.04f, 0.04f);
-            //    Vector3 pos = new Vector3(directionX ? offset : 0, yChange, directionX ? 0 : offset);
-            //    Quaternion rot = Quaternion.Euler(0, rotation.eulerAngles.y, 0/*Random.Range(0, 360)*/);
-            //    locationToRetrieve.ParentBoard.ModifyType(resourceTypeToInstancedType[type], locationToRetrieve, existingResources[i], pos, rot);
-            //    if (i % 5 == 0 && i != 0)
-            //    {
-            //        yChange += 0.18f;
-            //        directionX = !directionX;
-            //        if (rotation == Quaternion.identity)
-            //        {
-            //            rotation = Quaternion.Euler(0, 90, 0);
-            //        }
-            //        else
-            //        {
-            //            rotation = Quaternion.identity;
-            //        }
-            //    }
-            //}
+            firstResource = resource;
+            break;
         }
+
+        tileResourceData[locationToRetrieve].Resources.Remove(firstResource);
+        resourceRetrieved = firstResource;
+
+
+        OrganizeResources(locationToRetrieve, type);
 
         return true;
     }
 
-    private void OrganizeResources(HexTile associatedTile, ResourceType type, List<System.Guid> existingResources)
+    private void OrganizeResources(HexTile associatedTile, ResourceType type)
     {
-        int amountToRepresent = GetResourceRepresentationValue(type);
-        int amountToDisplay = Mathf.CeilToInt(tileResourceData[associatedTile].amount / amountToRepresent);
+        int amountToDisplay = tileResourceData[associatedTile].Resources.Count;
         float yChange = 0;
         bool directionX = true;
         Quaternion rotation = Quaternion.identity;
-        for (int i = 0; i < amountToDisplay; i++)
+        int index = 0;
+        foreach(var resource in tileResourceData[associatedTile].Resources)
         {
             if(type == ResourceType.Wood)
             {
@@ -385,21 +309,15 @@ public class ResourceHandler : MonoBehaviour
                 {
                     modValue = amountToDisplay;
                 }
-                float offset = Mathf.Lerp(-0.5f, 0.5f, modValue <= 1 ? 0.5f : (float)(i % modValue) / (modValue - 1)) + Random.Range(-0.04f, 0.04f);
+                float offset = Mathf.Lerp(-0.5f, 0.5f, modValue <= 1 ? 0.5f : (float)(index % modValue) / (modValue - 1)) + Random.Range(-0.04f, 0.04f);
                 Vector3 pos = new Vector3(directionX ? offset : 0, yChange, directionX ? 0 : offset);
                 Quaternion rot = Quaternion.Euler(0, rotation.eulerAngles.y, 0/*Random.Range(0, 360)*/);
 
-                if (i < existingResources.Count)
-                {
-                    associatedTile.ParentBoard.ModifyType(resourceTypeToInstancedType[type], associatedTile, existingResources[i], pos, rot);
-                }
-                else
-                {
-                    tileGuids[associatedTile].Add(associatedTile.ParentBoard.AddInstancedType(resourceTypeToInstancedType[type], associatedTile, rotation: rot, posAdjustment: pos));
-                }
+                Matrix4x4 matrix = Matrix4x4.TRS(associatedTile.Position + new Vector3(0, associatedTile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + pos, rot, resourcePrefabs[type].transform.localScale);
 
-                //associatedTile.ParentBoard.ModifyType(resourceTypeToInstancedType[type], associatedTile, existingResources[i], pos, rot);
-                if (i % modValue == 0 && i != 0)
+                instancedResources[type].UpdateDataPoint(resource.physicalGuidReference, matrix);
+
+                if (index % modValue == 0 && index != 0)
                 {
                     yChange += 0.18f;
                     directionX = !directionX;
@@ -417,8 +335,8 @@ public class ResourceHandler : MonoBehaviour
             {
                 int modValue = 4;
                 int stackValue = (int)Mathf.Pow(modValue, 2);
-                float xOffset = Mathf.Lerp(-0.5f, 0.5f, (float)(i % modValue) / (modValue - 1));
-                float zOffset = Mathf.Lerp(-0.5f, 0.5f, Mathf.Floor(i % stackValue / modValue) / (modValue - 1));
+                float xOffset = Mathf.Lerp(-0.5f, 0.5f, (float)(index % modValue) / (modValue - 1));
+                float zOffset = Mathf.Lerp(-0.5f, 0.5f, Mathf.Floor(index % stackValue / modValue) / (modValue - 1));
                 Vector3 pos = new Vector3(xOffset, yChange, zOffset);
 
                 if(type == ResourceType.Food)
@@ -427,29 +345,17 @@ public class ResourceHandler : MonoBehaviour
                     rotation = Quaternion.Euler(0, dir * 90, 0);
                 }
 
-                if (i < existingResources.Count)
-                {
-                    associatedTile.ParentBoard.ModifyType(resourceTypeToInstancedType[type], associatedTile, existingResources[i], pos, rotation);
-                }
-                else
-                {
-                    tileGuids[associatedTile].Add(associatedTile.ParentBoard.AddInstancedType(resourceTypeToInstancedType[type], associatedTile, rotation: rotation, posAdjustment: pos));
-                }
+                Matrix4x4 matrix = Matrix4x4.TRS(associatedTile.Position + new Vector3(0, associatedTile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + pos, rotation, resourcePrefabs[type].transform.localScale);
+                instancedResources[type].UpdateDataPoint(resource.physicalGuidReference, matrix);
 
-                if (i % stackValue == 0 && i != 0)
+                if (index % stackValue == 0 && index != 0)
                 {
                     yChange += 0.27f;
                     directionX = !directionX;
-                    //if (rotation == Quaternion.identity)
-                    //{
-                    //    rotation = Quaternion.Euler(0, 45, 0);
-                    //}
-                    //else
-                    //{
-                    //    rotation = Quaternion.identity;
-                    //}
                 }
             }
+
+            index++;
         }
     }
 }

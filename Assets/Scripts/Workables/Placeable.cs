@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using MEC;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -157,6 +158,8 @@ public class Placeable : Workable
 
         }
 
+        totalWorkSlots = new List<HexTile>(GetWorkableTiles()).Count;
+
         TerrainModificationHandler.Instance.RequestTerrainModification(homeTiles, tilePlacedOn.Height + ModifiedHeight, onComplete: () =>
         {
             foreach (var homeTile in homeTiles) {
@@ -183,6 +186,53 @@ public class Placeable : Workable
         base.DestroySelf();
 
         GameObject.Destroy(associatedPhysicalGameObject);
+    }
+
+    public override IEnumerator<float> DoWork(Peeple specificPeepleWorking = null)
+    {
+        HexTile workingTile = specificPeepleWorking.Movement.GetTileOn();
+        foreach(var key in resourcesToUse.Keys)
+        {
+            if(resourcesToUse[key] > ResourceHandler.Instance.PeekResourcesAtLocation(resourcePiles[key]).Resources.Count)
+            {
+                resourcesNeededToStart[key] += resourcesToUse[key] - ResourceHandler.Instance.PeekResourcesAtLocation(resourcePiles[key]).Resources.Count;
+                waitingOnResources = true;
+                yield break;
+            }
+
+            if(resourcesToUse[key] > 0 && ResourceHandler.Instance.PeekResourcesAtLocation(resourcePiles[key]).Resources.Count > 0)
+            {
+                if(HexCoordinates.HexDistance(resourcePiles[key].Coordinates, workingTile.Coordinates) > 1)
+                {
+                    specificPeepleWorking.Movement.SetGoal(resourcePiles[key].Neighbors[Random.Range(0, resourcePiles[key].Neighbors.Count)]);
+
+                    yield return Timing.WaitUntilFalse(() => { return specificPeepleWorking.Movement.IsMoving; });
+                }
+
+                resourcesToUse[key]--; //TODO: Figure out wtf to do if somehow between here and there the Peeple gets distracted
+                ResourceIndividual resource;
+                ResourceHandler.Instance.RetrieveResourceFromTile(key, resourcePiles[key], out resource);
+                specificPeepleWorking.ResourceHolding = resource;
+
+                if (HexCoordinates.HexDistance(resourcePiles[key].Coordinates, workingTile.Coordinates) > 1)
+                {
+                    specificPeepleWorking.Movement.SetGoal(workingTile);
+
+                    yield return Timing.WaitUntilFalse(() => { return specificPeepleWorking.Movement.IsMoving; });
+                }
+                else
+                {
+                    yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
+                }
+
+                ResourceHandler.Instance.ConsumeResource(resource);
+                specificPeepleWorking.ResourceHolding = null;
+
+                yield break;
+            }
+        }
+
+        WorkCompleted(true);
     }
 
     protected override void WorkCompleted(bool completedSuccessfully)
