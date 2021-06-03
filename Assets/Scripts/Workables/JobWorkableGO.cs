@@ -120,7 +120,8 @@ public class JobWorkableGO : MonoBehaviour
 
         HexTile tileToPlant = null;
         HexTile tileToMoveTo = null;
-        var tiles = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated().First(), 10);
+        var tilesOrdered = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(workableObj.GetTilesAssociated().First(), 10);
+        var tiles = tilesOrdered.Shuffle();
         foreach (var tile in tiles) {
             if(tile.HeightLocked || tile.HasWorkables || tile.BuildingOnTile != null || tile.WorkArea || tile.CantWalkThrough)
             {
@@ -165,7 +166,7 @@ public class JobWorkableGO : MonoBehaviour
         }
 
         //TODO: Plant tree happen over time
-        tileToPlant.ParentBoard.AddInstancedType(BoardInstancedType.Tree, tileToPlant);
+        tileToPlant.ParentBoard.AddInstancedType(BoardInstancedType.Tree, tileToPlant, instant: false);
 
         activePeeple.SetPeepleLocation(Peeple.PeepleLocation.Anywhere);
         onComplete(true);

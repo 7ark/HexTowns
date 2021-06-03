@@ -412,7 +412,7 @@ public class HexBoard
         {
             if(!instant)
             {
-                ResourceWorkable treeWorkable = new ResourceWorkable(tile, 3, ResourceType.Wood, 2, !instant);
+                ResourceWorkable treeWorkable = new ResourceWorkable(tile, 3, ResourceType.Wood, 2, false);
                 treeWorkable.OnDestroyed += (w) =>
                 {
                     boardInstancedObjects[BoardInstancedType.Tree][(int)subType].RemoveDataPoint(referenceGuid);
