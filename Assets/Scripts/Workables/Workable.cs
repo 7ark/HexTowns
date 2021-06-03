@@ -19,7 +19,7 @@ public class Workable
     public System.Action<bool> OnWorkFinished;
     public System.Action<Workable> OnDestroyed;
     public System.Func<bool> OnWorkTick;
-    public bool Unreachable { get; private set; }
+    public bool Unworkable { get; private set; }
 
     protected Dictionary<ResourceType, int> resourcesNeededToStart = new Dictionary<ResourceType, int>();
     protected Dictionary<ResourceType, int> resourcesToUse = new Dictionary<ResourceType, int>();
@@ -126,16 +126,26 @@ public class Workable
 
     public void MarkAsUnreachable()
     {
-        Unreachable = true;
+        Unworkable = true;
 
         Timing.RunCoroutine(DelayedTryAgain());
     }
-
-    private IEnumerator<float> DelayedTryAgain()
+    public void MarkAsOutOfResources()
     {
-        yield return Timing.WaitForSeconds(2);
+        for (int i = 0; i < currentWorkers.Count; i++)
+        {
+            LeaveWork(currentWorkers[i]);
+        }
+        Unworkable = true;
 
-        Unreachable = false;
+        Timing.RunCoroutine(DelayedTryAgain(60));
+    }
+
+    private IEnumerator<float> DelayedTryAgain(float time = 2)
+    {
+        yield return Timing.WaitForSeconds(time);
+
+        Unworkable = false;
     }
 
     public virtual IEnumerator<float> DoWork(Peeple specificPeepleWorking = null)

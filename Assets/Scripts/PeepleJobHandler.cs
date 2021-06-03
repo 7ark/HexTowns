@@ -66,15 +66,10 @@ public class PeepleJobHandler : MonoBehaviour
 
         for (int i = 0; i < jobsAvailable.Count; i++)
         {
-            if (!jobsAvailable[i].Unreachable && jobsAvailable[i].WorkSlotsAvailable > 0)
+            if (!jobsAvailable[i].Unworkable && jobsAvailable[i].WorkSlotsAvailable > 0)
             {
                 return true;
             }
-        }
-
-        if(GetCurrentBuildableFocus() != null)
-        {
-            return true;
         }
 
         return false;
@@ -102,7 +97,7 @@ public class PeepleJobHandler : MonoBehaviour
 
         for (int i = 0; i < jobsAvailable.Count; i++)
         {
-            if(!jobsAvailable[i].Unreachable && jobsAvailable[i].WorkSlotsAvailable > 0)
+            if(!jobsAvailable[i].Unworkable && jobsAvailable[i].WorkSlotsAvailable > 0)
             {
                 jobsAvailable[i].AssignWorker(peeple);
                 return true;

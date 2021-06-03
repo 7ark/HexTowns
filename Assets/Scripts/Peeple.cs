@@ -103,6 +103,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         private Dictionary<ResourceType, HashSet<HexTile>> seenResources = new Dictionary<ResourceType, HashSet<HexTile>>();
         private Dictionary<HexTile, float> resourceLastSeen = new Dictionary<HexTile, float>();
 
+        //Track seen job sites
+        private HashSet<HexTile> seenJobSites = new HashSet<HexTile>();
+
         //Track seen Peeple
 
         public PeepleMemory()
@@ -114,7 +117,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             }
         }
 
-        public void UpdateAtTile(HexTile tile)
+        public void UpdateAtTile(Peeple peeple, HexTile tile)
         {
             var tilesAround = HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tile, SIGHT_RANGE);
 
@@ -177,8 +180,24 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     }
 
                 }
+
+                //Job sites
+                if(peeple.Job != null && peeple.Job.ResourcePiles.ContainsValue(tileNearby))
+                {
+                    seenJobSites.Add(tileNearby);
+                }
             }
 
+        }
+
+        public void FlushJobSiteMemory()
+        {
+            seenJobSites.Clear();
+        }
+
+        public HashSet<HexTile> GetSeenJobSites()
+        {
+            return seenJobSites;
         }
 
         public HashSet<HexTile> GetSeenStorageLocations(ResourceType type)
@@ -441,7 +460,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         memoryTimer -= Time.deltaTime;
         if(memoryTimer <= 0)
         {
-            memory.UpdateAtTile(Movement.GetTileOn());
+            memory.UpdateAtTile(this, Movement.GetTileOn());
             memoryTimer = MEMORY_UPDATE_RATE;
         }
     }
@@ -474,6 +493,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         }
         else
         {
+            if(job is Placeable)
+            {
+                memory.FlushJobSiteMemory();
+                currentJob.OnWorkFinished += (success) => { memory.FlushJobSiteMemory(); memory.UpdateAtTile(this, Movement.GetTileOn()); };
+            }
+            memory.UpdateAtTile(this, Movement.GetTileOn());
             peepleWorldState.hasJob = true;
             peepleWorldState.location = PeepleLocation.Anywhere;
         }
@@ -594,15 +619,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> FindAndTakeFoodResource(System.Action<bool> onComplete)
     {
-        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Food, onComplete));
+        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Food, onComplete, memory.GetSeenJobSites()));
     }
     private IEnumerator<float> FindAndTakeWoodResource(System.Action<bool> onComplete)
     {
-        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Wood, onComplete));
+        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Wood, onComplete, memory.GetSeenJobSites()));
     }
     private IEnumerator<float> FindAndTakeStoneResource(System.Action<bool> onComplete)
     {
-        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Stone, onComplete));
+        yield return Timing.WaitUntilDone(FindAndTakeResource(ResourceType.Stone, onComplete, memory.GetSeenJobSites()));
     }
 
     private IEnumerator<float> FindAndTakeResource(ResourceType type, System.Action<bool> onComplete, HashSet<HexTile> exclusions = null)
@@ -643,6 +668,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     ResourceHolding = resourceRetrieved;
 
                     onComplete(true);
+                    yield break;
+                }
+                else
+                {
+                    onComplete(false);
                     yield break;
                 }
             }
@@ -687,7 +717,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             resourceLocations.Sort((x, y) => { return HexCoordinates.HexDistance(tileOn.Coordinates, x.Coordinates).CompareTo(HexCoordinates.HexDistance(tileOn.Coordinates, y.Coordinates)); });
         }
 
-        Job.LeaveWork(this);
         onComplete(false);
     }
 
@@ -911,6 +940,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         SetAIState(PeepleAIState.DoingNothing);
         peepleWorldState.location = PeepleLocation.Anywhere;
 
+        HashSet<HexTile> exclusions = memory.GetSeenJobSites();
+
         if(ResourceHolding == null)
         {
             List<HexTile> resourceLocations = new List<HexTile>(memory.GetAllSeenResourceLocations());
@@ -919,6 +950,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             foreach (var tile in resourceLocations)
             {
+                if(exclusions.Contains(tile))
+                {
+                    continue;
+                }
                 Movement.SetGoal(tile.Neighbors[Random.Range(0, tile.Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
 
                 yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
@@ -971,11 +1006,19 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             var resourcesNeeded = Job.ResourcesNeeded;
             ResourceType neededResource = ResourceType.Flags;
             int amountNeeded = 0;
+            bool last = false;
+            int lastCounter = 0;
             foreach (var key in Job.ResourcesNeeded.Keys)
             {
+                lastCounter++;
+
                 amountNeeded = Job.ResourcesNeeded[key];
                 if (amountNeeded > 0)
                 {
+                    if(lastCounter == Job.ResourcesNeeded.Count)
+                    {
+                        last = true;
+                    }
                     neededResource = key;
                     break;
                 }
@@ -983,22 +1026,57 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             amountNeeded = Mathf.Min(amountNeeded, PeepleCarryingCapacity);
 
-
-            bool trouble = false;
-            yield return Timing.WaitUntilDone(FindAndTakeResource(neededResource, (success) => 
+            while(true)
             {
-                if(!success)
+                bool trouble = false;
+                yield return Timing.WaitUntilDone(FindAndTakeResource(neededResource, (success) =>
                 {
-                    trouble = true;
+                    if (!success)
+                    {
+                        trouble = true;
+                    }
+                }, memory.GetSeenJobSites()));
+
+                if (trouble)
+                {
+                    if(last)
+                    {
+                        Job.MarkAsOutOfResources();
+                        onComplete(false);
+
+                        yield break;
+                    }
+                    else
+                    {
+                        int currCounter = 0;
+                        foreach (var key in Job.ResourcesNeeded.Keys)
+                        {
+                            currCounter++;
+                            if(currCounter <= lastCounter)
+                            {
+                                continue;
+                            }
+                            lastCounter++;
+
+                            amountNeeded = Job.ResourcesNeeded[key];
+                            if (amountNeeded > 0)
+                            {
+                                if (lastCounter == Job.ResourcesNeeded.Count)
+                                {
+                                    last = true;
+                                }
+                                neededResource = key;
+                                break;
+                            }
+                        }
+                    }
                 }
-            }, new HashSet<HexTile>() { Job.ResourcePiles[neededResource] }));
-
-            if(trouble)
-            {
-                onComplete(false);
-
-                yield break;
+                else
+                {
+                    break;
+                }
             }
+
 
             Movement.SetGoal(Job.ResourcePiles[neededResource].Neighbors[Random.Range(0, Job.ResourcePiles[neededResource].Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
 
