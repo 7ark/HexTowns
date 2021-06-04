@@ -9536,7 +9536,7 @@ MonoBehaviour:
   dawnTime: 4
   duskTime: 20
   dayTimeChangeMultiplier: 0.5
-  nightTimeChangeMultiplier: 1
+  nightTimeChangeMultiplier: 2.5
   timeDisplay: {fileID: 1872292448}
 --- !u!1 &1872292446
 GameObject:

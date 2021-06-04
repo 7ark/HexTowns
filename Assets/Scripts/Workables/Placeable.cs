@@ -211,7 +211,11 @@ public class Placeable : Workable
 
                 resourcesToUse[key]--; //TODO: Figure out wtf to do if somehow between here and there the Peeple gets distracted
                 ResourceIndividual resource;
-                ResourceHandler.Instance.RetrieveResourceFromTile(key, resourcePiles[key], out resource);
+                if(!ResourceHandler.Instance.RetrieveResourceFromTile(key, resourcePiles[key], out resource))
+                {
+                    resourcesToUse[key]++;
+                    yield break;
+                }
                 specificPeepleWorking.ResourceHolding = resource;
 
                 if (HexCoordinates.HexDistance(resourcePiles[key].Coordinates, workingTile.Coordinates) > 1)

@@ -136,6 +136,11 @@ public abstract class HTN_Agent<T> : MonoBehaviour where T : struct
         currentMtr = null;
         planHandle = default;
         delayCheckAgainTimer = 0;
+
+        while(HTN_LOG.Count > 3000)
+        {
+            HTN_LOG.RemoveAt(0);
+        }
     }
 
     private void SetReplanTimer()

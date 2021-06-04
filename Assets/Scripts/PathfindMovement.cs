@@ -22,6 +22,7 @@ public class PathfindMovement : MonoBehaviour
     public bool shouldDoArrivedActionEventIfCancelled = false;
     public System.Action<List<Vector3>, System.Action> OverrideMovementHandling;
     private CoroutineHandle safetyHandle;
+    private Vector3 lastPos;
 
     public float MovementSpeed { get { return movementDelay; } }
 
@@ -42,6 +43,20 @@ public class PathfindMovement : MonoBehaviour
         if(!OnBoard)
         {
             instant = true;
+        }
+
+        if(GetTileOn() == goal)
+        {
+            if (currentArrivedAction != null && shouldDoArrivedActionEventIfCancelled)
+            {
+                currentArrivedAction?.Invoke(false);
+            }
+
+            Timing.KillCoroutines(safetyHandle);
+            iTween.Stop(gameObject);
+            arrivedComplete?.Invoke(true);
+            IsMoving = false;
+            return;
         }
 
         if(instant)
@@ -103,6 +118,36 @@ public class PathfindMovement : MonoBehaviour
         }
 
         currentTile = goal;
+    }
+
+    private void Update()
+    {
+        if(IsMoving)
+        {
+            timer += Time.deltaTime;
+            if(timer > 5)
+            {
+                float dist = Vector3.Distance(lastPos, transform.position);
+                if (dist < 0.3f)
+                {
+                    Debug.Log("Something has gone wrong with " + name + " movement. They're stuck, cancelling their movement", gameObject);
+
+                    IsMoving = false;
+                    currentArrivedAction?.Invoke(false);
+                    currentArrivedAction = null;
+                }
+                else
+                {
+                    timer = 0;
+                    lastPos = transform.position;
+                }
+            }
+        }
+        else
+        {
+            timer = 0;
+            lastPos = transform.position;
+        }
     }
 
     private IEnumerator<float> SafetyArrivalCheck(float time)

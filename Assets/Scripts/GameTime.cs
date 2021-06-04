@@ -6,7 +6,7 @@ using TMPro;
 
 public class GameTime : MonoBehaviour
 {
-    private const float TIME_CHANGE_ADJUSTMENT = 0.1f;
+    private const float TIME_CHANGE_ADJUSTMENT = 0.05f;
 
     [SerializeField]
     private Light directionalLight;

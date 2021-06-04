@@ -113,10 +113,17 @@ public class ResourceHandler : MonoBehaviour
     {
         foreach(var resource in allTrackedResources)
         {
-            if(resource.Parent != null)
+            if(resource.Parent != gameObject)
             {
-                Matrix4x4 matrix = Matrix4x4.TRS(resource.Parent.transform.position + resource.FollowOffset, resource.Parent.transform.rotation, resourcePrefabs[resource.Type].transform.localScale);
-                instancedResources[resource.Type].UpdateDataPoint(resource.physicalGuidReference, matrix);
+                if(resource.Parent == null)
+                {
+                    DropResourceNearby(resource, HexBoardChunkHandler.Instance.GetTileFromWorldPosition(instancedResources[resource.Type].GetDataPoint(resource.physicalGuidReference).GetColumn(3)));
+                }
+                else
+                {
+                    Matrix4x4 matrix = Matrix4x4.TRS(resource.Parent.transform.position + resource.FollowOffset, resource.Parent.transform.rotation, resourcePrefabs[resource.Type].transform.localScale);
+                    instancedResources[resource.Type].UpdateDataPoint(resource.physicalGuidReference, matrix);
+                }
             }
         }
         foreach(var key in instancedResources.Keys)
@@ -186,7 +193,7 @@ public class ResourceHandler : MonoBehaviour
                 {
                     DropResourceNearby(tile, gainedLocation, true);
                 }
-                Debug.LogError("Adding resource to a tile that doesnt have that resource");
+                //Debug.LogError("Adding resource to a tile that doesnt have that resource");
             }
         }
 
@@ -196,6 +203,7 @@ public class ResourceHandler : MonoBehaviour
             Matrix4x4 matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one);
             System.Guid refGuid = instancedResources[type].AddDataPoint(matrix);
             ResourceIndividual resource = new ResourceIndividual(type, refGuid);
+            resource.Parent = gameObject;
             allTrackedResources.Add(resource);
             tileResourceData[gainedLocation].Resources.Add(resource);
         }
@@ -241,11 +249,12 @@ public class ResourceHandler : MonoBehaviour
         {
             if (tileResourceData[location].ResourceType != resource.Type)
             {
-                Debug.LogError("Adding resource to a tile that doesnt have that resource. Dropping it elsewhere");
+                Debug.LogWarning("Adding resource to a tile that doesnt have that resource. Dropping it elsewhere");
                 DropResourceNearby(resource, location, true); 
             }
         }
 
+        resource.Parent = gameObject;
         tileResourceData[location].ResourceType = resource.Type;
         tileResourceData[location].Resources.Add(resource);
 

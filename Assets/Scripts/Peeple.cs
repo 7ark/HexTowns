@@ -14,8 +14,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public bool anyJobsAvailable;
         public bool doesJobRequireResources;
         public bool anyBetterBedsAvailable;
-        public int energy;
-        public bool resting;
+        private int energyBacking;
+        public int energy { get { return energyBacking; } set { energyBacking = value; if (energyBacking < 0) energyBacking = 0; } }
         public bool hasHome;
         public bool isWorkingHours;
         public bool isNight;
@@ -25,10 +25,9 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         public PeepleWS(bool initDefault)
         {
             location = PeepleLocation.Anywhere;
-            energy = 100;
+            energyBacking = 100;
             hasJob = false;
             anyJobsAvailable = false;
-            resting = false;
             hasHome = false;
             isWorkingHours = true;
             isNight = false;
@@ -53,6 +52,18 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private PeepleAIState currentAIState = PeepleAIState.DoingNothing;
     [SerializeField]
     private PeepleWS peepleWorldState = new PeepleWS(true);
+    [SerializeField]
+    private List<string> PEEPLE_LOG = new List<string>();
+
+    public void AddLog(string log)
+    {
+        PEEPLE_LOG.Add(log);
+
+        while(PEEPLE_LOG.Count > 2000)
+        {
+            PEEPLE_LOG.RemoveAt(0);
+        }
+    }
 
     private GameObject restingSymbol;
     private ResourceIndividual resourceHeldBacking = null;
@@ -64,17 +75,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         }
         set
         {
-            if(resourceHeldBacking != null && value != null)
+            if(resourceHeldBacking != null)
             {
                 resourceHeldBacking.Parent = null;
                 ResourceHandler.Instance.DropResourceNearby(resourceHeldBacking, Movement.GetTileOn());
             }
 
-            if(resourceHeldBacking != null && value == null)
-            {
-                resourceHeldBacking.Parent = null;
-                ResourceHandler.Instance.DropResourceNearby(resourceHeldBacking, Movement.GetTileOn());
-            }
             resourceHeldBacking = value;
             if (value != null)
             {
@@ -86,8 +92,11 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     public void ResourceHeldPlacing()
     {
-        resourceHeldBacking.Parent = null;
-        resourceHeldBacking = null;
+        if(resourceHeldBacking != null)
+        {
+            resourceHeldBacking.Parent = null;
+            resourceHeldBacking = null;
+        }
     }
 
 
@@ -155,58 +164,86 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                         storageLastSeen[tileNearby] = timeSnapshot;
                     }
                 }
-                else
+
+                //Resources
+                ResourcePhysicalData resourceData = ResourceHandler.Instance.PeekResourcesAtLocation(tileNearby);
+
+                if (resourceData.ResourceType != ResourceType.Flags)
                 {
-
-                    //Resources
-                    ResourcePhysicalData resourceData = ResourceHandler.Instance.PeekResourcesAtLocation(tileNearby);
-
-                    if(resourceData.ResourceType != ResourceType.Flags)
+                    foreach (var key in seenResources.Keys)
                     {
-                        foreach (var key in seenResources.Keys)
+                        if (seenResources[key].Contains(tileNearby) && resourceData.Resources.Count <= 0)
                         {
-                            if (seenResources[key].Contains(tileNearby) && resourceData.Resources.Count <= 0)
-                            {
-                                seenResources[key].Remove(tileNearby);
-                                resourceLastSeen.Remove(tileNearby);
-                            }
-                        }
-
-                        if (resourceData.Resources.Count > 0)
-                        {
-                            if (!seenResources[resourceData.ResourceType].Contains(tileNearby))
-                            {
-                                seenResources[resourceData.ResourceType].Add(tileNearby);
-                                if(resourceLastSeen.ContainsKey(tileNearby))
-                                {
-                                    resourceLastSeen[tileNearby] = timeSnapshot;
-                                }
-                                else
-                                {
-                                    resourceLastSeen.Add(tileNearby, timeSnapshot);
-                                }
-                            }
-                            else
-                            {
-                                resourceLastSeen[tileNearby] = timeSnapshot;
-                            }
+                            seenResources[key].Remove(tileNearby);
+                            resourceLastSeen.Remove(tileNearby);
                         }
                     }
 
+                    if (resourceData.Resources.Count > 0)
+                    {
+                        if (!seenResources[resourceData.ResourceType].Contains(tileNearby))
+                        {
+                            seenResources[resourceData.ResourceType].Add(tileNearby);
+                            if (resourceLastSeen.ContainsKey(tileNearby))
+                            {
+                                resourceLastSeen[tileNearby] = timeSnapshot;
+                            }
+                            else
+                            {
+                                resourceLastSeen.Add(tileNearby, timeSnapshot);
+                            }
+                        }
+                        else
+                        {
+                            resourceLastSeen[tileNearby] = timeSnapshot;
+                        }
+                    }
                 }
 
                 //Job sites
-                if(peeple.Job != null && peeple.Job.ResourcePiles.ContainsValue(tileNearby))
+
+                HashSet<HexTile> toRemove = new HashSet<HexTile>();
+                foreach(var jobTile in seenJobSites)
                 {
+                    if(jobTile.IsStorageTile)
+                    {
+                        toRemove.Add(jobTile);
+                    }
+                }
+                foreach(var jobTile in toRemove)
+                {
+                    seenJobSites.Remove(jobTile);
+                }
+
+                if (peeple.Job != null && peeple.Job.ResourcePiles.ContainsValue(tileNearby))
+                {
+                    if(tileNearby.IsStorageTile)
+                    {
+                        Debug.LogError("Somehow a storage tile is being added as a job resource pile");
+                        Debug.Break();
+                    }
                     seenJobSites.Add(tileNearby);
                 }
             }
 
         }
 
-        public void FlushJobSiteMemory()
+        public void FlushJobSiteMemory(Workable specificJob = null)
         {
-            seenJobSites.Clear();
+            if(specificJob == null)
+            {
+                seenJobSites.Clear();
+            }
+            else
+            {
+                foreach(var jobTile in specificJob.ResourcePiles.Values)
+                {
+                    if(seenJobSites.Contains(jobTile))
+                    {
+                        seenJobSites.Remove(jobTile);
+                    }
+                }
+            }
         }
 
         public HashSet<HexTile> GetSeenJobSites()
@@ -229,6 +266,18 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             HashSet<HexTile> result = new HashSet<HexTile>();
 
             foreach(var tiles in seenResources.Values)
+            {
+                result.UnionWith(tiles);
+            }
+
+            return result;
+        }
+
+        public HashSet<HexTile> GetAllSeenStorageLocations()
+        {
+            HashSet<HexTile> result = new HashSet<HexTile>();
+
+            foreach (var tiles in seenStorages.Values)
             {
                 result.UnionWith(tiles);
             }
@@ -313,10 +362,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.location = PeepleLocation.InWorkArea;
         }
 
-        if (peepleWorldState.resting && peepleWorldState.energy >= 100)
-        {
-            peepleWorldState.resting = false;
-        }
         HashSet<HexTile> seenExclusions = memory.GetSeenJobSites();
         HashSet<HexTile> seenRes = memory.GetAllSeenResourceLocations();
         int seenResourcesCount = seenRes.Count;
@@ -375,7 +420,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             MoveOutOfWorkArea);
         PrimitiveTask<PeepleWS> relaxTask = new PrimitiveTask<PeepleWS>("Relax",
             (worldState) => { return true; },
-            (worldState) => { worldState.energy += 2; worldState.hunger++; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
+            (worldState) => { worldState.energy += 2; worldState.hunger++; if (worldState.energy > 100) worldState.energy = 100;  },
             TakeBreak);
         PrimitiveTask<PeepleWS> idleTask = new PrimitiveTask<PeepleWS>("Idle",
             (worldState) => { return true; },
@@ -383,14 +428,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             Idle);
         PrimitiveTask<PeepleWS> sleepTask = new PrimitiveTask<PeepleWS>("Sleep",
             (worldState) => { return true; },
-            (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100; worldState.resting = true; },
+            (worldState) => { worldState.energy += 5; if (worldState.energy > 100) worldState.energy = 100;  },
             Sleep);
         PrimitiveTask<PeepleWS> moveToHomeTask = new PrimitiveTask<PeepleWS>("MoveToHome",
             (worldState) => { return worldState.hasHome; },
             (worldState) => { worldState.location = PeepleLocation.Home; },
             MoveToHome);
         CompoundTask<PeepleWS> takeBreakIfTiredTask = new CompoundTask<PeepleWS>("TakeABreak",
-            new Method<PeepleWS>((worldState) => { return worldState.energy < 25 || (worldState.resting && worldState.energy < 75); }).AddSubTasks(
+            new Method<PeepleWS>((worldState) => { return worldState.energy < 10; }).AddSubTasks(
                 relaxTask
                 )
             );
@@ -521,7 +566,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             if(job is Placeable)
             {
                 memory.FlushJobSiteMemory();
-                currentJob.OnWorkFinished += (success) => { memory.FlushJobSiteMemory(); memory.UpdateAtTile(this, Movement.GetTileOn()); };
+                Workable jobGotten = job;
+                currentJob.OnWorkFinished += (success) => { memory.FlushJobSiteMemory(jobGotten); };
             }
             memory.UpdateAtTile(this, Movement.GetTileOn());
             peepleWorldState.hasJob = true;
@@ -555,20 +601,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private IEnumerator<float> CheckForBetterBed(System.Action<bool> onComplete)
     {
         BedTracker.TryGetBetterBed(homeQuality, this);
-        onComplete(true);
-
-        yield break;
-    }
-
-    private IEnumerator<float> StopResting(System.Action<bool> onComplete)
-    {
-        SetAIState(PeepleAIState.DoingNothing);
-        if (peepleWorldState.resting)
-        {
-            restingSymbol.SetActive(false);
-            peepleWorldState.resting = false;
-        }
-
         onComplete(true);
 
         yield break;
@@ -657,37 +689,58 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> FindAndTakeResource(ResourceType type, System.Action<bool> onComplete, HashSet<HexTile> exclusions = null)
     {
-        if(exclusions == null)
+        AddLog("Starting to find resource");
+        if (exclusions == null)
         {
             exclusions = new HashSet<HexTile>();
         }
-        List<HexTile> resourceLocations = new List<HexTile>(memory.GetSeenCombinedResourceLocations(type));
+        List<HexTile> resourceLocations = new List<HexTile>(memory.GetSeenResourceLocations(type));
         HexTile tileOn = Movement.GetTileOn();
         resourceLocations.Sort((x, y) => { return HexCoordinates.HexDistance(tileOn.Coordinates, x.Coordinates).CompareTo(HexCoordinates.HexDistance(tileOn.Coordinates, y.Coordinates)); });
 
         int impatience = 0;
 
+        AddLog("We know of " + resourceLocations.Count + " locations with the " + type + " resource");
         while (resourceLocations.Count > 0)
         {
             if(exclusions.Contains(resourceLocations[0]))
             {
+                AddLog("Location is on exclusion list. Not checking");
                 resourceLocations.RemoveAt(0);
                 continue;
             }
+            //exclusions.Add(resourceLocations[0]);
 
+            peepleWorldState.hunger++;
+            peepleWorldState.energy--;
 
-            if(HexCoordinates.HexDistance(Movement.GetTileOn().Coordinates, resourceLocations[0].Coordinates) > 2)
+            AddLog("Checking to move");
+            int safety = 0;
+            while(HexCoordinates.HexDistance(Movement.GetTileOn().Coordinates, resourceLocations[0].Coordinates) > 2)
             {
+                safety++;
+                if(safety >= 10)
+                {
+                    AddLog("For some reason we couldnt arrive");
+                    Debug.LogError("Tried to walk to tile 10 times and failed!");
+                    onComplete(false);
+
+                    yield break;
+                }
+                AddLog("Moving to a resource");
                 Movement.SetGoal(resourceLocations[0].Neighbors[Random.Range(0, resourceLocations[0].Neighbors.Count)]);
 
                 yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
             }
+            AddLog("Finished Moving");
 
             if (HexCoordinates.HexDistance(Movement.GetTileOn().Coordinates, resourceLocations[0].Coordinates) <= 2)
             {
+                AddLog("We're at the resource");
                 ResourcePhysicalData phyData = ResourceHandler.Instance.PeekResourcesAtLocation(resourceLocations[0]);
                 if (phyData.Resources.Count >= PeepleCarryingCapacity && phyData.ResourceType == type)
                 {
+                    AddLog("We found the resource! Taking it");
                     //Found resource
                     ResourceIndividual resourceRetrieved;
                     if(!ResourceHandler.Instance.RetrieveResourceFromTile(type, resourceLocations[0], out resourceRetrieved))
@@ -699,19 +752,26 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     onComplete(true);
                     yield break;
                 }
+                else
+                {
+                    if(phyData.Resources.Count <= 0)
+                    {
+                        AddLog("This pile didn't have enough resources for us to take any!");
+                    }
+                    if(phyData.ResourceType != type)
+                    {
+                        AddLog("This piles resource was different than what we expected. We wanted " + type + " but this is a pile of " + phyData.ResourceType);
+                    }
+                    exclusions.Add(resourceLocations[0]);
+                }
                 //else
                 //{
                 //    onComplete(false);
                 //    yield break;
                 //}
             }
-            else
-            {
-                //Something went wrong and couldnt move to the storage pile
-                onComplete(false);
-                yield break;
-            }
 
+            AddLog("Failed to find resource, checking impatience");
             if (Random.Range(1, 101) <= impatience)
             {
                 onComplete(false);
@@ -722,12 +782,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 impatience += 1; //TODO: Increase impatience based on personality
             }
 
+            AddLog("Removing location from options");
             resourceLocations.RemoveAt(0);
             tileOn = Movement.GetTileOn();
 
             //Any Peeple nearby to ask
             if (impatience > 10)
             {
+                AddLog("Asking other Peeple");
                 Peeple[] otherPeeple = PeepleHandler.Instance.GetPeepleOnTiles(HexBoardChunkHandler.Instance.GetTileNeighborsInDistance(tileOn, 5));
                 for (int i = 0; i < otherPeeple.Length; i++)
                 {
@@ -739,13 +801,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                         //TODO: Add some amount of UI and interaction to this
                     }
                 }
-                //Refresh our knowledge
-                resourceLocations = new List<HexTile>(memory.GetSeenCombinedResourceLocations(type));
-                resourceLocations.Sort((x, y) => { return HexCoordinates.HexDistance(tileOn.Coordinates, x.Coordinates).CompareTo(HexCoordinates.HexDistance(tileOn.Coordinates, y.Coordinates)); });
             }
 
+            AddLog("Refreshing our knowledge");
+            //Refresh our knowledge
+            resourceLocations = new List<HexTile>(memory.GetSeenResourceLocations(type));
+            resourceLocations.Sort((x, y) => { return HexCoordinates.HexDistance(tileOn.Coordinates, x.Coordinates).CompareTo(HexCoordinates.HexDistance(tileOn.Coordinates, y.Coordinates)); });
         }
 
+        AddLog("After searching absolutely everything, we're stuck and exiting");
         onComplete(false);
     }
 
@@ -757,6 +821,8 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             yield break;
         }
         SetAIState(PeepleAIState.Moving);
+
+        ResourceHolding = null;
 
         bool waitToArrive = true;
         bool moveSuccess = true;
@@ -954,10 +1020,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             yield return Timing.WaitUntilDone(Job.DoWork(this));
             peepleWorldState.hunger += 2;
             peepleWorldState.energy -= 1;
-            if (peepleWorldState.energy < 0)
-            {
-                peepleWorldState.energy = 0;
-            }
 
             yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
             onComplete(true);
@@ -967,9 +1029,12 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
     private IEnumerator<float> MoveResourcesToStorage(System.Action<bool> onComplete)
     {
         SetAIState(PeepleAIState.DoingNothing);
+        peepleWorldState.hunger++;
+        peepleWorldState.energy--;
         peepleWorldState.location = PeepleLocation.Anywhere;
 
         HashSet<HexTile> exclusions = memory.GetSeenJobSites();
+        exclusions.UnionWith(memory.GetAllSeenStorageLocations());
 
         if(ResourceHolding == null)
         {
@@ -1027,6 +1092,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
     private IEnumerator<float> CollectResourcesForJob(System.Action<bool> onComplete)
     {
+        AddLog("Collecting resources for job");
         SetAIState(PeepleAIState.DoingNothing);
         peepleWorldState.location = PeepleLocation.Anywhere;
 
@@ -1052,11 +1118,13 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     break;
                 }
             }
+            AddLog("Resource determined to collect: " + neededResource);
 
             amountNeeded = Mathf.Min(amountNeeded, PeepleCarryingCapacity);
 
             if(neededResource == ResourceType.Flags)
             {
+                Job.UpdateResourceStatus();
                 onComplete(false);
 
                 yield break;
@@ -1064,6 +1132,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             while(true)
             {
+                AddLog("Starting check");
+                peepleWorldState.hunger++;
+                peepleWorldState.energy--;
+
                 bool trouble = false;
                 yield return Timing.WaitUntilDone(FindAndTakeResource(neededResource, (success) =>
                 {
@@ -1073,13 +1145,15 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                     }
                 }, memory.GetSeenJobSites()));
 
+                AddLog("Finished finding resource");
                 if (trouble)
                 {
-                    if(last)
+                    AddLog("There was an issue when finding resource");
+                    if (last)
                     {
                         if(Job != null)
                         {
-                            Job.MarkAsOutOfResources();
+                            Job.MarkAsOutOfResources(this);
                         }
                         onComplete(false);
 
@@ -1121,20 +1195,41 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 }
             }
 
+            if(ResourceHolding == null)
+            {
+                AddLog("We're not holding anything. Breaking out");
+                onComplete(false);
+
+                yield break;
+            }
+
             bool jobLost = false;
             if (Job != null)
             {
-                Movement.SetGoal(Job.ResourcePiles[neededResource].Neighbors[Random.Range(0, Job.ResourcePiles[neededResource].Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
+                if (HexCoordinates.HexDistance(Job.ResourcePiles[neededResource].Coordinates, Movement.GetTileOn().Coordinates) > 2)
+                {
+                    AddLog("Moving to a resource pile");
+                    Movement.SetGoal(Job.ResourcePiles[neededResource].Neighbors[Random.Range(0, Job.ResourcePiles[neededResource].Neighbors.Count)]); //TODO: Limit neighbors they can go to based on a number of factors such as if its blocked etc
 
-                yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
+                    yield return Timing.WaitUntilFalse(() => { return Movement.IsMoving; });
+                    AddLog("Arrived at resource pile");
+                }
             }
             else
             {
                 jobLost = true;
             }
 
+            if (ResourceHolding == null)
+            {
+                AddLog("We're not holding anything, breaking out");
+                onComplete(false);
+
+                yield break;
+            } 
             if (Job != null)
             {
+                AddLog("Placing resource on tile");
                 ResourceHandler.Instance.PlaceResourceOnTile(ResourceHolding, Job.ResourcePiles[neededResource]);
                 Job.AddResource(ResourceHolding.Type, 1);
 
@@ -1148,6 +1243,7 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
 
             if(jobLost)
             {
+                AddLog("We lost our job at some point, ending");
                 onComplete(false);
                 yield break;
             }
@@ -1157,12 +1253,10 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
                 yield break;
             }
         }
-        else
-        {
-            onComplete(false);
 
-            yield break;
-        }
+        onComplete(false);
+
+        yield break;
     }
 
     private IEnumerator<float> TakeBreak(System.Action<bool> onComplete)
@@ -1175,16 +1269,14 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
             peepleWorldState.location = PeepleLocation.Anywhere;
         }
 
-        peepleWorldState.energy += 2;
-        peepleWorldState.hunger++;
-        peepleWorldState.resting = true;
-        restingSymbol.SetActive(true);
-        if (peepleWorldState.energy > 100)
+        while(peepleWorldState.energy < 90)
         {
-            peepleWorldState.energy = 100;
-            peepleWorldState.resting = false;
-            restingSymbol.SetActive(false);
+            restingSymbol.SetActive(true);
+            peepleWorldState.energy += 15;
+            peepleWorldState.hunger++;
+            yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         }
+        restingSymbol.SetActive(false);
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);
@@ -1234,7 +1326,6 @@ public class Peeple : HTN_Agent<Peeple.PeepleWS>
         {
             peepleWorldState.energy = 100;
         }
-        peepleWorldState.resting = true;
 
         yield return Timing.WaitForSeconds(PeepleHandler.STANDARD_ACTION_TICK);
         onComplete(true);

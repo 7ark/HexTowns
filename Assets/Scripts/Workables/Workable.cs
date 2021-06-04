@@ -29,6 +29,9 @@ public class Workable
     [SerializeField]
     protected int totalWorkSlots = 1;
     protected bool waitingOnResources = false;
+
+    private HashSet<Peeple> markedOutOfResourcesCount = new HashSet<Peeple>();
+
     public bool RequiresResources
     {
         get
@@ -130,15 +133,23 @@ public class Workable
 
         Timing.RunCoroutine(DelayedTryAgain());
     }
-    public void MarkAsOutOfResources()
+    public void MarkAsOutOfResources(Peeple marker)
     {
-        for (int i = 0; i < currentWorkers.Count; i++)
+        if(!markedOutOfResourcesCount.Contains(marker))
         {
-            LeaveWork(currentWorkers[i]);
+            markedOutOfResourcesCount.Add(marker);
         }
-        Unworkable = true;
 
-        Timing.RunCoroutine(DelayedTryAgain(60));
+        if(markedOutOfResourcesCount.Count >= 3 || markedOutOfResourcesCount.Count >= currentWorkers.Count)
+        {
+            for (int i = 0; i < currentWorkers.Count; i++)
+            {
+                LeaveWork(currentWorkers[i]);
+            }
+            Unworkable = true;
+
+            Timing.RunCoroutine(DelayedTryAgain(30));
+        }
     }
 
     private IEnumerator<float> DelayedTryAgain(float time = 2)
@@ -146,6 +157,7 @@ public class Workable
         yield return Timing.WaitForSeconds(time);
 
         Unworkable = false;
+        markedOutOfResourcesCount.Clear();
     }
 
     public virtual IEnumerator<float> DoWork(Peeple specificPeepleWorking = null)
