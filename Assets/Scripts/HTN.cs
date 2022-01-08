@@ -164,7 +164,7 @@ public class HTN_Planner<T> where T : struct
     {
         Stack<PlannerState<T>> plannerStateStack = new Stack<PlannerState<T>>();
 
-        PlannerState<T> currentState = new PlannerState<T>(currentWorldState); //Is this being copied?
+        PlannerState<T> currentState = new PlannerState<T>(currentWorldState);
 
         currentState.tasksToProcess.Push(constructedHTNRoot);
         while(currentState.tasksToProcess.Count > 0)
@@ -203,13 +203,6 @@ public class HTN_Planner<T> where T : struct
                     {
                         return new HTN_Plan(currentState.finalPlan, currentState.mtr);
                     }
-                    //if(plannerStateStack.Count == 0)
-                    //{
-                    //    return null;
-                    //}
-                    //currentState = plannerStateStack.Pop();
-                    //currentState.methodIndex++;
-                    //currentState.tasksToProcess.Push(currentState.decompTask);
                 }
             }
             else if(currentTask is PrimitiveTask<T>)

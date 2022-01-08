@@ -16,10 +16,8 @@ public class HexBoardChunkHandler : MonoBehaviour
     private Vector2Int boardSize;
     public static Vector2Int BoardSize => Instance.boardSize;
 
-    [SerializeField] 
-    private IBoardMod[] BoardGenerationMods = {
-        new VoronoiBoardMod()
-    };
+    [SerializeField]
+    private IBoardMod[] BoardGenerationMods = null;
     
     [SerializeField]
     private Vector2Int tileSize = new Vector2Int(17, 17);
@@ -48,6 +46,9 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     [SerializeField]
     private Material hexagonPreviewMaterial;
+
+    [SerializeField]
+    private ComputeShader voronoiComputerShader;
 
     [System.Serializable]
     private struct PrefabDataInfo
@@ -85,6 +86,8 @@ public class HexBoardChunkHandler : MonoBehaviour
     public static int Seed => Instance.seed;
     private Vector2Int[] voronoiPoints;
     private HashSet<HexBoard> lastRendered = new HashSet<HexBoard>();
+
+    private HexCoordinates[] regionCenters = null;
 
     public static HexBoardChunkHandler Instance;
 
@@ -211,6 +214,7 @@ public class HexBoardChunkHandler : MonoBehaviour
 
         Random.InitState(seed);
 
+
         StartGeneratingWorld(new Vector2Int(worldSize, worldSize));
 
         GameTime.Instance.SetTimeSpeed(1);
@@ -224,6 +228,10 @@ public class HexBoardChunkHandler : MonoBehaviour
         cachedLengths = new Vector2Int(worldSize.x * tileSize.x, worldSize.y * tileSize.y);
         globalTiles = new HexTile[cachedLengths.x * cachedLengths.y];
         FillTiles();
+        
+        SetupRegionCenters();
+        SetupGenerationMods();
+        
         FillBoards(0, 0);
     }
 
@@ -233,6 +241,27 @@ public class HexBoardChunkHandler : MonoBehaviour
             var index = cachedLengths.x * j + i;
             globalTiles[index] = new HexTile(i, j, index);
         }
+    }
+
+    private void SetupRegionCenters()
+    {
+        int amountOfRegions = (int) (globalTiles.Length * 0.0002f);
+        amountOfRegions = (int) (amountOfRegions * 1.5f);
+        
+        regionCenters = new HexCoordinates[amountOfRegions];
+        for (int i = 0; i < regionCenters.Length; i++)
+        {
+            regionCenters[i] = globalTiles[Random.Range(0, globalTiles.Length - 1)].Coordinates;
+        }
+    }
+
+    private void SetupGenerationMods()
+    {
+        BoardGenerationMods = new IBoardMod[] {
+            // new VoronoiBoardMod()
+            new VoronoiTileMod(regionCenters, voronoiComputerShader),
+            new NoiseMod()
+        };
     }
 
     public bool FlattenArea(HexTile[] areaTiles, int height, bool step = false)

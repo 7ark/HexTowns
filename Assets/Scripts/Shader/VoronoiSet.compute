@@ -1,0 +1,48 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel SetVoronoi
+
+struct SingleTileData
+{
+    int index;
+    float3 hexCoord;
+    int regionResult;
+    int distanceToCenter;
+};
+
+struct RegionData
+{
+    float3 hexCoord;
+    int regionIndex;
+};
+
+RWStructuredBuffer<SingleTileData> tileData;
+RWStructuredBuffer<RegionData> regionsData;
+int regionsDataLength;
+
+int CheckDistance(float3 a, float3 b)
+{
+    return (
+            abs(a.x - b.x) +
+            abs(a.x + a.y - b.x - b.y) +
+            abs(a.y - b.y)) / 2;
+}
+
+[numthreads(64,1,1)]
+void SetVoronoi (uint3 id : SV_DispatchThreadID)
+{
+    int closestDist = 999999;
+    int index = -1;
+    for(int i = 0; i < regionsDataLength; i++)
+    {
+        int dist = CheckDistance(tileData[id.x].hexCoord, regionsData[i].hexCoord);
+    
+        if(dist < closestDist)
+        {
+            closestDist = dist;
+            index = regionsData[i].regionIndex;
+        }
+    }
+
+    tileData[id.x].distanceToCenter = closestDist;
+    tileData[id.x].regionResult = index;
+}

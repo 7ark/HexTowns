@@ -90,9 +90,15 @@ public class PeepleJobHandler : MonoBehaviour
         {
             jobsAvailable.Add(placeable);
         }
-        jobsAvailable.Sort((x, y) => 
-        { 
-            return Vector3.Distance(x.GetClosestAssociatedTile(peeple.transform.position).Position, peeple.transform.position).CompareTo(Vector3.Distance(y.GetClosestAssociatedTile(peeple.transform.position).Position, peeple.transform.position)); 
+        jobsAvailable.Sort((x, y) =>
+        {
+            var xClosest = x.GetClosestAssociatedTile(peeple.transform.position);
+            var yClosest = y.GetClosestAssociatedTile(peeple.transform.position);
+            if (xClosest == null || yClosest == null)
+            {
+                return 100;
+            }
+            return Vector3.Distance(xClosest.Position, peeple.transform.position).CompareTo(Vector3.Distance(yClosest.Position, peeple.transform.position)); 
         });
 
         for (int i = 0; i < jobsAvailable.Count; i++)

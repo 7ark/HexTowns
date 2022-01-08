@@ -2789,6 +2789,8 @@ MonoBehaviour:
   hoverBadPreviewMaterial: {fileID: 2100000, guid: fe4441abf1d05ad4e9939de657be8321, type: 2}
   meshCombiner: {fileID: 1619208941}
   selectionCamera: {fileID: 435334066}
+  showHoverCoords: 0
+  hoverCoordsDisplay: 
 --- !u!4 &460025806
 Transform:
   m_ObjectHideFlags: 0
@@ -6955,93 +6957,127 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f89a7737142a6cd49816d3af0acd8703, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  textureInfo:
+  - textureType: 0
+    texture: {fileID: 2800000, guid: c2e975e8a074dff45aee75e580a54344, type: 3}
+  - textureType: 1
+    texture: {fileID: 2800000, guid: 29cf16dcfaae11f46bccf7ae069faa60, type: 3}
+  - textureType: 2
+    texture: {fileID: 2800000, guid: 922b2f4389cf30f46ad4dd56df061162, type: 3}
+  - textureType: 3
+    texture: {fileID: 2800000, guid: 5c38e2edb8ae412468d3186b2e38caf1, type: 3}
+  - textureType: 4
+    texture: {fileID: 2800000, guid: cdaa0c60fdc92ed47af5eb4257f20c89, type: 3}
+  - textureType: 5
+    texture: {fileID: 2800000, guid: 819311b7a66a8f740b104cf9f9ffadf5, type: 3}
+  - textureType: 6
+    texture: {fileID: 2800000, guid: 1acff9429044bf4469ddf77481156ff0, type: 3}
+  - textureType: 7
+    texture: {fileID: 2800000, guid: 84a0082a671cb3642819cc69b89b9353, type: 3}
+  - textureType: 8
+    texture: {fileID: 2800000, guid: b6e958058e84ea540a4e6d7946673f53, type: 3}
+  - textureType: 9
+    texture: {fileID: 2800000, guid: 91ea5d8940fb7fd4c963e672324628a5, type: 3}
+  - textureType: 10
+    texture: {fileID: 2800000, guid: e65e8c6f286469944a22f2777d8e870c, type: 3}
+  - textureType: 11
+    texture: {fileID: 2800000, guid: 1d2634ee9f36b834980539d2a726ef75, type: 3}
+  - textureType: 12
+    texture: {fileID: 2800000, guid: 8254f5ff1e3225c4a8c34c3054086ad3, type: 3}
+  - textureType: 13
+    texture: {fileID: 2800000, guid: 9cf90a6e517ec2d408eb16fabbd8c0dd, type: 3}
+  - textureType: 14
+    texture: {fileID: 2800000, guid: ac83f026f611fb248850f7e282af4037, type: 3}
+  - textureType: 15
+    texture: {fileID: 2800000, guid: cd5df956a22dcba48913a8fbbc68487c, type: 3}
+  - textureType: 16
+    texture: {fileID: 2800000, guid: 07f44d4cc88d7a14e9ef3821380ae9c6, type: 3}
+  - textureType: 17
+    texture: {fileID: 2800000, guid: fca5ccfbfb5acfc49bda94d2353c2268, type: 3}
+  - textureType: 18
+    texture: {fileID: 2800000, guid: de351dd85f0dd0440be0d8e36566d064, type: 3}
+  - textureType: 19
+    texture: {fileID: 2800000, guid: 1edc7cc525f7299418b71823a99a9776, type: 3}
+  - textureType: 20
+    texture: {fileID: 2800000, guid: 2f9b52419a7aab04aa2a67b1d5433369, type: 3}
+  - textureType: 21
+    texture: {fileID: 2800000, guid: 43a6f2a6855649a458bf3ff1c9643cc2, type: 3}
+  - textureType: 22
+    texture: {fileID: 2800000, guid: fddb796191afb2947993970b4084592b, type: 3}
+  - textureType: 23
+    texture: {fileID: 2800000, guid: 464397aea913d01409f3d8329f26b705, type: 3}
+  - textureType: 24
+    texture: {fileID: 2800000, guid: aae5d0c409b2960409c4797c4932938b, type: 3}
+  - textureType: 25
+    texture: {fileID: 2800000, guid: 6ca8a2583723da44dbcb5ff60cdeedbc, type: 3}
+  - textureType: 26
+    texture: {fileID: 2800000, guid: b4e2835cd8257a04ab37c4bfbf1165d6, type: 3}
+  - textureType: 27
+    texture: {fileID: 2800000, guid: af59bdb6ca27dbd479831f98668cec63, type: 3}
+  - textureType: 28
+    texture: {fileID: 2800000, guid: a22f74dadcc373b4da1943778db036d4, type: 3}
+  - textureType: 29
+    texture: {fileID: 2800000, guid: 58780efb29e14bd4d8015aa66cf60699, type: 3}
+  - textureType: 30
+    texture: {fileID: 2800000, guid: fdc4a260f8e438a439e9a2b7d5456adb, type: 3}
+  - textureType: 31
+    texture: {fileID: 2800000, guid: 5231de66c8b9c2243b4342fded500099, type: 3}
+  - textureType: 32
+    texture: {fileID: 2800000, guid: 91d2c889d3e809f4d81557f9aa7a5c8a, type: 3}
   textureData:
-  - heightRange: {x: -100, y: -75}
-    textureChoices:
-    - {fileID: 2800000, guid: c2e975e8a074dff45aee75e580a54344, type: 3}
-  - heightRange: {x: -74, y: -51}
-    textureChoices:
-    - {fileID: 2800000, guid: c2e975e8a074dff45aee75e580a54344, type: 3}
-    - {fileID: 2800000, guid: 29cf16dcfaae11f46bccf7ae069faa60, type: 3}
-    - {fileID: 2800000, guid: 922b2f4389cf30f46ad4dd56df061162, type: 3}
-  - heightRange: {x: -50, y: -6}
-    textureChoices:
-    - {fileID: 2800000, guid: 29cf16dcfaae11f46bccf7ae069faa60, type: 3}
-    - {fileID: 2800000, guid: 922b2f4389cf30f46ad4dd56df061162, type: 3}
-  - heightRange: {x: -5, y: -1}
-    textureChoices:
-    - {fileID: 2800000, guid: 5c38e2edb8ae412468d3186b2e38caf1, type: 3}
-    - {fileID: 2800000, guid: cdaa0c60fdc92ed47af5eb4257f20c89, type: 3}
-  - heightRange: {x: 0, y: 30}
-    textureChoices:
-    - {fileID: 2800000, guid: b6e958058e84ea540a4e6d7946673f53, type: 3}
-    - {fileID: 2800000, guid: 80fd47506951736449e2a7e364a70350, type: 3}
-    - {fileID: 2800000, guid: c6614ed1f7bc5564f8495fadee9724b0, type: 3}
-    - {fileID: 2800000, guid: 26408f3456289d04583fce2a70b66d98, type: 3}
-    - {fileID: 2800000, guid: 0ea2403f81de68a4eb1effe14694e0f4, type: 3}
-    - {fileID: 2800000, guid: 1458b2e4ed79022448a67f1b5a189ae9, type: 3}
-    - {fileID: 2800000, guid: 4edd444daa6565646b98180ec3d6e512, type: 3}
-    - {fileID: 2800000, guid: 4c8014b956345774d93bb7dea1435ae9, type: 3}
-    - {fileID: 2800000, guid: 8b920213f6c8c0240a890fc1e671262d, type: 3}
-    - {fileID: 2800000, guid: 91ea5d8940fb7fd4c963e672324628a5, type: 3}
-  - heightRange: {x: 31, y: 60}
-    textureChoices:
-    - {fileID: 2800000, guid: 819311b7a66a8f740b104cf9f9ffadf5, type: 3}
-    - {fileID: 2800000, guid: 1acff9429044bf4469ddf77481156ff0, type: 3}
-    - {fileID: 2800000, guid: 84a0082a671cb3642819cc69b89b9353, type: 3}
-    - {fileID: 2800000, guid: e65e8c6f286469944a22f2777d8e870c, type: 3}
-    - {fileID: 2800000, guid: 1d2634ee9f36b834980539d2a726ef75, type: 3}
-  - heightRange: {x: 61, y: 90}
-    textureChoices:
-    - {fileID: 2800000, guid: b6e958058e84ea540a4e6d7946673f53, type: 3}
-    - {fileID: 2800000, guid: 80fd47506951736449e2a7e364a70350, type: 3}
-    - {fileID: 2800000, guid: c6614ed1f7bc5564f8495fadee9724b0, type: 3}
-    - {fileID: 2800000, guid: 26408f3456289d04583fce2a70b66d98, type: 3}
-    - {fileID: 2800000, guid: 0ea2403f81de68a4eb1effe14694e0f4, type: 3}
-    - {fileID: 2800000, guid: 1458b2e4ed79022448a67f1b5a189ae9, type: 3}
-    - {fileID: 2800000, guid: 4edd444daa6565646b98180ec3d6e512, type: 3}
-    - {fileID: 2800000, guid: 4c8014b956345774d93bb7dea1435ae9, type: 3}
-    - {fileID: 2800000, guid: 8b920213f6c8c0240a890fc1e671262d, type: 3}
-    - {fileID: 2800000, guid: 91ea5d8940fb7fd4c963e672324628a5, type: 3}
-  - heightRange: {x: 91, y: 120}
-    textureChoices:
-    - {fileID: 2800000, guid: 8b920213f6c8c0240a890fc1e671262d, type: 3}
-    - {fileID: 2800000, guid: 819311b7a66a8f740b104cf9f9ffadf5, type: 3}
-    - {fileID: 2800000, guid: fdecb5767e47411408963ab5a67bbf7e, type: 3}
-    - {fileID: 2800000, guid: e65e8c6f286469944a22f2777d8e870c, type: 3}
-    - {fileID: 2800000, guid: 1d2634ee9f36b834980539d2a726ef75, type: 3}
-    - {fileID: 2800000, guid: 2f9b52419a7aab04aa2a67b1d5433369, type: 3}
-    - {fileID: 2800000, guid: 43a6f2a6855649a458bf3ff1c9643cc2, type: 3}
-    - {fileID: 2800000, guid: fddb796191afb2947993970b4084592b, type: 3}
-  - heightRange: {x: 121, y: 150}
-    textureChoices:
-    - {fileID: 2800000, guid: 2f9b52419a7aab04aa2a67b1d5433369, type: 3}
-    - {fileID: 2800000, guid: 43a6f2a6855649a458bf3ff1c9643cc2, type: 3}
-    - {fileID: 2800000, guid: fddb796191afb2947993970b4084592b, type: 3}
-    - {fileID: 2800000, guid: 464397aea913d01409f3d8329f26b705, type: 3}
-    - {fileID: 2800000, guid: aae5d0c409b2960409c4797c4932938b, type: 3}
-    - {fileID: 2800000, guid: fdecb5767e47411408963ab5a67bbf7e, type: 3}
-    - {fileID: 2800000, guid: 1edc7cc525f7299418b71823a99a9776, type: 3}
-  - heightRange: {x: 151, y: 220}
-    textureChoices:
-    - {fileID: 2800000, guid: 6ca8a2583723da44dbcb5ff60cdeedbc, type: 3}
-    - {fileID: 2800000, guid: b4e2835cd8257a04ab37c4bfbf1165d6, type: 3}
-    - {fileID: 2800000, guid: af59bdb6ca27dbd479831f98668cec63, type: 3}
-    - {fileID: 2800000, guid: a22f74dadcc373b4da1943778db036d4, type: 3}
-    - {fileID: 2800000, guid: 58780efb29e14bd4d8015aa66cf60699, type: 3}
-  - heightRange: {x: 221, y: 250}
-    textureChoices:
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-    - {fileID: 2800000, guid: a22f74dadcc373b4da1943778db036d4, type: 3}
-    - {fileID: 2800000, guid: 6ca8a2583723da44dbcb5ff60cdeedbc, type: 3}
-  - heightRange: {x: 251, y: 300}
-    textureChoices:
-    - {fileID: 2800000, guid: ace8a4b32c2aad747b2f2f1289d4c8d5, type: 3}
-  textureSize: 128
+  - overrideBiome: 1
+    heightRange: {x: -100, y: -75}
+    textureChoices: 00000000
+  - overrideBiome: 1
+    heightRange: {x: -74, y: -51}
+    textureChoices: 000000000100000002000000
+  - overrideBiome: 1
+    heightRange: {x: -50, y: -6}
+    textureChoices: 0100000002000000
+  - overrideBiome: 0
+    heightRange: {x: -5, y: -3}
+    textureChoices: 0300000004000000
+  - overrideBiome: 0
+    heightRange: {x: -2, y: 30}
+    textureChoices: 050000000c0000000d0000000e0000000f0000001000000011000000120000001300000009000000
+  - overrideBiome: 0
+    heightRange: {x: 31, y: 60}
+    textureChoices: 0500000006000000070000000800000009000000
+  - overrideBiome: 0
+    heightRange: {x: 61, y: 90}
+    textureChoices: 0b0000000c0000000d0000000e0000000f000000100000001100000012000000130000000a000000
+  - overrideBiome: 0
+    heightRange: {x: 91, y: 120}
+    textureChoices: 07000000080000000a0000000b00000010000000150000001600000017000000
+  - overrideBiome: 0
+    heightRange: {x: 121, y: 150}
+    textureChoices: 14000000150000001600000017000000180000001300000009000000
+  - overrideBiome: 1
+    heightRange: {x: 151, y: 220}
+    textureChoices: 190000001a0000001b0000001c0000001d000000
+  - overrideBiome: 1
+    heightRange: {x: 221, y: 250}
+    textureChoices: 190000001d0000001e0000001f000000200000001e0000001f000000
+  - overrideBiome: 1
+    heightRange: {x: 251, y: 300}
+    textureChoices: 1e0000001f00000020000000
+  textureBiomeData:
+  - biome: 1
+    textureChoices: 0300000004000000
+  - biome: 9
+    textureChoices: 1e0000001f00000020000000
+  - biome: 5
+    textureChoices: 14000000150000001600000017000000180000000c0000000e000000110000001200000000000000
+  - biome: 4
+    textureChoices: 05000000060000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000
+  - biome: 8
+    textureChoices: 140000001500000016000000170000001800000000000000
+  - biome: 2
+    textureChoices: 140000001500000016000000170000001800000005000000060000000700000008000000090000000a0000000b000000
+  - biome: 3
+    textureChoices: 07000000160000000600000000000000060000000700000016000000
+  - biome: 7
+    textureChoices: 07000000000000000600000000000000060000000700000000000000
 --- !u!1 &1400210974
 GameObject:
   m_ObjectHideFlags: 0
@@ -7239,14 +7275,22 @@ MonoBehaviour:
   - type: 0
     prefabOptions:
     - {fileID: 5583023051182274134, guid: d8b250eabdfd83945b5c4c3b56717e8c, type: 3}
+    - {fileID: 5583023051182274134, guid: c8a9a0a25994f7c4eb0357d7e55636cb, type: 3}
+    - {fileID: 5583023051182274134, guid: 1e02ee61cc6fb094bb4f36aa68a67817, type: 3}
+    - {fileID: 5583023051182274134, guid: 74e3f5a11ed895947987ea50cae6bbaa, type: 3}
   - type: 1
     prefabOptions:
     - {fileID: 8766014541193715956, guid: 23058347256c2c34bb43f4c315157b04, type: 3}
+  - type: 2
+    prefabOptions:
+    - {fileID: 8766014541193715956, guid: 21e17ccb94c501446b475d468407992f, type: 3}
+    - {fileID: 8766014541193715956, guid: 40ce6c8668b37e2488954d1b844674c6, type: 3}
   baseMaterial: {fileID: 2100000, guid: 43f2bd7bcd4b198458b969d83497966f, type: 2}
   baseMaterialSelection: {fileID: 2100000, guid: 95f1f57c8b51bef459fab80856994eed, type: 2}
   drawingCamera: {fileID: 1023898293}
   selectionCamera: {fileID: 435334066}
   hexagonPreviewMaterial: {fileID: 2100000, guid: 1e9d3c058453f7948b4a84c9f7ec39ee, type: 2}
+  voronoiComputerShader: {fileID: 7200000, guid: dfce8005454b045449f3b2e9e7d49b65, type: 3}
   mesh: {fileID: -2432090755550338912, guid: 666e33dd6ccaa1f428c998259d5d6d35, type: 3}
   textureArray: {fileID: 0}
 --- !u!4 &1407722124

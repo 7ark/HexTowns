@@ -125,7 +125,17 @@ public struct HexCoordinates : System.IEquatable<HexCoordinates>
     }
 }
 
-public enum Biome { None, Mountains, Hills, Plains, Ocean, Desert, Forest }
+public enum Biome
+{
+    None, 
+    
+    //Proper biomes
+    Desert, Savannah, TropicalRainforest, Grassland, Shrubland, TemperateForest,
+    TemperateRainforest, Taiga, Tundra,
+    
+    //Non-traditional
+    MountainRange, River
+}
 
 public struct BoardCorners
 {
@@ -143,14 +153,21 @@ public struct BoardCorners
     }
 }
 
-public enum BoardInstancedType { Tree, Rock }
-public enum TreeType { Oak }
+public enum BoardInstancedType { Tree, Rock, Plant }
+public enum RockType { Stone }
+public enum TreeType { Oak, Pine, Pine_Snow, Jungle }
+
+public enum PlantType { Bush, Fern }
 
 public class HexBoard
 {
     public Vector2Int tileSize;
 
     public  HexTile[,] board2D;
+    public List<HexTile> board
+    {
+        get { return allTiles; }
+    }
     private List<HexTile> allTiles = new List<HexTile>();
     private HexMesh hexMesh;
     private bool environmentalObjectsGenerated = false;
@@ -163,6 +180,7 @@ public class HexBoard
     public Vector2Int Size { get { return tileSize; } }
     public BoardCorners CornerHeights { get; set; }
     public Vector3 WorldPosition { get; private set; }
+    public int FarthestDistanceFromCenter { get; set; }
 
     [SerializeField] private Biome biome;
     public Biome BiomeTerrain { get => biome;
@@ -250,11 +268,11 @@ public class HexBoard
 
         hexMesh.Update();
 
-        foreach(var type in boardInstancedObjects.Keys)
+        foreach(var instancedObjects in boardInstancedObjects.Values)
         {
-            for (int i = 0; i < boardInstancedObjects[type].Length; i++)
+            for (int i = 0; i < instancedObjects.Length; i++)
             {
-                boardInstancedObjects[type][i].Update();
+                instancedObjects[i].Update();
             }
         }
     }
@@ -301,73 +319,89 @@ public class HexBoard
         //}
     }
 
+    public struct EnvObj
+    {
+        public BoardInstancedType type;
+        public int subType;
+        public HexTile tile;
+    }
+
     public void GenerateEnvironmentalObjects()
     {
         if (!environmentalObjectsGenerated && spawningObject != null)
         {
-            List<HexBoard> otherBoards = HexBoardChunkHandler.Instance.GetNearbyBoards(this);
             environmentalObjectsGenerated = true;
-            for (int i = 0; i < allTiles.Count; i++)
+            for (int i = 0; i < envObjsToAdd.Count; i++)
             {
-                int likelinessToHaveTree = 1;
-                int likelinessToHaveRock = 1;
-                switch (BiomeTerrain)
+                float yPosMod = 0;
+                if (envObjsToAdd[i].type == BoardInstancedType.Tree)
                 {
-                    case Biome.Mountains:
-                        likelinessToHaveTree = Random.Range(0, 150);
-                        likelinessToHaveRock = Random.Range(0, 10);
-                        break;
-                    case Biome.Hills:
-                        likelinessToHaveTree = Random.Range(0, 150);
-                        likelinessToHaveRock = Random.Range(0, 50);
-                        break;
-                    case Biome.Plains:
-                        likelinessToHaveTree = Random.Range(0, 100);
-                        likelinessToHaveRock = Random.Range(0, 100);
-                        break;
-                    case Biome.Forest:
-                        likelinessToHaveRock = Random.Range(0, 100);
-                        int otherForests = otherBoards.Count(b => b.BiomeTerrain == Biome.Forest);
-
-                        if (otherForests >= 6)
-                        {
-                            otherForests += 8;
-                        }
-
-                        likelinessToHaveTree = Random.Range(0, 20 - (otherForests));
-                        break;
-                }
-                if (allTiles[i].Height < 150 && allTiles[i].Height > 5 && likelinessToHaveTree == 0)
-                {
-                    Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
-                    Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
-                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[BoardInstancedType.Tree][(int)TreeType.Oak].transform.localScale);
-
-                    Guid id = boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].AddDataPoint(matrix);
-
-                    ResourceWorkable treeWorkable = new ResourceWorkable(allTiles[i], 3, ResourceType.Wood, 2); //FIX
-                    treeWorkable.OnDestroyed += (w) =>
+                    if (envObjsToAdd[i].subType == (int) TreeType.Pine || envObjsToAdd[i].subType == (int) TreeType.Pine_Snow)
                     {
-                        boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].RemoveDataPoint(id);
+                        yPosMod = Random.Range(0f, 3f);
+                    }
+                    else if (envObjsToAdd[i].subType == (int) TreeType.Jungle)
+                    {
+                        yPosMod = Random.Range(-1f, 4f);
+                    }
+                }
+                
+                Vector3 posAddition = Vector3.zero;
+                if (envObjsToAdd[i].type == BoardInstancedType.Rock || envObjsToAdd[i].type == BoardInstancedType.Plant)
+                {
+                    posAddition = new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
+                }
+                
+                Vector3 pos = envObjsToAdd[i].tile.Position + new Vector3(0, envObjsToAdd[i].tile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP + yPosMod) + posAddition;
+                Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
+                Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[envObjsToAdd[i].type][envObjsToAdd[i].subType].transform.localScale);
+
+                Guid id = boardInstancedObjects[envObjsToAdd[i].type][envObjsToAdd[i].subType].AddDataPoint(matrix);
+
+                ResourceWorkable workable = null;
+                bool used = false;
+                
+                int index = i;
+                int work = 0;
+                int worth = 0;
+                ResourceType resource = ResourceType.Food;
+                if (envObjsToAdd[i].type == BoardInstancedType.Tree)
+                {
+                    used = true;
+                    resource = ResourceType.Wood;
+                    switch ((TreeType)envObjsToAdd[i].subType)
+                    {
+                        case TreeType.Oak:
+                            worth = 2;
+                            work = 3;
+                            break;
+                        case TreeType.Pine:
+                        case TreeType.Pine_Snow:
+                            worth = 3;
+                            work = 5;
+                            break;
+                        case TreeType.Jungle:
+                            worth = 5;
+                            work = 10;
+                            break;
+                    }
+                }
+                else if (envObjsToAdd[i].type == BoardInstancedType.Rock)
+                {
+                    used = true;
+                    resource = ResourceType.Stone;
+                }
+
+                if (used)
+                {
+                    workable = new ResourceWorkable(envObjsToAdd[i].tile, work, resource,   worth); //FIX
+                    workable.OnDestroyed += (w) =>
+                    {
+                        boardInstancedObjects[envObjsToAdd[index].type][envObjsToAdd[index].subType].RemoveDataPoint(id);
                     };
+                
                     
-                    allTiles[i].AddEnvironmentItem(treeWorkable);
-                }
-                if (allTiles[i].Height > -2 && likelinessToHaveRock == 0)
-                {
-                    Vector3 pos = allTiles[i].Position + new Vector3(0, allTiles[i].Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f));
-                    Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
-                    Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[BoardInstancedType.Rock][0].transform.localScale);
-
-                    Guid id = boardInstancedObjects[BoardInstancedType.Rock][0].AddDataPoint(matrix); 
-
-                    ResourceWorkable rockWorkable = new ResourceWorkable(allTiles[i], 1, ResourceType.Stone, 1);
-                    rockWorkable.OnDestroyed += (w) =>
-                    {
-                        boardInstancedObjects[BoardInstancedType.Rock][0].RemoveDataPoint(id);
-                    };
-
-                    allTiles[i].AddEnvironmentItem(rockWorkable);
+                    envObjsToAdd[i].tile.AddEnvironmentItem(workable);
                 }
             }
 
@@ -380,21 +414,45 @@ public class HexBoard
             }
 
             //Animals
-            int amountOfBunies = 0;
-            if(BiomeTerrain == Biome.Forest)
-            {
-                amountOfBunies = Random.Range(4, 8);
-            }
-            else if(BiomeTerrain == Biome.Plains)
-            {
-                amountOfBunies = Random.Range(0, 4);
-            }
+            int amountOfBunies = 0;//Random.Range(0, 4);
+            // if(BiomeTerrain == Biome.Forest)
+            // {
+            //     amountOfBunies = Random.Range(4, 8);
+            // }
+            // else if(BiomeTerrain == Biome.Plains)
+            // {
+            //     amountOfBunies = Random.Range(0, 4);
+            // }
 
             for (int i = 0; i < amountOfBunies; i++)
             {
                 allAnimalsOnBoard.Add(AnimalHandler.Instance.SpawnAnimal(AnimalType.Buny, allTiles[Random.Range(0, allTiles.Count)]));
             }
         }
+    }
+
+    private List<EnvObj> envObjsToAdd = new List<EnvObj>();
+    public void AddEnvironmental(HexTile tile, BoardInstancedType type, int subType)
+    {
+        envObjsToAdd.Add(new EnvObj()
+        {
+            type = type,
+            subType = subType,
+            tile = tile
+        });
+        // Vector3 pos = tile.Position + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP - HexTile.HEIGHT_STEP);
+        // Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
+        // Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[BoardInstancedType.Tree][(int)TreeType.Oak].transform.localScale);
+        //
+        // Guid id = boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].AddDataPoint(matrix);
+        //
+        // ResourceWorkable treeWorkable = new ResourceWorkable(tile, 3, ResourceType.Wood, 2); //FIX
+        // treeWorkable.OnDestroyed += (w) =>
+        // {
+        //     boardInstancedObjects[BoardInstancedType.Tree][(int)TreeType.Oak].RemoveDataPoint(id);
+        // };
+        //             
+        // tile.AddEnvironmentItem(treeWorkable);
     }
 
     public Guid AddInstancedType(BoardInstancedType instancedType, HexTile tile, int subType = 0, bool instant = true, Quaternion? rotation = null, Vector3? posAdjustment = null)

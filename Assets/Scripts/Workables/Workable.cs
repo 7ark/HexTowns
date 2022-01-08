@@ -293,6 +293,10 @@ public class Workable
         List<HexTile> tiles = new List<HexTile>(GetWorkableTiles());
         tiles.Sort((x, y) => { return Vector3.Distance(x.Position, pos).CompareTo(Vector3.Distance(y.Position, pos)); });
 
+        if (tiles.Count == 0)
+        {
+            return null;
+        }
         return tiles[0];
     }
 

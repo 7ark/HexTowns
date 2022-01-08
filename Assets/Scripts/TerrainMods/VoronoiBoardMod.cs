@@ -124,7 +124,7 @@ namespace TerrainMods
                 ((board2D[diamond.xMin, diamond.yMin].Height +
                 board2D[diamond.xMin, diamond.yMax].Height +
                 board2D[diamond.xMax, diamond.yMin].Height +
-                board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome));// SpecialRandom(new Vector2Int(-5, 30));
+                board2D[diamond.xMax, diamond.yMax].Height) / 4) + (depth % 6 == 0 ? SpecialRandom(new Vector2Int(-30, 80)) : SpecialRandom(biome));
 
             board2D[halfX, halfY].SetHeight(averageHeight);
 
@@ -191,11 +191,11 @@ namespace TerrainMods
         private List<Biome> _biomeBag => _lazyBiomeBag ??= FillBag();
         private List<Biome> FillBag() {
             List<Biome> grabBag = new List<Biome>();
-            grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 6));
-            grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Hills, 3));
-            grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Ocean, 5));
-            grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Mountains, 1));
-            grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 6));
+            // grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Plains, 6));
+            // grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Hills, 3));
+            // grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Ocean, 5));
+            // grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Mountains, 1));
+            // grabBag.AddRange(System.Linq.Enumerable.Repeat(Biome.Forest, 6));
             return grabBag;
         }
         
@@ -218,68 +218,68 @@ namespace TerrainMods
 
         private int SpecialRandom(Biome biome)
         {
-            switch (biome)
-            {
-                case Biome.Hills:
-                    return Random.Range(-2, 4);
-                case Biome.Plains:
-                    return Random.Range(-2, 3);
-                case Biome.Ocean:
-                    return Random.Range(-8, 3);
-                case Biome.Mountains:
-                    return Random.Range(-2, 13);
-                case Biome.Desert:
-                    return Random.Range(-5, 6);
-                case Biome.Forest:
-                    return Random.Range(-1, 4);
-            }
+            // switch (biome)
+            // {
+            //     case Biome.Hills:
+            //         return Random.Range(-2, 4);
+            //     case Biome.Plains:
+            //         return Random.Range(-2, 3);
+            //     case Biome.Ocean:
+            //         return Random.Range(-8, 3);
+            //     case Biome.Mountains:
+            //         return Random.Range(-2, 13);
+            //     case Biome.Desert:
+            //         return Random.Range(-5, 6);
+            //     case Biome.Forest:
+            //         return Random.Range(-1, 4);
+            // }
 
             return 0;
         }
         
         private int GetCornerHeight(Biome biome)
         {
-            switch (biome)
-            {
-                case Biome.Hills:
-                    const int minHeightHills = 25;
-                    const int maxHeightHills = 161;
-
-                    return Random.Range(minHeightHills, maxHeightHills);
-                case Biome.Plains:
-                    const int minHeightPlains = -2;
-                    const int maxHeightPlains = 51;
-
-                    return Random.Range(minHeightPlains, maxHeightPlains);
-                case Biome.Ocean:
-                    const int minHeightOcean = -150;
-                    const int maxHeightOcean = 21;
-
-                    return Random.Range(minHeightOcean, maxHeightOcean);
-                case Biome.Mountains:
-                    const int minHeightMountains = 50;
-                    const int maxHeightMountains = 301;
-
-                    if(Random.Range(0, 4) == 0)
-                    {
-                        return Random.Range(minHeightMountains, maxHeightMountains);
-                    }
-                    else
-                    {
-                        return Random.Range(minHeightMountains, maxHeightMountains + 200);
-                    }
-
-                case Biome.Desert:
-                    const int minHeightDesert = 20;
-                    const int maxHeightDesert = 61;
-
-                    return Random.Range(minHeightDesert, maxHeightDesert);
-                case Biome.Forest:
-                    const int minHeightForest = -5;
-                    const int maxHeightForest = 101;
-
-                    return Random.Range(minHeightForest, maxHeightForest);
-            }
+            // switch (biome)
+            // {
+            //     case Biome.Hills:
+            //         const int minHeightHills = 25;
+            //         const int maxHeightHills = 161;
+            //
+            //         return Random.Range(minHeightHills, maxHeightHills);
+            //     case Biome.Plains:
+            //         const int minHeightPlains = -2;
+            //         const int maxHeightPlains = 51;
+            //
+            //         return Random.Range(minHeightPlains, maxHeightPlains);
+            //     case Biome.Ocean:
+            //         const int minHeightOcean = -150;
+            //         const int maxHeightOcean = 21;
+            //
+            //         return Random.Range(minHeightOcean, maxHeightOcean);
+            //     case Biome.Mountains:
+            //         const int minHeightMountains = 50;
+            //         const int maxHeightMountains = 301;
+            //
+            //         if(Random.Range(0, 4) == 0)
+            //         {
+            //             return Random.Range(minHeightMountains, maxHeightMountains);
+            //         }
+            //         else
+            //         {
+            //             return Random.Range(minHeightMountains, maxHeightMountains + 200);
+            //         }
+            //
+            //     case Biome.Desert:
+            //         const int minHeightDesert = 20;
+            //         const int maxHeightDesert = 61;
+            //
+            //         return Random.Range(minHeightDesert, maxHeightDesert);
+            //     case Biome.Forest:
+            //         const int minHeightForest = -5;
+            //         const int maxHeightForest = 101;
+            //
+            //         return Random.Range(minHeightForest, maxHeightForest);
+            // }
 
             return 0;
         }

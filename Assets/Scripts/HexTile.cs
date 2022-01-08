@@ -44,6 +44,10 @@ public class HexTile
 	public bool WorkArea { get; set; }
 	public bool HasWorkables { get { return buildingReferences.Count > 0; } }
 	public Building BuildingOnTile { get; set; }
+	
+	public Biome Biome { get; set; }
+	public int RegionID { get; private set; }
+	public int DistanceToCenterOfRegion { get; private set; }
 	public bool IsStorageTile { get; set; } = false;
 
 	public HexTile(int x, int y, int index) {
@@ -174,4 +178,10 @@ public class HexTile
 		//Material mat = textureReference.GetMaterial(Height);
 		//HexMesh.SetMaterials(mat, mat);
     }
+
+	public void SetRegion(int id, int distanceToCenter)
+	{
+		RegionID = id;
+		DistanceToCenterOfRegion = distanceToCenter;
+	}
 }

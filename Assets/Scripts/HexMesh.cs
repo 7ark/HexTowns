@@ -95,7 +95,7 @@ public class HexMesh
                 data.pos_s.w = height * HexTile.HEIGHT_STEP;
                 if(cell.MaterialIndex == -1)
                 {
-                    cell.MaterialIndex = textureReference.GetTextureIndex(cell.Height);
+                    cell.MaterialIndex = textureReference.GetTextureIndex(cell.Height, cell.Biome);
                 }
                 data.index = cell.MaterialIndex;
                 data.hexCoordX = cell.Coordinates.X;

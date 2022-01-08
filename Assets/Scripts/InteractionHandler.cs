@@ -35,6 +35,12 @@ public class InteractionHandler : MonoBehaviour
     [SerializeField]
     private Camera selectionCamera;
 
+    [SerializeField]
+    private bool showHoverCoords = false;
+
+    [SerializeField]
+    private string hoverCoordsDisplay = "";
+
     //private PreviewTile previewTile;
 
     private MasterInput inputMaster;
@@ -293,6 +299,12 @@ public class InteractionHandler : MonoBehaviour
             forceHoverUpdate = false;
             lastHoveredTile = tile;
             hoverObject.transform.position = tile.Coordinates.ToPosition() + new Vector3(0, tile.Height * HexTile.HEIGHT_STEP + 0.1f);
+
+            if (showHoverCoords)
+            {
+                hoverCoordsDisplay = tile.Coordinates.ToString() + " H" + tile.Height;
+            }
+            
             //previewTile.tile = tile;
             if(multiSelectionsLeft > 0 && multiSelections.Count > 0)
             {
