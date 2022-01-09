@@ -93,22 +93,22 @@ public class HexBoardChunkHandler : MonoBehaviour
 
     public HexagonTextureReference TextureRef { get { return textureReference; } }
     
-    private void OnValidate() {
-        int newBoardSizeScalar= 1;
-        int newBoardSize = 1;
-        while(newBoardSize < tileSize.x)
-        {
-            newBoardSizeScalar++;
-            int currSize = (int)(Mathf.Pow(2, newBoardSizeScalar) + 1);
-            if(currSize > tileSize.x)
-            {
-                break;
-            }
-            newBoardSize = currSize;
-        }
-
-        tileSize = new Vector2Int(newBoardSize, newBoardSize);
-    }
+    // private void OnValidate() {
+    //     int newBoardSizeScalar= 1;
+    //     int newBoardSize = 1;
+    //     while(newBoardSize < tileSize.x)
+    //     {
+    //         newBoardSizeScalar++;
+    //         int currSize = (int)(Mathf.Pow(2, newBoardSizeScalar) + 1);
+    //         if(currSize > tileSize.x)
+    //         {
+    //             break;
+    //         }
+    //         newBoardSize = currSize;
+    //     }
+    //
+    //     tileSize = new Vector2Int(newBoardSize, newBoardSize);
+    // }
 
     private void CreateBaseMesh()
     {
@@ -259,7 +259,7 @@ public class HexBoardChunkHandler : MonoBehaviour
     {
         BoardGenerationMods = new IBoardMod[] {
             // new VoronoiBoardMod()
-            new VoronoiTileMod(regionCenters, voronoiComputerShader),
+            // new VoronoiTileMod(regionCenters, voronoiComputerShader),
             new NoiseMod()
         };
     }

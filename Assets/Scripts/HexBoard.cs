@@ -356,7 +356,7 @@ public class HexBoard
                 Quaternion rotate = Quaternion.Euler(new Vector3(0, Random.Range(0, 361)));
                 Matrix4x4 matrix = Matrix4x4.TRS(pos, rotate, allPrefabs[envObjsToAdd[i].type][envObjsToAdd[i].subType].transform.localScale);
 
-                Guid id = boardInstancedObjects[envObjsToAdd[i].type][envObjsToAdd[i].subType].AddDataPoint(matrix);
+                Guid id = boardInstancedObjects[envObjsToAdd[i].type][envObjsToAdd[i].subType].AddDataPoint(matrix, false, false);
 
                 ResourceWorkable workable = null;
                 bool used = false;
@@ -410,6 +410,7 @@ public class HexBoard
                 for (int i = 0; i < boardInstancedObjects[type].Length; i++)
                 {
                     boardInstancedObjects[type][i].FindCenter();
+                    boardInstancedObjects[type][i].UpdateBufferManual();
                 }
             }
 

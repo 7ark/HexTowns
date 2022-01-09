@@ -22,7 +22,7 @@ public class InstancedGenericObject
     private List<Material> matInstances = new List<Material>();
     private Dictionary<Guid, Matrix4x4> pointInformation = new Dictionary<Guid, Matrix4x4>();
     private Vector3 center = new Vector3(0, 0, 0);
-    private Vector3 boundsSize = new Vector3(80, 100, 80);
+    private Vector3 boundsSize = new Vector3(200, 100, 200);
     private int submeshCount = 0;
 
     public InstancedGenericObject(GameObject originalObject, bool biggerBounds = false)
@@ -51,7 +51,7 @@ public class InstancedGenericObject
         UpdateBuffer(pointInformation);
     }
 
-    public Guid AddDataPoint(Matrix4x4 pos, bool updateBuffer = true)
+    public Guid AddDataPoint(Matrix4x4 pos, bool updateBuffer = true, bool updateCenter = true)
     {
         Guid uniqueId = Guid.NewGuid();
         pointInformation.Add(uniqueId, pos);
@@ -60,7 +60,10 @@ public class InstancedGenericObject
             UpdateBuffer(pointInformation);
         }
 
-        FindCenter();
+        if (updateCenter)
+        {
+            FindCenter();
+        }
 
         return uniqueId;
     }
@@ -68,6 +71,11 @@ public class InstancedGenericObject
     public void UpdateDataPoint(Guid unqiueInstance, Matrix4x4 pos)
     {
         pointInformation[unqiueInstance] = pos;
+        UpdateBuffer(pointInformation);
+    }
+
+    public void UpdateBufferManual()
+    {
         UpdateBuffer(pointInformation);
     }
 

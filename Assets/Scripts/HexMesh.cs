@@ -118,7 +118,7 @@ public class HexMesh
     {
         if(meshBasis != null)
         {
-            Bounds bound = new Bounds(center, new Vector3(80, 100, 80));
+            Bounds bound = new Bounds(center, new Vector3(200, 100, 200));
             Graphics.DrawMeshInstancedProcedural(meshBasis, 0, matInstance, bound, allTiles.Length, null,
                 ShadowCastingMode.On, true, 6);
 
