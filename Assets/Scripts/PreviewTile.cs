@@ -8,6 +8,8 @@ public class PreviewTile : MonoBehaviour
 
     private void OnDrawGizmosSelected() {
         tile = HexBoardChunkHandler.Instance?.GetTileFromWorldPosition(transform.position);
+        
+        #if UNITY_EDITOR
         if (tile != null) {
             var neighbors = tile.Neighbors;
             foreach (var neighbor in neighbors) {
@@ -19,5 +21,6 @@ public class PreviewTile : MonoBehaviour
             
             Handles.Label(tile.Position + new Vector3(0,tile.Height * HexTile.HEIGHT_STEP + 1f), $"{tile.Coordinates} : {tile.GlobalIndex}");
         }
+        #endif
     }
 }

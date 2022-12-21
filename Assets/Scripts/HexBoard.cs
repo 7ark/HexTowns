@@ -390,6 +390,8 @@ public class HexBoard
                 {
                     used = true;
                     resource = ResourceType.Stone;
+                    worth = 3;
+                    work = 3;
                 }
 
                 if (used)
